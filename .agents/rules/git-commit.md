@@ -1,10 +1,8 @@
 ---
-trigger: manual
+trigger: always_on
 ---
 
 # Git 커밋 메시지 규칙
-
-이 규칙은 `@git-commit` 으로 명시적으로 호출했을 때만 적용된다.
 
 ## Conventional Commits 형식
 
