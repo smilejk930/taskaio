@@ -75,10 +75,14 @@ export async function updateTask(id: string, updates: TaskUpdatePayload) {
         .update(updates)
         .eq('id', id)
         .select()
-        .single()
+        .maybeSingle()
 
     if (error) {
         throw new Error(error.message)
+    }
+
+    if (!data) {
+        throw new Error('업무를 찾을 수 없거나 수정 권한이 없습니다.')
     }
 
     if (data?.project_id) {
@@ -108,10 +112,14 @@ export async function createTask(task: TaskInsertPayload) {
         .from('tasks')
         .insert(taskWithColor)
         .select()
-        .single()
+        .maybeSingle()
 
     if (error) {
         throw new Error(error.message)
+    }
+
+    if (!data) {
+        throw new Error('업무를 생성할 수 없습니다.')
     }
 
     revalidatePath(`/projects/${task.project_id}`)
@@ -132,7 +140,7 @@ export async function deleteTask(id: string) {
         .from('tasks')
         .select('project_id, parent_id')
         .eq('id', id)
-        .single()
+        .maybeSingle()
 
     // 하위 업무 먼저 soft delete
     await supabase.from('tasks').update({ is_deleted: true }).eq('parent_id', id)
