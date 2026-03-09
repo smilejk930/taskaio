@@ -112,9 +112,14 @@ export default function WbsGrid({
                             />
                         </div>
                         {/* 업무 설명 (description) */}
-                        {task.description && (
-                            <p className="text-xs text-muted-foreground pl-4 pt-0.5 pb-1 line-clamp-1">{task.description}</p>
-                        )}
+                        <div className="pl-4 pt-0.5 pb-1">
+                            <Input
+                                defaultValue={task.description ?? ''}
+                                placeholder="업무 내용 입력..."
+                                className="h-6 border-none bg-transparent focus-visible:ring-1 text-xs text-muted-foreground p-0 placeholder:text-muted-foreground/50"
+                                onBlur={(e) => onTaskUpdate(task.id, 'description', e.target.value || null)}
+                            />
+                        </div>
                     </div>
                 )
             },

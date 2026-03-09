@@ -18,6 +18,7 @@ import { UserMenu } from '@/components/auth/UserMenu'
 import { updateTask, createTask, deleteTask } from '@/app/actions/tasks'
 import { updateProject, deleteProject } from '@/app/actions/projects'
 import { createLink, deleteLink } from '@/app/actions/links'
+import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
@@ -94,18 +95,69 @@ export default function ProjectClientView({
     const [selectedMember, setSelectedMember] = useState<string>('all')
     const [activeTab, setActiveTab] = useState('dashboard')
 
+    const router = useRouter()
+    const currentMemberRole = members.find(m => m.id === currentUser?.id)?.role
+
+    // ── 실시간 데이터 동기화 (Supabase Realtime) ─────────────────────────────────
+    React.useEffect(() => {
+        const supabase = createClient()
+        const channel = supabase.channel(`public:tasks:${project.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'tasks',
+                    filter: `project_id=eq.${project.id}`,
+                },
+                (payload) => {
+                    const { eventType, new: newRecord, old: oldRecord } = payload
+
+                    if (eventType === 'INSERT') {
+                        setTasks(prev => {
+                            if (prev.find(t => t.id === newRecord.id)) return prev
+                            return [...prev, newRecord as Task]
+                        })
+                    } else if (eventType === 'UPDATE') {
+                        setTasks(prev => prev.map(t => t.id === newRecord.id ? { ...t, ...newRecord } as Task : t))
+                    } else if (eventType === 'DELETE') {
+                        setTasks(prev => prev.filter(t => t.id !== oldRecord.id))
+                    }
+                }
+            )
+            .subscribe()
+
+        return () => {
+            supabase.removeChannel(channel)
+        }
+    }, [project.id])
+
+    // 탭 변경 시 데이터 갱신
+    React.useEffect(() => {
+        router.refresh()
+    }, [activeTab, router])
+
     const [isEditProjectOpen, setIsEditProjectOpen] = useState(false)
     const [editProjectName, setEditProjectName] = useState(project.name)
     const [editProjectDesc, setEditProjectDesc] = useState(project.description || '')
     const [deleteConfirmInput, setDeleteConfirmInput] = useState('')
 
-    const router = useRouter()
-    const currentMemberRole = members.find(m => m.id === currentUser?.id)?.role
-
     // ── 업무 수정 ──────────────────────────────────────────────────────────────
     const handleTaskUpdate = async (id: string, field: string, value: string | number | null) => {
         try {
-            const updatedTask = await updateTask(id, { [field]: value } as Record<string, unknown>)
+            const updates: Record<string, unknown> = { [field]: value }
+
+            // 진척률 변경 시 상태 자동 연동
+            if (field === 'progress') {
+                const progressVal = typeof value === 'string' ? parseInt(value) : (value as number)
+                if (progressVal === 100) {
+                    updates.status = 'done'
+                } else if (progressVal > 0) {
+                    updates.status = 'in_progress'
+                }
+            }
+
+            const updatedTask = await updateTask(id, updates)
             setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updatedTask } : t))
             toast.success('업무가 업데이트되었습니다.')
         } catch (error: unknown) {
@@ -163,6 +215,7 @@ export default function ProjectClientView({
                 progress: 0,
                 priority: 'medium',
                 status: 'todo',
+                assignee_id: currentUser?.id ?? null, // 생성한 사람을 담당자로 자동 지정
             })
             setTasks(prev => [...prev, newTask])
             toast.success('업무가 추가되었습니다.')
@@ -192,6 +245,7 @@ export default function ProjectClientView({
         end_date?: Date
         progress: number
         description?: string | null
+        color?: string
     }) => {
         try {
             await updateTask(ganttTask.id, {
@@ -200,6 +254,7 @@ export default function ProjectClientView({
                 end_date: ganttTask.end_date ? format(ganttTask.end_date, 'yyyy-MM-dd') : undefined,
                 progress: Math.round(ganttTask.progress * 100),
                 description: ganttTask.description ?? null,
+                color: ganttTask.color,
             })
             setTasks(prev => prev.map(t =>
                 t.id === ganttTask.id ? {
@@ -209,6 +264,7 @@ export default function ProjectClientView({
                     end_date: ganttTask.end_date ? format(ganttTask.end_date, 'yyyy-MM-dd') : null,
                     progress: Math.round(ganttTask.progress * 100),
                     description: ganttTask.description ?? null,
+                    color: ganttTask.color ?? t.color,
                 } : t
             ))
         } catch (error: unknown) {

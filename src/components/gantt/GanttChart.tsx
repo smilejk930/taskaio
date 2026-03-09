@@ -60,6 +60,13 @@ export default function GanttChart({
 }: GanttChartProps) {
     const ganttContainer = useRef<HTMLDivElement>(null)
 
+    // 콜백 함수들을 최신 상태로 유지하기 위한 Ref
+    const callbacksRef = useRef({ onTaskUpdated, onTaskCreated, onLinkAdd, onLinkDelete })
+    useEffect(() => {
+        callbacksRef.current = { onTaskUpdated, onTaskCreated, onLinkAdd, onLinkDelete }
+    }, [onTaskUpdated, onTaskCreated, onLinkAdd, onLinkDelete])
+
+    // ── 초기 설정 및 이벤트 바인딩 (최초 1회 실행) ──────────────────────
     useEffect(() => {
         if (!ganttContainer.current) return
 
@@ -79,11 +86,11 @@ export default function GanttChart({
                 template: (task: GanttTask) => {
                     const name = task.assignee_name || '미지정';
                     return `<div style="display:flex; align-items:center; gap:8px; padding-left:4px;">
-                                <div style="width:24px; height:24px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold; color:#64748b;">
-                                    ${name.charAt(0)}
-                                </div>
-                                <span style="font-size:13px;">${name}</span>
-                            </div>`;
+                                    <div style="width:24px; height:24px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold; color:#64748b;">
+                                        ${name.charAt(0)}
+                                    </div>
+                                    <span style="font-size:13px;">${name}</span>
+                                </div>`;
                 }
             },
             { name: "text", label: "업무명", tree: true, width: '*' },
@@ -97,7 +104,7 @@ export default function GanttChart({
             { name: "add", label: "", width: 44 }
         ]
 
-        // ── 로케일 설정 ────────────────────────────────────────────────────────
+        // ── 플러그인 활성화 및 커스텀 에디터 등록 ────────────────────────────
         const g = gantt as unknown as {
             locale: {
                 labels: Record<string, string>
@@ -105,13 +112,93 @@ export default function GanttChart({
             }
             config: typeof gantt.config & { lightbox: { sections: unknown[] } }
             templates: {
-                scale_cell_class: (date: Date) => string
+                scale_cell_class: (date: Date, scale: unknown) => string
+                timeline_cell_class: (task: GanttTask, date: Date) => string
                 task_time: (start: Date, end: Date, task: GanttTask) => string
                 tooltip_text: (start: Date, end: Date, task: GanttTask) => string
                 [key: string]: unknown
             }
+            getTask: (id: string | number) => GanttTask
+            attachEvent: (name: string, callback: (...args: never[]) => unknown) => string
+            detachEvent: (id: string) => void
+            plugins: (plugins: Record<string, boolean>) => void
+            calculateDuration: (start: Date, end: Date) => number
         }
 
+        g.plugins({
+            marker: true,
+            tooltip: true,
+        })
+
+        // 커스텀 라이트박스 섹션: color_picker
+        const ganttAny = gantt as unknown as { form_blocks: Record<string, unknown> }
+        ganttAny.form_blocks["color_picker"] = {
+            render: function () {
+                return `<div class='gantt_color_picker' style='padding:4px;'><input type='color' style='width:20%; height:50px; border:none; cursor:pointer; background:transparent;'/></div>`;
+            },
+            set_value: function (node: HTMLElement, value: string) {
+                const input = node.querySelector("input")
+                if (input) input.value = value || "#86efac";
+            },
+            get_value: function (node: HTMLElement) {
+                const input = node.querySelector("input")
+                return input ? input.value : "#86efac";
+            },
+            focus: function (node: HTMLElement) {
+                const input = node.querySelector("input")
+                if (input) input.focus();
+            }
+        };
+
+        // 커스텀 라이트박스 섹션: date_range
+        ganttAny.form_blocks["date_range"] = {
+            render: function () {
+                return `<div class='gantt_date_range' style='padding:8px 4px; display:flex; align-items:center; gap:8px;'>
+                            <input type='date' class='start_date' style='width:auto; height:32px; padding:0 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:13px; outline:none; cursor:pointer;'/>
+                            <span style='color:#64748b; font-size:13px;'>~</span>
+                            <input type='date' class='end_date' style='width:auto; height:32px; padding:0 8px; border:1px solid #e2e8f0; border-radius:6px; font-size:13px; outline:none; cursor:pointer;'/>
+                        </div>`;
+            },
+            set_value: function (node: HTMLElement, value: unknown, task: GanttTask) {
+                const startDateInput = node.querySelector(".start_date") as HTMLInputElement;
+                const endDateInput = node.querySelector(".end_date") as HTMLInputElement;
+
+                if (task.start_date && startDateInput) {
+                    const tzOffset = task.start_date.getTimezoneOffset() * 60000;
+                    startDateInput.value = (new Date(task.start_date.getTime() - tzOffset)).toISOString().split('T')[0];
+                }
+                if (task.end_date && endDateInput) {
+                    const tzOffset = task.end_date.getTimezoneOffset() * 60000;
+                    // dhtmlx-gantt end_date는 보통 +1일 전 자정
+                    const adjustedEndDate = new Date(task.end_date.getTime() - 24 * 60 * 60 * 1000);
+                    endDateInput.value = (new Date(adjustedEndDate.getTime() - tzOffset)).toISOString().split('T')[0];
+                }
+            },
+            get_value: function (node: HTMLElement, task: GanttTask) {
+                const startDateInput = node.querySelector(".start_date") as HTMLInputElement;
+                const endDateInput = node.querySelector(".end_date") as HTMLInputElement;
+
+                const start = new Date(startDateInput.value + "T00:00:00");
+                const end = new Date(endDateInput.value + "T00:00:00");
+                end.setDate(end.getDate() + 1); // 다음날 자정으로 설정
+
+                task.start_date = start;
+                task.end_date = end || undefined;
+                task.duration = g.calculateDuration(start, end);
+
+                return {
+                    start_date: start,
+                    end_date: end,
+                    duration: task.duration
+                };
+            },
+            focus: function (node: HTMLElement) {
+                const input = node.querySelector(".start_date") as HTMLInputElement;
+                if (input) input.focus();
+            }
+        };
+
+        // ── 로케일 설정 ────────────────────────────────────────────────────────
         g.locale.labels.new_task = "새 업무"
         g.locale.labels.icon_save = "저장"
         g.locale.labels.icon_cancel = "취소"
@@ -123,6 +210,7 @@ export default function GanttChart({
         g.locale.labels.section_description = "업무명"
         g.locale.labels.section_details = "업무내용"
         g.locale.labels.section_time = "기간"
+        g.locale.labels.section_color = "색상"
 
         g.locale.labels.days = "일"
         g.locale.labels.hours = "시간"
@@ -135,44 +223,104 @@ export default function GanttChart({
         g.locale.date.day_full = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"]
         g.locale.date.day_short = ["일", "월", "화", "수", "목", "금", "토"]
 
-        // ── Lightbox 설정 ──────────────────────────────────────────────────────
         g.config.lightbox.sections = [
             { name: "description", height: 38, map_to: "text", type: "textarea", focus: true },
             { name: "details", height: 70, map_to: "description", type: "textarea" },
-            { name: "time", height: 72, type: "time", map_to: "auto", time_format: ["%Y", "%m", "%d"] }
+            { name: "color", height: 38, map_to: "color", type: "color_picker" },
+            { name: "time", height: 48, type: "date_range", map_to: "auto" }
         ]
 
-        // ── 스케일 주말 스타일 적용 및 툴팁 템플릿 ──────────────────────────────
-        g.templates.scale_cell_class = (date: Date) => {
-            if (date.getDay() === 0 || date.getDay() === 6) {
-                return "weekend"
+        // ── 주말 스타일 적용 (타임라인 및 스케일 헤더) ──────────────────────
+        g.templates.scale_cell_class = (date: Date, scale?: { unit?: string }) => {
+            // scale 인자가 제공되며 단위가 'day'일 때만(일간 보기의 하단 날짜 행) 주말 강조
+            if (scale && scale.unit === 'day') {
+                if (date.getDay() === 0 || date.getDay() === 6) {
+                    return "weekend_scale"
+                }
             }
             return ""
         }
 
-        g.templates.task_time = (start: Date) => {
-            return `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일`
+        g.templates.timeline_cell_class = (_task: GanttTask, date: Date) => {
+            if (date.getDay() === 0 || date.getDay() === 6) {
+                return "weekend_cell"
+            }
+            return ""
+        }
+
+        const formatDate = (date: Date) => {
+            return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`
+        }
+
+        g.templates.task_time = (start: Date, end: Date) => {
+            return `${formatDate(start)} ~ ${formatDate(end)}`
         }
 
         g.templates.tooltip_text = (start: Date, end: Date, task: GanttTask) => {
-            const startStr = `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일`
-            const endStr = `${end.getFullYear()}년 ${end.getMonth() + 1}월 ${end.getDate()}일`
-            return `<b>업무명:</b> ${task.text}<br/><b>기간:</b> ${startStr} ~ ${endStr}<br/><b>소요:</b> ${task.duration}일`
+            return `<b>업무명:</b> ${task.text}<br/><b>기간:</b> ${formatDate(start)} ~ ${formatDate(end)}<br/><b>소요:</b> ${task.duration}일`
         }
 
-        // ── 스케일 설정 ────────────────────────────────────────────────────────
+        // ── 이벤트 핸들러 바인딩 ──
+        const dragStartEvent = g.attachEvent("onBeforeTaskDrag", () => {
+            return true;
+        });
+
+        const dragEvent = g.attachEvent("onTaskDrag", (id: string, mode: string, task: GanttTask) => {
+            if (mode === "progress") {
+                const original = g.getTask(id) as GanttTask;
+                task.start_date = original.start_date;
+                task.end_date = original.end_date;
+            }
+        });
+
+        const updatedEvent = g.attachEvent('onAfterTaskUpdate', (_id: string, item: GanttTask) => {
+            callbacksRef.current.onTaskUpdated?.(item)
+            return true
+        })
+
+        const createdEvent = g.attachEvent('onAfterTaskAdd', (_id: string, item: GanttTask) => {
+            callbacksRef.current.onTaskCreated?.(item)
+            return true
+        })
+
+        const linkAddedEvent = g.attachEvent('onAfterLinkAdd', (id: string | number, link: GanttLink) => {
+            callbacksRef.current.onLinkAdd?.(id.toString(), link.source.toString(), link.target.toString(), link.type.toString())
+            return true
+        })
+
+        const linkDeletedEvent = g.attachEvent('onAfterLinkDelete', (id: string | number) => {
+            callbacksRef.current.onLinkDelete?.(id.toString())
+            return true
+        })
+
+        gantt.init(ganttContainer.current)
+
+        return () => {
+            g.detachEvent(dragStartEvent)
+            g.detachEvent(dragEvent)
+            g.detachEvent(updatedEvent)
+            g.detachEvent(createdEvent)
+            g.detachEvent(linkAddedEvent)
+            g.detachEvent(linkDeletedEvent)
+            gantt.clearAll()
+            if (ganttContainer.current) {
+                ganttContainer.current.innerHTML = ''
+            }
+        }
+    }, []) // 마운트 시 한 번만 실행되도록 빈 의존성 배열 사용
+
+    // ── 스케일, 필터 및 렌더링 (설정 변경 시) ─────────────────────────
+    useEffect(() => {
         const days = ['일', '월', '화', '수', '목', '금', '토']
         switch (scales) {
             case 'day':
-                // 일간: 상단 → 연/월, 하단 → 일 + 요일
                 gantt.config.scales = [
                     { unit: 'month', step: 1, format: (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1} 월` },
-                    { unit: 'day', step: 1, format: (date: Date) => `${date.getDate()} 일(${days[date.getDay()]})` }
+                    { unit: 'day', step: 1, format: (date: Date) => `${date.getDate()} (${days[date.getDay()]})` }
                 ]
                 gantt.config.min_column_width = 70;
                 break
             case 'week':
-                // 주간: 상단 → 연/월, 하단 → 주차 (n주차)
                 gantt.config.scales = [
                     { unit: 'month', step: 1, format: (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1} 월` },
                     {
@@ -184,7 +332,6 @@ export default function GanttChart({
                 ]
                 break
             case 'month':
-                // 월간: 연/월
                 gantt.config.scales = [
                     { unit: 'year', step: 1, format: (date: Date) => `${date.getFullYear()} 년` },
                     { unit: 'month', step: 1, format: (date: Date) => `${date.getMonth() + 1} 월` }
@@ -192,24 +339,24 @@ export default function GanttChart({
                 break
         }
 
-        // ── 상위 업무 필터 ─────────────────────────────────────────────────────
         gantt.filter = (_id: string, item: Record<string, unknown>) => {
             if (showOnlyParent && item.parent) return false
             return true
         }
 
-        // ── 초기화 ─────────────────────────────────────────────────────────────
-        gantt.init(ganttContainer.current)
+        gantt.render()
+    }, [scales, showOnlyParent])
+
+    // ── 데이터, 휴일 마커 업데이트 ───────────────────────────────────────
+    useEffect(() => {
         gantt.clearAll()
         gantt.parse({ data: tasks, links })
 
-        // ── 휴일 마커 적용 ─────────────────────────────────────────────────────
-        // Day 모드일 때: 휴일 날짜 범위만큼 배경 강조 (addMarker로 각 날 표시)
-        // Week/Month 모드일 때: 시작일에만 단순 마커 표시
+        // 휴일 마커 지우기 (기존 마커 제거를 위해) - dhtmlxgantt의 기본 marker 플러그인은 마커의 전체 삭제 메서드가 명확치 않음.
+        // 보통 clearAll()하면 데이터는 지워지지만 마커는 지워지는지 확인해야 함. 대부분 지원됨.
         if (holidays?.length) {
             holidays.forEach(holiday => {
                 if (scales === 'day') {
-                    // 날짜 범위 내 각 일자별로 마커 추가하여 배경 채움
                     const start = new Date(holiday.start_date)
                     const end = new Date(holiday.end_date)
                     const current = new Date(start)
@@ -226,7 +373,6 @@ export default function GanttChart({
                         current.setDate(current.getDate() + 1)
                     }
                 } else {
-                    // Week/Month 모드는 시작일에만 마커 표시
                     gantt.addMarker({
                         start_date: new Date(holiday.start_date),
                         css: 'gantt_holiday_public',
@@ -236,62 +382,48 @@ export default function GanttChart({
                 }
             })
         }
-
         gantt.render()
+    }, [tasks, links, holidays, scales])
 
-        // ── 이벤트 핸들러 ──────────────────────────────────────────────────────
-        const updatedEvent = gantt.attachEvent('onAfterTaskUpdate', (_id: string, item: GanttTask) => {
-            onTaskUpdated?.(item)
-            return true
-        })
-
-        const createdEvent = gantt.attachEvent('onAfterTaskAdd', (_id: string, item: GanttTask) => {
-            onTaskCreated?.(item)
-            return true
-        })
-
-        const linkAddedEvent = gantt.attachEvent('onAfterLinkAdd', (id: string | number, link: GanttLink) => {
-            onLinkAdd?.(id.toString(), link.source.toString(), link.target.toString(), link.type.toString())
-            return true
-        })
-
-        const linkDeletedEvent = gantt.attachEvent('onAfterLinkDelete', (id: string | number) => {
-            onLinkDelete?.(id.toString())
-            return true
-        })
-
-        return () => {
-            gantt.detachEvent(updatedEvent)
-            gantt.detachEvent(createdEvent)
-            gantt.detachEvent(linkAddedEvent)
-            gantt.detachEvent(linkDeletedEvent)
-            gantt.clearAll()
-        }
-    }, [tasks, links, scales, holidays, showOnlyParent, onTaskUpdated, onTaskCreated, onLinkAdd, onLinkDelete])
 
     return (
         <div className="w-full h-full flex flex-col">
             <style dangerouslySetInnerHTML={{
                 __html: `
                 /* ──── 간트 태스크 바 색상 커스터마이징 ──── */
+                /* .gantt_task_line 에 배경색을 직접 지정하면 task.color가 무시될 수 있으므로, 
+                   기본색만 지정하고 inline style(task.color)이 먹히도록 합니다. */
                 .gantt_task_line {
-                    background-color: #86efac;
-                    border-color: #4ade80;
+                    background-color: #86efac; /* 기본 연그린 */
+                    border-color: rgba(0,0,0,0.1) !important;
                     border-radius: 6px !important;
                 }
+                /* task.color가 있을 경우 border-color도 맞춰주면 더 예쁨 */
+                .gantt_task_line[style*="background-color"] {
+                    border-color: rgba(0,0,0,0.2) !important;
+                }
+                
                 .gantt_task_progress {
-                    background-color: #22c55e;
+                    background-color: rgba(0,0,0,0.2) !important; /* 진행률 바는 배경색에 맞춘 어두운 투명색으로 처리해 색상 조화 유도 */
                     border-radius: 6px !important;
                 }
                 .gantt_task_content {
-                    color: #166534 !important;
+                    color: #1e293b !important;
+                    font-weight: 500;
                 }
                 .gantt_grid_scale, .gantt_task_scale {
                     background-color: #f8fafc;
                 }
-                .weekend {
+                
+                /* ──── 주말 강조 ──── */
+                .weekend_scale {
                     color: #ef4444 !important;
+                    background-color: rgba(239, 68, 68, 0.05) !important;
                 }
+                .weekend_cell {
+                    background-color: rgba(239, 68, 68, 0.03) !important;
+                }
+                
                 /* ──── 공휴일 배경 (붉은 계열) ──── */
                 .gantt_holiday_public.gantt_marker {
                     background-color: rgba(239, 68, 68, 0.12) !important;
