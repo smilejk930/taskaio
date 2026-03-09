@@ -132,10 +132,19 @@ export default function ProjectClientView({
         }
     }, [project.id])
 
-    // 탭 변경 시 데이터 갱신
+    // 탭 변경 시 데이터 갱신 (서버로부터 최신 데이터 요청)
     React.useEffect(() => {
         router.refresh()
     }, [activeTab, router])
+
+    // 서버 프롭스(initialTasks, initialLinks) 변경 시 클라이언트 상태 동기화
+    React.useEffect(() => {
+        setTasks(initialTasks)
+    }, [initialTasks])
+
+    React.useEffect(() => {
+        setLinks(initialLinks)
+    }, [initialLinks])
 
     const [isEditProjectOpen, setIsEditProjectOpen] = useState(false)
     const [editProjectName, setEditProjectName] = useState(project.name)
