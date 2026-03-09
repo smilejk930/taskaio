@@ -105,7 +105,7 @@ export default function GanttChart({
                     { unit: 'month', step: 1, format: (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월` },
                     { unit: 'day', step: 1, format: (date: Date) => `${date.getDate()}일 (${days[date.getDay()]})` }
                 ]
-                gantt.config.min_column_width = 55;
+                gantt.config.min_column_width = 80;
                 break
             case 'week':
                 // 주간: 상단 → 연/월, 하단 → 주차 (n주차)
