@@ -17,6 +17,7 @@ interface GanttTask {
     assignee_name?: string
     /** WBS리스트에서 지정한 HEX 색상 (간트 바 색상) */
     color?: string
+    description?: string | null
 }
 
 interface Holiday {
@@ -85,7 +86,7 @@ export default function GanttChart({
                             </div>`;
                 }
             },
-            { name: "text", label: "제목", tree: true, width: '*' },
+            { name: "text", label: "업무명", tree: true, width: '*' },
             {
                 name: "progress",
                 label: "진행률",
@@ -96,25 +97,88 @@ export default function GanttChart({
             { name: "add", label: "", width: 44 }
         ]
 
+        // ── 로케일 설정 ────────────────────────────────────────────────────────
+        const g = gantt as unknown as {
+            locale: {
+                labels: Record<string, string>
+                date: { month_full: string[]; month_short: string[]; day_full: string[]; day_short: string[] }
+            }
+            config: typeof gantt.config & { lightbox: { sections: unknown[] } }
+            templates: {
+                scale_cell_class: (date: Date) => string
+                task_time: (start: Date, end: Date, task: GanttTask) => string
+                tooltip_text: (start: Date, end: Date, task: GanttTask) => string
+                [key: string]: unknown
+            }
+        }
+
+        g.locale.labels.new_task = "새 업무"
+        g.locale.labels.icon_save = "저장"
+        g.locale.labels.icon_cancel = "취소"
+        g.locale.labels.icon_details = "상세"
+        g.locale.labels.icon_edit = "수정"
+        g.locale.labels.icon_delete = "삭제"
+        g.locale.labels.confirm_closing = "변경사항이 있습니다. 취소하시겠습니까?"
+        g.locale.labels.confirm_deleting = "영구적으로 삭제됩니다. 계속하시겠습니까?"
+        g.locale.labels.section_description = "업무명"
+        g.locale.labels.section_details = "업무내용"
+        g.locale.labels.section_time = "기간"
+
+        g.locale.labels.days = "일"
+        g.locale.labels.hours = "시간"
+        g.locale.labels.minutes = "분"
+        g.locale.labels.months = "개월"
+        g.locale.labels.years = "년"
+
+        g.locale.date.month_full = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"]
+        g.locale.date.month_short = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"]
+        g.locale.date.day_full = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"]
+        g.locale.date.day_short = ["일", "월", "화", "수", "목", "금", "토"]
+
+        // ── Lightbox 설정 ──────────────────────────────────────────────────────
+        g.config.lightbox.sections = [
+            { name: "description", height: 38, map_to: "text", type: "textarea", focus: true },
+            { name: "details", height: 70, map_to: "description", type: "textarea" },
+            { name: "time", height: 72, type: "time", map_to: "auto", time_format: ["%Y", "%m", "%d"] }
+        ]
+
+        // ── 스케일 주말 스타일 적용 및 툴팁 템플릿 ──────────────────────────────
+        g.templates.scale_cell_class = (date: Date) => {
+            if (date.getDay() === 0 || date.getDay() === 6) {
+                return "weekend"
+            }
+            return ""
+        }
+
+        g.templates.task_time = (start: Date) => {
+            return `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일`
+        }
+
+        g.templates.tooltip_text = (start: Date, end: Date, task: GanttTask) => {
+            const startStr = `${start.getFullYear()}년 ${start.getMonth() + 1}월 ${start.getDate()}일`
+            const endStr = `${end.getFullYear()}년 ${end.getMonth() + 1}월 ${end.getDate()}일`
+            return `<b>업무명:</b> ${task.text}<br/><b>기간:</b> ${startStr} ~ ${endStr}<br/><b>소요:</b> ${task.duration}일`
+        }
+
         // ── 스케일 설정 ────────────────────────────────────────────────────────
         const days = ['일', '월', '화', '수', '목', '금', '토']
         switch (scales) {
             case 'day':
                 // 일간: 상단 → 연/월, 하단 → 일 + 요일
                 gantt.config.scales = [
-                    { unit: 'month', step: 1, format: (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월` },
-                    { unit: 'day', step: 1, format: (date: Date) => `${date.getDate()}일 (${days[date.getDay()]})` }
+                    { unit: 'month', step: 1, format: (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1} 월` },
+                    { unit: 'day', step: 1, format: (date: Date) => `${date.getDate()} 일(${days[date.getDay()]})` }
                 ]
-                gantt.config.min_column_width = 80;
+                gantt.config.min_column_width = 70;
                 break
             case 'week':
                 // 주간: 상단 → 연/월, 하단 → 주차 (n주차)
                 gantt.config.scales = [
-                    { unit: 'month', step: 1, format: (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월` },
+                    { unit: 'month', step: 1, format: (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1} 월` },
                     {
                         unit: 'week', step: 1, format: (date: Date) => {
                             const weekNum = Math.ceil(date.getDate() / 7)
-                            return `${weekNum}주차`
+                            return `${weekNum} 주차`
                         }
                     },
                 ]
@@ -122,8 +186,8 @@ export default function GanttChart({
             case 'month':
                 // 월간: 연/월
                 gantt.config.scales = [
-                    { unit: 'year', step: 1, format: (date: Date) => `${date.getFullYear()}년` },
-                    { unit: 'month', step: 1, format: (date: Date) => `${date.getMonth() + 1}월` }
+                    { unit: 'year', step: 1, format: (date: Date) => `${date.getFullYear()} 년` },
+                    { unit: 'month', step: 1, format: (date: Date) => `${date.getMonth() + 1} 월` }
                 ]
                 break
         }
@@ -157,7 +221,7 @@ export default function GanttChart({
                                 ? 'gantt_holiday_public'
                                 : 'gantt_holiday_leave',
                             text: current.getTime() === start.getTime() ? holiday.name : '',
-                            id: `holiday_${holiday.id}_${current.toISOString().split('T')[0]}`,
+                            id: `holiday_${holiday.id}_${current.toISOString().split('T')[0]} `,
                         })
                         current.setDate(current.getDate() + 1)
                     }
@@ -167,7 +231,7 @@ export default function GanttChart({
                         start_date: new Date(holiday.start_date),
                         css: 'gantt_holiday_public',
                         text: holiday.name,
-                        id: `holiday_${holiday.id}`,
+                        id: `holiday_${holiday.id} `,
                     })
                 }
             })
@@ -211,12 +275,12 @@ export default function GanttChart({
                 __html: `
                 /* ──── 간트 태스크 바 색상 커스터마이징 ──── */
                 .gantt_task_line {
-                    background-color: #86efac !important;
-                    border-color: #4ade80 !important;
+                    background-color: #86efac;
+                    border-color: #4ade80;
                     border-radius: 6px !important;
                 }
                 .gantt_task_progress {
-                    background-color: #22c55e !important;
+                    background-color: #22c55e;
                     border-radius: 6px !important;
                 }
                 .gantt_task_content {
@@ -224,6 +288,9 @@ export default function GanttChart({
                 }
                 .gantt_grid_scale, .gantt_task_scale {
                     background-color: #f8fafc;
+                }
+                .weekend {
+                    color: #ef4444 !important;
                 }
                 /* ──── 공휴일 배경 (붉은 계열) ──── */
                 .gantt_holiday_public.gantt_marker {

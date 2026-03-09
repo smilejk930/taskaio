@@ -187,21 +187,28 @@ export default function ProjectClientView({
     // ── 간트 태스크/링크 콜백 핸들러 ──────────────────────────────────────────────
     const handleGanttTaskUpdated = async (ganttTask: {
         id: string
+        text: string
         start_date: Date
         end_date?: Date
         progress: number
+        description?: string | null
     }) => {
         try {
             await updateTask(ganttTask.id, {
+                title: ganttTask.text,
                 start_date: format(ganttTask.start_date, 'yyyy-MM-dd'),
                 end_date: ganttTask.end_date ? format(ganttTask.end_date, 'yyyy-MM-dd') : undefined,
                 progress: Math.round(ganttTask.progress * 100),
+                description: ganttTask.description ?? null,
             })
             setTasks(prev => prev.map(t =>
                 t.id === ganttTask.id ? {
                     ...t,
+                    title: ganttTask.text,
                     start_date: format(ganttTask.start_date, 'yyyy-MM-dd'),
+                    end_date: ganttTask.end_date ? format(ganttTask.end_date, 'yyyy-MM-dd') : null,
                     progress: Math.round(ganttTask.progress * 100),
+                    description: ganttTask.description ?? null,
                 } : t
             ))
         } catch (error: unknown) {
@@ -274,6 +281,7 @@ export default function ProjectClientView({
                 assignee_name: assignee?.display_name ?? assignee?.email ?? '',
                 // 업무별 색상 (WBS에서 지정한 color 값을 간트 바에 반영)
                 color: task.color ?? undefined,
+                description: task.description ?? null,
             }
         })
 
@@ -330,7 +338,7 @@ export default function ProjectClientView({
                     <div className="flex justify-between items-center mb-4">
                         <TabsList>
                             <TabsTrigger value="dashboard">📈 대시보드</TabsTrigger>
-                            <TabsTrigger value="wbs">📋 WBS 리스트</TabsTrigger>
+                            <TabsTrigger value="wbs">📋 업무 목록</TabsTrigger>
                             <TabsTrigger value="gantt">📊 간트 뷰</TabsTrigger>
                             <TabsTrigger value="members">👥 팀원 관리</TabsTrigger>
                         </TabsList>
