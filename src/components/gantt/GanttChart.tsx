@@ -15,6 +15,8 @@ interface GanttTask {
     parent: string | null
     open?: boolean
     assignee_name?: string
+    /** WBS리스트에서 지정한 HEX 색상 (간트 바 색상) */
+    color?: string
 }
 
 interface Holiday {
@@ -96,20 +98,31 @@ export default function GanttChart({
         const days = ['일', '월', '화', '수', '목', '금', '토']
         switch (scales) {
             case 'day':
+                // 일간: 상단 → 연/월, 하단 → 일 + 요일
                 gantt.config.scales = [
-                    { unit: 'day', step: 1, format: '%j' },
-                    { unit: 'day', step: 1, format: (date: Date) => days[date.getDay()] }
+                    { unit: 'month', step: 1, format: (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월` },
+                    { unit: 'day', step: 1, format: (date: Date) => `${date.getDate()}일 (${days[date.getDay()]})` }
                 ]
-                gantt.config.min_column_width = 45;
+                gantt.config.min_column_width = 55;
                 break
             case 'week':
+                // 주간: 상단 → 연/월, 하단 → 주차 (n주차)
                 gantt.config.scales = [
-                    { unit: 'month', step: 1, format: '%F, %Y' },
-                    { unit: 'week', step: 1, format: 'Week #%W' },
+                    { unit: 'month', step: 1, format: (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월` },
+                    {
+                        unit: 'week', step: 1, format: (date: Date) => {
+                            const weekNum = Math.ceil(date.getDate() / 7)
+                            return `${weekNum}주차`
+                        }
+                    },
                 ]
                 break
             case 'month':
-                gantt.config.scales = [{ unit: 'month', step: 1, format: '%F, %Y' }]
+                // 월간: 연/월
+                gantt.config.scales = [
+                    { unit: 'year', step: 1, format: (date: Date) => `${date.getFullYear()}년` },
+                    { unit: 'month', step: 1, format: (date: Date) => `${date.getMonth() + 1}월` }
+                ]
                 break
         }
 

@@ -16,33 +16,39 @@ export type Database = {
     Tables: {
       holidays: {
         Row: {
-          created_at: string | null
-          date: string
           id: string
           name: string
-          type: Database["public"]["Enums"]["holiday_type"] | null
-          user_id: string | null
+          start_date: string
+          end_date: string
+          type: 'public_holiday' | 'member_leave'
+          member_id: string | null
+          note: string | null
+          created_at: string | null
         }
         Insert: {
-          created_at?: string | null
-          date: string
           id?: string
           name: string
-          type?: Database["public"]["Enums"]["holiday_type"] | null
-          user_id?: string | null
+          start_date: string
+          end_date: string
+          type: 'public_holiday' | 'member_leave'
+          member_id?: string | null
+          note?: string | null
+          created_at?: string | null
         }
         Update: {
-          created_at?: string | null
-          date?: string
           id?: string
           name?: string
-          type?: Database["public"]["Enums"]["holiday_type"] | null
-          user_id?: string | null
+          start_date?: string
+          end_date?: string
+          type?: 'public_holiday' | 'member_leave'
+          member_id?: string | null
+          note?: string | null
+          created_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "holidays_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "holidays_member_id_fkey"
+            columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -109,6 +115,7 @@ export type Database = {
           creator_id: string | null
           description: string | null
           id: string
+          is_deleted: boolean | null
           name: string
           updated_at: string | null
         }
@@ -117,6 +124,7 @@ export type Database = {
           creator_id?: string | null
           description?: string | null
           id?: string
+          is_deleted?: boolean | null
           name: string
           updated_at?: string | null
         }
@@ -125,6 +133,7 @@ export type Database = {
           creator_id?: string | null
           description?: string | null
           id?: string
+          is_deleted?: boolean | null
           name?: string
           updated_at?: string | null
         }
@@ -185,6 +194,7 @@ export type Database = {
       tasks: {
         Row: {
           assignee_id: string | null
+          color: string | null
           created_at: string | null
           description: string | null
           end_date: string | null
@@ -201,6 +211,7 @@ export type Database = {
         }
         Insert: {
           assignee_id?: string | null
+          color?: string | null
           created_at?: string | null
           description?: string | null
           end_date?: string | null
@@ -217,6 +228,7 @@ export type Database = {
         }
         Update: {
           assignee_id?: string | null
+          color?: string | null
           created_at?: string | null
           description?: string | null
           end_date?: string | null
@@ -268,6 +280,11 @@ export type Database = {
         Returns: boolean
       }
       is_member_of: { Args: { p_id: string }; Returns: boolean }
+      is_project_empty: { Args: { p_project_id: string }; Returns: boolean }
+      is_project_manager_or_owner: {
+        Args: { p_project_id: string }
+        Returns: boolean
+      }
       search_users: {
         Args: { search_query: string }
         Returns: {
@@ -279,7 +296,6 @@ export type Database = {
       }
     }
     Enums: {
-      holiday_type: "public" | "individual"
       project_role: "owner" | "manager" | "member"
       task_priority: "low" | "medium" | "high" | "urgent"
       task_status: "todo" | "in_progress" | "review" | "done"
@@ -410,7 +426,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      holiday_type: ["public", "individual"],
       project_role: ["owner", "manager", "member"],
       task_priority: ["low", "medium", "high", "urgent"],
       task_status: ["todo", "in_progress", "review", "done"],

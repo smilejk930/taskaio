@@ -100,9 +100,15 @@ export async function updateTask(id: string, updates: TaskUpdatePayload) {
 export async function createTask(task: TaskInsertPayload) {
     const supabase = createClient()
 
+    // 색상이 없으면 랜덤 HEX 색상을 생성하여 간트차트에서 구분 가능하게 함
+    const taskWithColor = {
+        ...task,
+        color: task.color ?? `#${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, '0')}`,
+    }
+
     const { data, error } = await supabase
         .from('tasks')
-        .insert(task)
+        .insert(taskWithColor)
         .select()
         .single()
 

@@ -16,7 +16,7 @@ import DashboardView from '@/components/dashboard/DashboardView'
 import TeamManagementView from '@/components/projects/members/TeamManagementView'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { updateTask, createTask, deleteTask } from '@/app/actions/tasks'
-import { updateProject } from '@/app/actions/projects'
+import { updateProject, deleteProject } from '@/app/actions/projects'
 import { createLink, deleteLink } from '@/app/actions/links'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -35,6 +35,8 @@ interface Task {
     parent_id: string | null
     project_id: string
     assignee_id: string | null
+    description?: string | null
+    color?: string | null
 }
 
 interface Link {
@@ -91,6 +93,7 @@ export default function ProjectClientView({
     const [isEditProjectOpen, setIsEditProjectOpen] = useState(false)
     const [editProjectName, setEditProjectName] = useState(project.name)
     const [editProjectDesc, setEditProjectDesc] = useState(project.description || '')
+    const [deleteConfirmInput, setDeleteConfirmInput] = useState('')
 
     const router = useRouter()
     const currentMemberRole = members.find(m => m.id === currentUser?.id)?.role
@@ -122,6 +125,24 @@ export default function ProjectClientView({
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : '알 수 없는 오류'
             toast.error('프로젝트 수정 실패', { description: message })
+        }
+    }
+
+    // ── 프로젝트 삭제 (GitHub 방식: 이름 재입력 확인 필수) ─────────────────────
+    const handleProjectDelete = async () => {
+        if (deleteConfirmInput !== project.name) {
+            toast.error('프로젝트 이름이 일치하지 않습니다.')
+            return
+        }
+        try {
+            const res = await deleteProject(project.id)
+            if (res.error) throw new Error(res.error)
+
+            toast.success('프로젝트가 삭제되었습니다.')
+            router.push('/projects')
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : '알 수 없는 오류'
+            toast.error('프로젝트 삭제 실패', { description: message })
         }
     }
 
@@ -247,6 +268,8 @@ export default function ProjectClientView({
                 parent: task.parent_id,
                 open: true,
                 assignee_name: assignee?.display_name ?? assignee?.email ?? '',
+                // 업무별 색상 (WBS에서 지정한 color 값을 간트 바에 반영)
+                color: task.color ?? undefined,
             }
         })
 
@@ -357,13 +380,32 @@ export default function ProjectClientView({
                     </div>
 
                     <TabsContent value="dashboard" className="flex-1 mt-0 overflow-auto">
-                        <DashboardView tasks={tasks} members={members} />
+                        <DashboardView
+                            tasks={tasks}
+                            members={members}
+                            onTaskClick={(taskId) => {
+                                // 대시보드 업무 클릭 시 WBS 탭으로 전환
+                                setActiveTab('wbs')
+                                // 해당 업무 행을 하이라이팅하기 위해 URL hash 활용
+                                setTimeout(() => {
+                                    const el = document.getElementById(`task-row-${taskId}`)
+                                    if (el) {
+                                        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                                        el.classList.add('bg-primary/10')
+                                        setTimeout(() => el.classList.remove('bg-primary/10'), 2000)
+                                    }
+                                }, 100)
+                            }}
+                        />
                     </TabsContent>
 
                     <TabsContent value="wbs" className="flex-1 mt-0 overflow-auto">
                         <WbsGrid
                             tasks={tasks.filter(t => selectedMember === 'all' || t.assignee_id === selectedMember)}
                             projectId={project.id}
+                            members={members}
+                            currentMemberRole={currentMemberRole}
+                            currentUserId={currentUser?.id}
                             onTaskUpdate={handleTaskUpdate}
                             onTaskCreate={handleTaskCreate}
                             onTaskDelete={handleTaskDelete}
@@ -426,6 +468,34 @@ export default function ProjectClientView({
                         <Button variant="outline" onClick={() => setIsEditProjectOpen(false)}>취소</Button>
                         <Button onClick={handleProjectUpdateSubmit}>저장</Button>
                     </DialogFooter>
+
+                    {/* Danger Zone */}
+                    {currentMemberRole === 'owner' && (
+                        <div className="mt-4 rounded-md border border-destructive/40 p-4 space-y-3">
+                            <div>
+                                <p className="text-sm font-semibold text-destructive">⚠️ 위험 구역</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    프로젝트를 삭제하면 복구할 수 없습니다. 삭제를 원하시면 프로젝트 이름을 정확히 입력하세요:
+                                </p>
+                                <p className="text-xs font-mono bg-muted px-2 py-1 rounded mt-1 inline-block">{project.name}</p>
+                            </div>
+                            <Input
+                                value={deleteConfirmInput}
+                                onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                                placeholder="프로젝트 이름 입력"
+                                className="border-destructive/40"
+                            />
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                disabled={deleteConfirmInput !== project.name}
+                                onClick={handleProjectDelete}
+                                className="w-full"
+                            >
+                                이 프로젝트 삭제하기
+                            </Button>
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
         </div>

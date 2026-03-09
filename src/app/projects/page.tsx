@@ -15,13 +15,14 @@ interface ProjectMember {
 export default async function ProjectsPage() {
     const supabase = createClient()
 
-    // 현재 사용자의 프로젝트 목록 조회
+    // 현재 사용자의 프로젝트 목록 조회 (소프트 딜리트 제외)
     const { data: projects, error } = await supabase
         .from('projects')
         .select(`
       *,
       project_members!inner(role)
     `)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: false })
 
     const user = await getUser()

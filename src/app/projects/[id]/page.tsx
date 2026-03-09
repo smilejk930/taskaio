@@ -24,11 +24,12 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         return notFound()
     }
 
-    // 업무 목록 조회
+    // 업무 목록 조회 (소프트 딜리트된 업무 제외)
     const { data: tasks } = await supabase
         .from('tasks')
         .select('*')
         .eq('project_id', projectId)
+        .eq('is_deleted', false)
         .order('created_at', { ascending: true })
 
     // 휴일 정보 조회
@@ -71,7 +72,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             project={project}
             initialTasks={tasks || []}
             initialLinks={links || []}
-            holidays={holidays || []}
+            holidays={(holidays || []).map(h => ({ id: h.id, name: h.name, date: h.start_date }))}
             members={formattedMembers}
             currentUser={user}
         />

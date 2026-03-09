@@ -77,3 +77,28 @@ export async function updateProject(id: string, updates: { name?: string; descri
     revalidatePath(`/projects/${id}`)
     return { success: true, project }
 }
+
+/**
+ * 프로젝트를 소프트 삭제합니다. (is_deleted = true)
+ * @param id 삭제할 프로젝트 ID
+ */
+export async function deleteProject(id: string) {
+    const supabase = createClient()
+    const user = await getUser()
+
+    if (!user) {
+        return { error: '로그인이 필요합니다.' }
+    }
+
+    const { error } = await supabase
+        .from('projects')
+        .update({ is_deleted: true })
+        .eq('id', id)
+
+    if (error) {
+        return { error: `프로젝트 삭제 실패: ${error.message}` }
+    }
+
+    revalidatePath('/projects')
+    return { success: true }
+}
