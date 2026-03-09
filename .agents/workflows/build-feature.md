@@ -1,5 +1,5 @@
 ---
-description: `/analyze-feature`에서 승인된 Feature Spec을 받아 실제 코드를 구현하는 워크플로우. 반드시 승인된 Feature Spec Artifact와 함께 호출해야 한다. 분석이나 범위 재협의는 하지 않고 오직 구현에만 집중한다. `/build-feature`로 호출한다.
+description: workflows 중 `/analyze-feature`에서 승인된 Feature Spec을 받아 실제 코드를 구현하는 워크플로우. 반드시 승인된 Feature Spec Artifact와 함께 호출해야 한다. 분석이나 범위 재협의는 하지 않고 오직 구현에만 집중한다.
 ---
 
 # Build Feature

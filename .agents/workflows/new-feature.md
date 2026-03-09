@@ -1,5 +1,5 @@
 ---
-description: 새 기능 개발의 진입점 워크플로우. 규모에 따라 두 가지 경로로 분기한다. **작은 기능** (컴포넌트 1~2개, DB 변경 없음): 이 워크플로우에서 직접 구현, **큰 기능** (페이지 신규, DB 변경, 복잡한 로직): `/analyze-feature` → `/build-feature` 2단계로 분리, `/new-feature`로 호출
+description: 새 기능 개발하는 Workflow. 소규모(컴포넌트 1~2개, DB 미변경)는 직접 구현하고, 대규모(페이지 신규 DB 변경/복잡 로직)는 `/analyze-feature`와 `/build-feature` 2단계로 분리하여 호출한다.
 ---
 
 # New Feature
