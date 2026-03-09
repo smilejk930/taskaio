@@ -39,7 +39,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             if (result?.error) {
                 toast.error(result.error)
             } else {
-                if (mode === 'signup' && (result as any)?.emailVerificationRequired) {
+                if (mode === 'signup' && (result as { emailVerificationRequired?: boolean })?.emailVerificationRequired) {
                     toast.success('회원가입이 완료되었습니다. 이메일 인증을 확인해주세요.')
                     router.push('/login')
                 } else {
@@ -48,7 +48,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                     router.refresh()
                 }
             }
-        } catch (error) {
+        } catch {
             toast.error('오류가 발생했습니다. 다시 시도해주세요.')
         } finally {
             setIsLoading(false)

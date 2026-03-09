@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Layout } from 'lucide-react'
+import { Plus, Layout, CalendarDays } from 'lucide-react'
 import Link from 'next/link'
 import { getUser } from '@/app/actions/auth'
 import { UserMenu } from '@/components/auth/UserMenu'
@@ -40,6 +40,12 @@ export default async function ProjectsPage() {
                     <p className="text-muted-foreground">참여 중인 모든 프로젝트를 한눈에 관리하세요.</p>
                 </div>
                 <div className="flex items-center gap-4">
+                    <Link href="/holidays">
+                        <Button variant="outline" className="gap-2">
+                            <CalendarDays className="w-4 h-4" />
+                            휴일 관리
+                        </Button>
+                    </Link>
                     <CreateProjectDialog>
                         <Button className="gap-2">
                             <Plus className="w-4 h-4" />

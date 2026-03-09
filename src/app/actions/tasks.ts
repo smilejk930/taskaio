@@ -6,10 +6,8 @@ import { Database } from '@/types/supabase'
 
 
 
-// tasks 테이블의 Update 타입을 Supabase 스키마와 일치시킴
 type TaskUpdatePayload = Database['public']['Tables']['tasks']['Update']
 type TaskInsertPayload = Database['public']['Tables']['tasks']['Insert']
-type HolidayInsertPayload = Database['public']['Tables']['holidays']['Insert']
 
 /**
  * 하위 업무의 변경 사항을 상위 업무에 반영 (날짜 범위 및 진척률 통합 계산)
@@ -157,28 +155,3 @@ export async function deleteTask(id: string) {
     }
 }
 
-export async function createHoliday(holiday: HolidayInsertPayload) {
-    const supabase = createClient()
-
-    const { data, error } = await supabase
-        .from('holidays')
-        .insert(holiday)
-        .select()
-        .single()
-
-    if (error) {
-        throw new Error(error.message)
-    }
-
-    return data
-}
-
-export async function deleteHoliday(id: string) {
-    const supabase = createClient()
-
-    const { error } = await supabase.from('holidays').delete().eq('id', id)
-
-    if (error) {
-        throw new Error(error.message)
-    }
-}

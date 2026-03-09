@@ -56,7 +56,11 @@ interface Member {
 interface Holiday {
     id: string
     name: string
-    date: string
+    start_date: string
+    end_date: string
+    type: 'public_holiday' | 'member_leave'
+    member_id: string | null
+    note: string | null
 }
 
 interface ProjectClientViewProps {
@@ -405,7 +409,6 @@ export default function ProjectClientView({
                             projectId={project.id}
                             members={members}
                             currentMemberRole={currentMemberRole}
-                            currentUserId={currentUser?.id}
                             onTaskUpdate={handleTaskUpdate}
                             onTaskCreate={handleTaskCreate}
                             onTaskDelete={handleTaskDelete}

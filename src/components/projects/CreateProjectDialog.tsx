@@ -66,7 +66,7 @@ export function CreateProjectDialog({ children }: CreateProjectDialogProps) {
             if (result.project) {
                 router.push(`/projects/${result.project.id}`)
             }
-        } catch (error) {
+        } catch {
             toast.error('오류 발생', {
                 description: '프로젝트 생성 중 예상치 못한 오류가 발생했습니다.',
             })

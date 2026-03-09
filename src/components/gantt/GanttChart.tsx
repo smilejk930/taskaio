@@ -22,7 +22,9 @@ interface GanttTask {
 interface Holiday {
     id: string
     name: string
-    date: string
+    start_date: string
+    end_date: string
+    type: 'public_holiday' | 'member_leave'
 }
 
 interface GanttLink {
@@ -138,14 +140,36 @@ export default function GanttChart({
         gantt.parse({ data: tasks, links })
 
         // ── 휴일 마커 적용 ─────────────────────────────────────────────────────
+        // Day 모드일 때: 휴일 날짜 범위만큼 배경 강조 (addMarker로 각 날 표시)
+        // Week/Month 모드일 때: 시작일에만 단순 마커 표시
         if (holidays?.length) {
             holidays.forEach(holiday => {
-                gantt.addMarker({
-                    start_date: new Date(holiday.date),
-                    css: 'holiday_marker',
-                    text: holiday.name,
-                    id: `holiday_${holiday.id}`,
-                })
+                if (scales === 'day') {
+                    // 날짜 범위 내 각 일자별로 마커 추가하여 배경 채움
+                    const start = new Date(holiday.start_date)
+                    const end = new Date(holiday.end_date)
+                    const current = new Date(start)
+
+                    while (current <= end) {
+                        gantt.addMarker({
+                            start_date: new Date(current),
+                            css: holiday.type === 'public_holiday'
+                                ? 'gantt_holiday_public'
+                                : 'gantt_holiday_leave',
+                            text: current.getTime() === start.getTime() ? holiday.name : '',
+                            id: `holiday_${holiday.id}_${current.toISOString().split('T')[0]}`,
+                        })
+                        current.setDate(current.getDate() + 1)
+                    }
+                } else {
+                    // Week/Month 모드는 시작일에만 마커 표시
+                    gantt.addMarker({
+                        start_date: new Date(holiday.start_date),
+                        css: 'gantt_holiday_public',
+                        text: holiday.name,
+                        id: `holiday_${holiday.id}`,
+                    })
+                }
             })
         }
 
@@ -185,22 +209,45 @@ export default function GanttChart({
         <div className="w-full h-full flex flex-col">
             <style dangerouslySetInnerHTML={{
                 __html: `
-                /* 간트 차트 태스크 바 색상 커스터마이징 */
+                /* ──── 간트 태스크 바 색상 커스터마이징 ──── */
                 .gantt_task_line {
-                    background-color: #86efac !important; /* light green */
+                    background-color: #86efac !important;
                     border-color: #4ade80 !important;
                     border-radius: 6px !important;
                 }
                 .gantt_task_progress {
-                    background-color: #22c55e !important; /* darker green progress */
+                    background-color: #22c55e !important;
                     border-radius: 6px !important;
                 }
                 .gantt_task_content {
-                    color: #166534 !important; /* text color inside bar */
+                    color: #166534 !important;
                 }
-                /* 그리드 헤더 보더 스타일 정리 */
                 .gantt_grid_scale, .gantt_task_scale {
                     background-color: #f8fafc;
+                }
+                /* ──── 공휴일 배경 (붉은 계열) ──── */
+                .gantt_holiday_public.gantt_marker {
+                    background-color: rgba(239, 68, 68, 0.12) !important;
+                    border-left: 2px solid rgba(239, 68, 68, 0.5) !important;
+                }
+                .gantt_holiday_public.gantt_marker .gantt_marker_content {
+                    color: #dc2626;
+                    font-size: 11px;
+                    font-weight: 600;
+                    writing-mode: horizontal-tb;
+                    padding: 2px 4px;
+                }
+                /* ──── 팀원 휴가 배경 (노란 계열) ──── */
+                .gantt_holiday_leave.gantt_marker {
+                    background-color: rgba(245, 158, 11, 0.12) !important;
+                    border-left: 2px solid rgba(245, 158, 11, 0.5) !important;
+                }
+                .gantt_holiday_leave.gantt_marker .gantt_marker_content {
+                    color: #b45309;
+                    font-size: 11px;
+                    font-weight: 600;
+                    writing-mode: horizontal-tb;
+                    padding: 2px 4px;
                 }
             `}} />
             <div

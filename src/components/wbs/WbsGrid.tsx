@@ -59,9 +59,8 @@ interface WbsGridProps {
     tasks: Task[]
     projectId: string
     members: Member[]
-    /** 현재 접속자 역할 (owner/manager: 담당자 선택 가능, member: 본인 고정) */
+    /** 현재 접속자 역할 (owner/manager: 담당자 선택 가능, member: 읽기 전용) */
     currentMemberRole: 'owner' | 'manager' | 'member' | null | undefined
-    currentUserId: string | undefined
     onTaskUpdate: (id: string, field: string, value: string | number | null) => void
     onTaskCreate: (parentId: string | null) => void
     onTaskDelete: (id: string) => void
@@ -73,7 +72,6 @@ export default function WbsGrid({
     tasks,
     members,
     currentMemberRole,
-    currentUserId,
     onTaskUpdate,
     onTaskCreate,
     onTaskDelete,

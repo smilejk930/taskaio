@@ -72,7 +72,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             project={project}
             initialTasks={tasks || []}
             initialLinks={links || []}
-            holidays={(holidays || []).map(h => ({ id: h.id, name: h.name, date: h.start_date }))}
+            holidays={holidays || []}
             members={formattedMembers}
             currentUser={user}
         />
