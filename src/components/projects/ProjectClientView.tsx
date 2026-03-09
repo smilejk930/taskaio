@@ -339,7 +339,7 @@ export default function ProjectClientView({
                         <TabsList>
                             <TabsTrigger value="dashboard">📈 대시보드</TabsTrigger>
                             <TabsTrigger value="wbs">📋 업무 목록</TabsTrigger>
-                            <TabsTrigger value="gantt">📊 간트 뷰</TabsTrigger>
+                            <TabsTrigger value="gantt">📊 일정 현황</TabsTrigger>
                             <TabsTrigger value="members">👥 팀원 관리</TabsTrigger>
                         </TabsList>
 

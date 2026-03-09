@@ -55,7 +55,7 @@ export default function HolidayClientView({
                         <h1 className="text-xl font-bold">휴일 관리</h1>
                     </div>
                     <p className="text-sm text-muted-foreground hidden md:block">
-                        공휴일 및 팀원 개별 휴가를 관리합니다. 등록된 휴일은 모든 프로젝트의 간트 뷰에 표시됩니다.
+                        공휴일 및 팀원 개별 휴가를 관리합니다. 등록된 휴일은 모든 프로젝트의 일정 현황에 표시됩니다.
                     </p>
                 </div>
 
