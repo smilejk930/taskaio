@@ -22,22 +22,35 @@ interface Holiday {
     date: string
 }
 
+interface GanttLink {
+    id: string | number
+    source: string | number
+    target: string | number
+    type: string | number
+}
+
 interface GanttChartProps {
     tasks: GanttTask[]
+    links?: GanttLink[]
     scales: 'day' | 'week' | 'month'
     holidays?: Holiday[]
     showOnlyParent?: boolean
     onTaskUpdated?: (task: GanttTask) => void
     onTaskCreated?: (task: GanttTask) => void
+    onLinkAdd?: (id: string, source: string, target: string, type: string) => void
+    onLinkDelete?: (id: string) => void
 }
 
 export default function GanttChart({
     tasks,
+    links = [],
     scales,
     holidays,
     showOnlyParent = false,
     onTaskUpdated,
     onTaskCreated,
+    onLinkAdd,
+    onLinkDelete,
 }: GanttChartProps) {
     const ganttContainer = useRef<HTMLDivElement>(null)
 
@@ -74,7 +87,7 @@ export default function GanttChart({
         // ── 초기화 ─────────────────────────────────────────────────────────────
         gantt.init(ganttContainer.current)
         gantt.clearAll()
-        gantt.parse({ data: tasks })
+        gantt.parse({ data: tasks, links })
 
         // ── 휴일 마커 적용 ─────────────────────────────────────────────────────
         if (holidays?.length) {
@@ -101,12 +114,24 @@ export default function GanttChart({
             return true
         })
 
+        const linkAddedEvent = gantt.attachEvent('onAfterLinkAdd', (id: string | number, link: GanttLink) => {
+            onLinkAdd?.(id.toString(), link.source.toString(), link.target.toString(), link.type.toString())
+            return true
+        })
+
+        const linkDeletedEvent = gantt.attachEvent('onAfterLinkDelete', (id: string | number) => {
+            onLinkDelete?.(id.toString())
+            return true
+        })
+
         return () => {
             gantt.detachEvent(updatedEvent)
             gantt.detachEvent(createdEvent)
+            gantt.detachEvent(linkAddedEvent)
+            gantt.detachEvent(linkDeletedEvent)
             gantt.clearAll()
         }
-    }, [tasks, scales, holidays, showOnlyParent, onTaskUpdated, onTaskCreated])
+    }, [tasks, links, scales, holidays, showOnlyParent, onTaskUpdated, onTaskCreated, onLinkAdd, onLinkDelete])
 
     return (
         <div

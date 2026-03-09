@@ -3,6 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Plus, Layout } from 'lucide-react'
 import Link from 'next/link'
+import { getUser } from '@/app/actions/auth'
+import { UserMenu } from '@/components/auth/UserMenu'
+import { CreateProjectDialog } from '@/components/projects/CreateProjectDialog'
 
 // Supabase 조인 결과 타입
 interface ProjectMember {
@@ -21,6 +24,8 @@ export default async function ProjectsPage() {
     `)
         .order('created_at', { ascending: false })
 
+    const user = await getUser()
+
     if (error) {
         // 서버 컴포넌트에서는 에러 경계로 처리
         throw new Error(`프로젝트 목록 조회 실패: ${error.message}`)
@@ -33,10 +38,15 @@ export default async function ProjectsPage() {
                     <h1 className="text-3xl font-bold tracking-tight">프로젝트</h1>
                     <p className="text-muted-foreground">참여 중인 모든 프로젝트를 한눈에 관리하세요.</p>
                 </div>
-                <Button className="gap-2">
-                    <Plus className="w-4 h-4" />
-                    신규 프로젝트
-                </Button>
+                <div className="flex items-center gap-4">
+                    <CreateProjectDialog>
+                        <Button className="gap-2">
+                            <Plus className="w-4 h-4" />
+                            신규 프로젝트
+                        </Button>
+                    </CreateProjectDialog>
+                    {user && <UserMenu user={user} />}
+                </div>
             </div>
 
             {!projects || projects.length === 0 ? (
@@ -49,7 +59,9 @@ export default async function ProjectsPage() {
                         아직 참여 중인 프로젝트가 없습니다. <br />
                         새로운 프로젝트를 생성하여 시작해 보세요.
                     </CardDescription>
-                    <Button variant="outline">신규 프로젝트 생성하기</Button>
+                    <CreateProjectDialog>
+                        <Button variant="outline">신규 프로젝트 생성하기</Button>
+                    </CreateProjectDialog>
                 </Card>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -65,7 +77,7 @@ export default async function ProjectsPage() {
                                 <CardContent>
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                         <span className="capitalize px-2 py-0.5 bg-secondary rounded text-xs font-medium">
-                                            {(project.project_members as ProjectMember[])[0]?.role ?? 'member'}
+                                            {(project.project_members as unknown as ProjectMember[])[0]?.role ?? 'member'}
                                         </span>
                                         <span>•</span>
                                         <span>생성일: {project.created_at ? new Date(project.created_at).toLocaleDateString() : '-'}</span>

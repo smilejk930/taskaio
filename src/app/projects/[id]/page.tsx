@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import ProjectClientView from '@/components/projects/ProjectClientView'
+import { getUser } from '@/app/actions/auth'
 
 interface ProjectDetailPageProps {
     params: {
@@ -41,6 +42,12 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         .select('*, profiles(*)')
         .eq('project_id', projectId)
 
+    // 업무 연관성(링크) 조회
+    const { data: links } = await supabase
+        .from('task_dependencies')
+        .select('*')
+        .eq('project_id', projectId)
+
     interface ProfileData {
         id: string
         display_name: string | null
@@ -57,12 +64,16 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         }
     }) || []
 
+    const user = await getUser()
+
     return (
         <ProjectClientView
             project={project}
             initialTasks={tasks || []}
+            initialLinks={links || []}
             holidays={holidays || []}
             members={formattedMembers}
+            currentUser={user}
         />
     )
 }
