@@ -14,6 +14,7 @@ interface GanttTask {
     progress: number
     parent: string | null
     open?: boolean
+    assignee_name?: string
 }
 
 interface Holiday {
@@ -61,11 +62,45 @@ export default function GanttChart({
         gantt.config.date_format = '%Y-%m-%d %H:%i'
         gantt.config.drag_project = true
         gantt.config.work_time = true
+        gantt.config.show_progress = true
+
+        // ── 컬럼 설정 ──────────────────────────────────────────────────────────
+        gantt.config.columns = [
+            {
+                name: "assignee",
+                label: "담당자",
+                align: "left",
+                width: 130,
+                template: (task: GanttTask) => {
+                    const name = task.assignee_name || '미지정';
+                    return `<div style="display:flex; align-items:center; gap:8px; padding-left:4px;">
+                                <div style="width:24px; height:24px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold; color:#64748b;">
+                                    ${name.charAt(0)}
+                                </div>
+                                <span style="font-size:13px;">${name}</span>
+                            </div>`;
+                }
+            },
+            { name: "text", label: "제목", tree: true, width: '*' },
+            {
+                name: "progress",
+                label: "진행률",
+                align: "center",
+                width: 70,
+                template: (task: GanttTask) => `<span style="color:#64748b; font-size:13px;">${Math.round(task.progress * 100)}%</span>`
+            },
+            { name: "add", label: "", width: 44 }
+        ]
 
         // ── 스케일 설정 ────────────────────────────────────────────────────────
+        const days = ['일', '월', '화', '수', '목', '금', '토']
         switch (scales) {
             case 'day':
-                gantt.config.scales = [{ unit: 'day', step: 1, format: '%d %M' }]
+                gantt.config.scales = [
+                    { unit: 'day', step: 1, format: '%j' },
+                    { unit: 'day', step: 1, format: (date: Date) => days[date.getDay()] }
+                ]
+                gantt.config.min_column_width = 45;
                 break
             case 'week':
                 gantt.config.scales = [
@@ -134,10 +169,32 @@ export default function GanttChart({
     }, [tasks, links, scales, holidays, showOnlyParent, onTaskUpdated, onTaskCreated, onLinkAdd, onLinkDelete])
 
     return (
-        <div
-            ref={ganttContainer}
-            style={{ width: '100%', height: '600px' }}
-            className="rounded-lg border bg-background shadow-sm overflow-hidden"
-        />
+        <div className="w-full h-full flex flex-col">
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                /* 간트 차트 태스크 바 색상 커스터마이징 */
+                .gantt_task_line {
+                    background-color: #86efac !important; /* light green */
+                    border-color: #4ade80 !important;
+                    border-radius: 6px !important;
+                }
+                .gantt_task_progress {
+                    background-color: #22c55e !important; /* darker green progress */
+                    border-radius: 6px !important;
+                }
+                .gantt_task_content {
+                    color: #166534 !important; /* text color inside bar */
+                }
+                /* 그리드 헤더 보더 스타일 정리 */
+                .gantt_grid_scale, .gantt_task_scale {
+                    background-color: #f8fafc;
+                }
+            `}} />
+            <div
+                ref={ganttContainer}
+                style={{ width: '100%', height: '600px' }}
+                className="rounded-lg border bg-background shadow-sm overflow-hidden"
+            />
+        </div>
     )
 }

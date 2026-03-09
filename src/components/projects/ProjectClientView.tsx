@@ -4,18 +4,23 @@ import React, { useState } from 'react'
 import GanttChart from '@/components/gantt/GanttChart'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { Settings } from 'lucide-react'
 import WbsGrid from '@/components/wbs/WbsGrid'
 import DashboardView from '@/components/dashboard/DashboardView'
 import TeamManagementView from '@/components/projects/members/TeamManagementView'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { updateTask, createTask, deleteTask } from '@/app/actions/tasks'
+import { updateProject } from '@/app/actions/projects'
 import { createLink, deleteLink } from '@/app/actions/links'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { useRouter } from 'next/navigation'
 
 // ──── 타입 정의 ────────────────────────────────────────────────────────────────
 
@@ -83,6 +88,11 @@ export default function ProjectClientView({
     const [selectedMember, setSelectedMember] = useState<string>('all')
     const [activeTab, setActiveTab] = useState('dashboard')
 
+    const [isEditProjectOpen, setIsEditProjectOpen] = useState(false)
+    const [editProjectName, setEditProjectName] = useState(project.name)
+    const [editProjectDesc, setEditProjectDesc] = useState(project.description || '')
+
+    const router = useRouter()
     const currentMemberRole = members.find(m => m.id === currentUser?.id)?.role
 
     // ── 업무 수정 ──────────────────────────────────────────────────────────────
@@ -94,6 +104,24 @@ export default function ProjectClientView({
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : '알 수 없는 오류'
             toast.error('업무 업데이트 실패', { description: message })
+        }
+    }
+
+    const handleProjectUpdateSubmit = async () => {
+        if (!editProjectName.trim()) {
+            toast.error('프로젝트 이름을 입력해주세요.')
+            return
+        }
+        try {
+            const res = await updateProject(project.id, { name: editProjectName, description: editProjectDesc })
+            if (res.error) throw new Error(res.error)
+
+            toast.success('프로젝트 정보가 수정되었습니다.')
+            setIsEditProjectOpen(false)
+            router.refresh()
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : '알 수 없는 오류'
+            toast.error('프로젝트 수정 실패', { description: message })
         }
     }
 
@@ -206,17 +234,21 @@ export default function ProjectClientView({
     // ── 간트 데이터 포맷팅 ──────────────────────────────────────────────────────
     const ganttTasks = tasks
         .filter(task => selectedMember === 'all' || task.assignee_id === selectedMember)
-        .map(task => ({
-            id: task.id,
-            text: task.title,
-            start_date: task.start_date ? new Date(task.start_date) : new Date(),
-            duration: task.start_date && task.end_date
-                ? Math.max(1, Math.ceil((new Date(task.end_date).getTime() - new Date(task.start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1)
-                : 1,
-            progress: (task.progress ?? 0) / 100,
-            parent: task.parent_id,
-            open: true,
-        }))
+        .map(task => {
+            const assignee = members.find(m => m.id === task.assignee_id)
+            return {
+                id: task.id,
+                text: task.title,
+                start_date: task.start_date ? new Date(task.start_date) : new Date(),
+                duration: task.start_date && task.end_date
+                    ? Math.max(1, Math.ceil((new Date(task.end_date).getTime() - new Date(task.start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1)
+                    : 1,
+                progress: (task.progress ?? 0) / 100,
+                parent: task.parent_id,
+                open: true,
+                assignee_name: assignee?.display_name ?? assignee?.email ?? '',
+            }
+        })
 
     const ganttLinks = links.map(link => ({
         id: link.id,
@@ -236,6 +268,11 @@ export default function ProjectClientView({
                 <div>
                     <div className="flex items-center gap-3">
                         <h1 className="text-2xl font-bold">{project.name}</h1>
+                        {(currentMemberRole === 'owner' || currentMemberRole === 'manager') && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted" onClick={() => setIsEditProjectOpen(true)}>
+                                <Settings className="h-4 w-4" />
+                            </Button>
+                        )}
                         <Badge variant="outline">{totalProgress}% 완료</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
@@ -355,6 +392,42 @@ export default function ProjectClientView({
                     </TabsContent>
                 </Tabs>
             </main>
+
+            {/* 프로젝트 수정 모달 */}
+            <Dialog open={isEditProjectOpen} onOpenChange={setIsEditProjectOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>프로젝트 상세 정보</DialogTitle>
+                        <DialogDescription>
+                            프로젝트 이름과 설명을 수정할 수 있습니다.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label>프로젝트 이름</Label>
+                            <Input
+                                value={editProjectName}
+                                onChange={(e) => setEditProjectName(e.target.value)}
+                                placeholder="프로젝트 이름을 입력하세요"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>프로젝트 설명</Label>
+                            <textarea
+                                value={editProjectDesc}
+                                onChange={(e) => setEditProjectDesc(e.target.value)}
+                                placeholder="프로젝트 설명을 입력하세요"
+                                rows={3}
+                                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditProjectOpen(false)}>취소</Button>
+                        <Button onClick={handleProjectUpdateSubmit}>저장</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

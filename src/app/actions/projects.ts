@@ -48,3 +48,32 @@ export async function createProject(name: string, description?: string) {
     revalidatePath('/projects')
     return { success: true, project }
 }
+
+/**
+ * 프로젝트 정보를 수정합니다.
+ * @param id 프로젝트 ID
+ * @param updates 갱신할 필드 (name, description 등)
+ */
+export async function updateProject(id: string, updates: { name?: string; description?: string }) {
+    const supabase = createClient()
+    const user = await getUser()
+
+    if (!user) {
+        return { error: '로그인이 필요합니다.' }
+    }
+
+    const { data: project, error } = await supabase
+        .from('projects')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single()
+
+    if (error) {
+        return { error: `프로젝트 수정 실패: ${error.message}` }
+    }
+
+    revalidatePath('/projects')
+    revalidatePath(`/projects/${id}`)
+    return { success: true, project }
+}
