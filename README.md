@@ -42,6 +42,7 @@
 src/
 ├── app/                  # Next.js App Router (페이지 및 API)
 │   ├── (auth)/           # 인증 관련 (로그인/회원가입)
+│   ├── holidays/         # 휴일 관리
 │   ├── projects/         # 프로젝트 관리 및 상세 뷰
 │   └── tasks/            # 업무 목록 및 상세
 ├── components/           # UI 컴포넌트 (feature별 분리)
