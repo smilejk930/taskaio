@@ -26,7 +26,7 @@ description: 새 기능 개발하는 Workflow. 소규모(컴포넌트 1~2개, DB
    아래 순서로 바로 구현한다. 이 단계가 끝나면 워크플로우를 종료한다.
    - 백엔드: API Route 또는 Server Action 작성
    - 프론트엔드: 훅 → 컴포넌트 → 페이지 연결
-   - 브라우저 검증: 스크린샷 Artifact 생성
+   - 브라우저 검증: 스크린샷 Artifact 생성❌
    - 완료 보고: Walkthrough Artifact + 커밋 메시지 제안
 
 3. **[큰 기능] Phase 1 — 분석**
