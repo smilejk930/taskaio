@@ -61,6 +61,7 @@ export default function GanttChart({
     onLinkDelete,
 }: GanttChartProps) {
     const ganttContainer = useRef<HTMLDivElement>(null)
+    const isDragging = useRef(false)
 
     // 콜백 함수들을 최신 상태로 유지하기 위한 Ref
     const callbacksRef = useRef({ onTaskUpdated, onTaskCreated, onLinkAdd, onLinkDelete })
@@ -132,6 +133,7 @@ export default function GanttChart({
             detachEvent: (id: string) => void
             plugins: (plugins: Record<string, boolean>) => void
             calculateDuration: (start: Date, end: Date) => number
+            deleteMarker: (id: string) => void
         }
 
         g.plugins({
@@ -187,8 +189,18 @@ export default function GanttChart({
                 const startDateInput = node.querySelector(".start_date") as HTMLInputElement;
                 const endDateInput = node.querySelector(".end_date") as HTMLInputElement;
 
-                const start = new Date(startDateInput.value + "T00:00:00");
-                const end = new Date(endDateInput.value + "T00:00:00");
+                const start = new Date(startDateInput.value ? startDateInput.value + "T00:00:00" : new Date());
+                const end = new Date(endDateInput.value ? endDateInput.value + "T00:00:00" : new Date());
+                
+                // 날짜 유효성 검사
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+                    return {
+                        start_date: task.start_date,
+                        end_date: task.end_date,
+                        duration: task.duration
+                    };
+                }
+
                 end.setDate(end.getDate() + 1); // 다음날 자정으로 설정
 
                 task.start_date = start;
@@ -271,54 +283,40 @@ export default function GanttChart({
 
         // ── 이벤트 핸들러 바인딩 ──
         const dragStartEvent = g.attachEvent("onBeforeTaskDrag", (id: string) => {
+            isDragging.current = true;
             const task = g.getTask(id);
+            if (!task) return false;
             task._original_duration = task.duration;
             return true;
+        });
+
+        const dragEndEvent = g.attachEvent("onAfterTaskDrag", () => {
+            isDragging.current = false;
         });
 
         const dragEvent = g.attachEvent("onTaskDrag", (id: string, mode: string, task: GanttTask) => {
             if (mode === "progress") {
                 const original = g.getTask(id) as GanttTask;
-                task.start_date = original.start_date;
-                task.end_date = original.end_date;
-            } else if (mode === "move") {
-                const originalDuration = task._original_duration || task.duration;
-                if (task.start_date) {
-                    // 이동 시에도 시분초 초기화하여 그리드 정착 보장
-                    const d = new Date(task.start_date);
-                    d.setHours(0, 0, 0, 0);
-                    task.start_date = d;
-                    task.end_date = gantt.calculateEndDate(task.start_date, originalDuration);
-                }
-            } else if (mode === "resize") {
-                // 리사이즈 시 라이브러리가 이미 task.end_date를 설정하므로 시간만 정규화
-                if (task.start_date) {
-                    const d = new Date(task.start_date);
-                    d.setHours(0, 0, 0, 0);
-                    task.start_date = d;
-                }
-                if (task.end_date) {
-                    const d = new Date(task.end_date);
-                    d.setHours(0, 0, 0, 0);
-                    task.end_date = d;
+                if (original) {
+                    task.start_date = original.start_date;
+                    task.end_date = original.end_date;
                 }
             }
         });
 
         const updatedEvent = g.attachEvent('onAfterTaskUpdate', (_id: string, item: GanttTask) => {
             // DB로 보내기 전 최종 날짜 정규화 (시분초 제거)
-            if (item.start_date) {
+            if (item.start_date && !isNaN(item.start_date.getTime())) {
                 const d = new Date(item.start_date);
                 d.setHours(0, 0, 0, 0);
                 item.start_date = d;
             }
-            if (item.end_date) {
+            if (item.end_date && !isNaN(item.end_date.getTime())) {
                 const d = new Date(item.end_date);
                 d.setHours(0, 0, 0, 0);
                 item.end_date = d;
             }
             
-            // duration은 라이브러리가 계산한 값을 그대로 사용
             callbacksRef.current.onTaskUpdated?.(item)
             return true
         })
@@ -342,6 +340,7 @@ export default function GanttChart({
 
         return () => {
             g.detachEvent(dragStartEvent)
+            g.detachEvent(dragEndEvent)
             g.detachEvent(dragEvent)
             g.detachEvent(updatedEvent)
             g.detachEvent(createdEvent)
@@ -394,18 +393,30 @@ export default function GanttChart({
 
     // ── 데이터, 휴일 마커 업데이트 ───────────────────────────────────────
     useEffect(() => {
+        if (isDragging.current) return; // 드래그 중에는 외부 데이터 업데이트 무시
+
+        // 유효한 날짜를 가진 데이터만 필터링
+        const validTasks = tasks.filter(t => t.start_date instanceof Date && !isNaN(t.start_date.getTime()));
+
         gantt.clearAll()
-        gantt.parse({ data: tasks, links })
+        
+        // 기존 마커 수동 제거
+        const g = gantt as unknown as { deleteMarker: (id: string) => void };
+        const markers = document.querySelectorAll('.gantt_marker');
+        markers.forEach(m => m.remove());
+
+        gantt.parse({ data: validTasks, links })
 
         // 휴일 마커 지우기 (기존 마커 제거를 위해) - dhtmlxgantt의 기본 marker 플러그인은 마커의 전체 삭제 메서드가 명확치 않음.
         // 보통 clearAll()하면 데이터는 지워지지만 마커는 지워지는지 확인해야 함. 대부분 지원됨.
         if (holidays?.length) {
             holidays.forEach(holiday => {
                 if (scales === 'day') {
-                    const start = new Date(holiday.start_date)
-                    const end = new Date(holiday.end_date)
-                    const current = new Date(start)
+                    const start = new Date(holiday.start_date + "T00:00:00")
+                    const end = new Date(holiday.end_date + "T00:00:00")
+                    if (isNaN(start.getTime()) || isNaN(end.getTime())) return;
 
+                    const current = new Date(start)
                     while (current <= end) {
                         gantt.addMarker({
                             start_date: new Date(current),
@@ -418,8 +429,11 @@ export default function GanttChart({
                         current.setDate(current.getDate() + 1)
                     }
                 } else {
+                    const start = new Date(holiday.start_date + "T00:00:00");
+                    if (isNaN(start.getTime())) return;
+                    
                     gantt.addMarker({
-                        start_date: new Date(holiday.start_date),
+                        start_date: start,
                         css: 'gantt_holiday_public',
                         text: holiday.name,
                         id: `holiday_${holiday.id} `,
