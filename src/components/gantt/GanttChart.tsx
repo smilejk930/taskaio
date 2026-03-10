@@ -367,9 +367,8 @@ export default function GanttChart({
 
                     const getDisplayName = (h: Holiday) => h.type === 'member_leave' && h.member_name ? `${h.member_name} (${h.name})` : h.name;
 
-                    // 텍스트는 첫 번째 휴일명 기준, 여러 개인 경우 "+ N건" 추가
-                    const mainName = getDisplayName(dailyHolidays[0]);
-                    const text = dailyHolidays.length > 1 ? `${mainName} 외 ${dailyHolidays.length - 1}건` : mainName;
+                    // 텍스트는 우측 영역을 침범하지 않도록 대표 휴일명 1개만 간략히 출력
+                    const text = dailyHolidays[0].name;
 
                     // 툴팁에서 사용할 수 있도록 전체 휴일 이름 목록을 커스텀 속성으로 저장
                     // title 속성에서는 <br/> 대신 \n 을 사용해야 줄바꿈이 정상적으로 표시됨
@@ -393,7 +392,7 @@ export default function GanttChart({
                     g.addMarker({
                         start_date: start,
                         css: holiday.type === 'public_holiday' ? 'gantt_holiday_public' : 'gantt_holiday_leave',
-                        text: displayName,
+                        text: holiday.name,
                         title: displayName,
                         id: `holiday_${holiday.id}`
                     })
