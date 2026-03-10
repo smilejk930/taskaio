@@ -1,8 +1,14 @@
 'use client'
 
 import React, { useState } from 'react'
-import GanttChart from '@/components/gantt/GanttChart'
+import dynamic from 'next/dynamic'
 import { Badge } from '@/components/ui/badge'
+
+// dhtmlx-gantt는 브라우저 전용 객체(window, document)를 사용하므로 ssr: false로 로드해야 합니다.
+const GanttChart = dynamic(() => import('@/components/gantt/GanttChart'), {
+    ssr: false,
+    loading: () => <div className="flex items-center justify-center h-[600px] bg-muted/20 rounded-lg border border-dashed">간트차트를 불러오는 중...</div>
+})
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
