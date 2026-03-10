@@ -70,7 +70,8 @@ export default function GanttChart({
 
     // ── 초기 설정 및 이벤트 바인딩 (최초 1회 실행) ──────────────────────
     useEffect(() => {
-        if (!ganttContainer.current) return
+        const container = ganttContainer.current;
+        if (!container) return
 
         // ── 기본 설정 ──────────────────────────────────────────────────────────
         gantt.config.date_format = '%Y-%m-%d %H:%i'
@@ -263,9 +264,9 @@ export default function GanttChart({
         }
 
         // ── 이벤트 핸들러 바인딩 ──
-        const dragStartEvent = g.attachEvent("onBeforeTaskDrag", (id: string, _mode: string) => {
+        const dragStartEvent = g.attachEvent("onBeforeTaskDrag", (id: string) => {
             const task = g.getTask(id);
-            (task as any)._original_duration = task.duration;
+            task._original_duration = task.duration;
             return true;
         });
 
@@ -280,27 +281,34 @@ export default function GanttChart({
                     task.end_date = gantt.calculateEndDate(task.start_date, originalDuration);
                 }
             } else if (mode === "resize") {
-                // 리사이즈 시 dhtmlx-gantt가 자동 계산한 duration을 기반으로 end_date를 정규화
-                if (task.start_date && task.end_date) {
-                    // 시간을 자정으로 정규화하여 오차 방지
-                    task.start_date.setHours(0, 0, 0, 0);
-                    task.end_date.setHours(0, 0, 0, 0);
-                    const duration = gantt.calculateDuration(task.start_date, task.end_date);
-                    task.end_date = gantt.calculateEndDate(task.start_date, duration);
+                // 리사이즈 시 라이브러리가 이미 task.end_date를 설정하므로 시간만 정규화
+                if (task.start_date) {
+                    const d = new Date(task.start_date);
+                    d.setHours(0, 0, 0, 0);
+                    task.start_date = d;
+                }
+                if (task.end_date) {
+                    const d = new Date(task.end_date);
+                    d.setHours(0, 0, 0, 0);
+                    task.end_date = d;
                 }
             }
         });
 
         const updatedEvent = g.attachEvent('onAfterTaskUpdate', (_id: string, item: GanttTask) => {
-            // DB로 보내기 전 최종 날짜 검증: duration과 end_date가 일치하도록 보정
-            if (item.start_date && item.end_date) {
-                item.start_date.setHours(0, 0, 0, 0);
-                item.end_date.setHours(0, 0, 0, 0);
-                const actualDuration = gantt.calculateDuration(item.start_date, item.end_date);
-                if (item.duration !== actualDuration) {
-                    item.duration = actualDuration;
-                }
+            // DB로 보내기 전 최종 날짜 정규화 (시분초 제거)
+            if (item.start_date) {
+                const d = new Date(item.start_date);
+                d.setHours(0, 0, 0, 0);
+                item.start_date = d;
             }
+            if (item.end_date) {
+                const d = new Date(item.end_date);
+                d.setHours(0, 0, 0, 0);
+                item.end_date = d;
+            }
+            
+            // duration은 라이브러리가 계산한 값을 그대로 사용
             callbacksRef.current.onTaskUpdated?.(item)
             return true
         })
@@ -320,7 +328,7 @@ export default function GanttChart({
             return true
         })
 
-        gantt.init(ganttContainer.current)
+        gantt.init(container)
 
         return () => {
             g.detachEvent(dragStartEvent)
@@ -330,8 +338,8 @@ export default function GanttChart({
             g.detachEvent(linkAddedEvent)
             g.detachEvent(linkDeletedEvent)
             gantt.clearAll()
-            if (ganttContainer.current) {
-                ganttContainer.current.innerHTML = ''
+            if (container) {
+                container.innerHTML = ''
             }
         }
     }, []) // 마운트 시 한 번만 실행되도록 빈 의존성 배열 사용
