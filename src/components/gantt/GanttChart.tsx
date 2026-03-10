@@ -255,23 +255,48 @@ export default function GanttChart({
             { name: "time", height: 48, type: "date_range", map_to: "auto" }
         ]
 
-        // ── 주말 스타일 적용 (타임라인 및 스케일 헤더) ──────────────────────
-        g.templates.scale_cell_class = (date: Date, scale?: { unit?: string }) => {
-            // scale 인자가 제공되며 단위가 'day'일 때만(일간 보기의 하단 날짜 행) 주말 강조
-            if (scale && scale.unit === 'day') {
-                if (date.getDay() === 0 || date.getDay() === 6) {
-                    return "weekend_scale"
-                }
-            }
-            return ""
-        }
+        // ── 오늘 날짜 하이라이트 로직 보강 ──
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
 
-        g.templates.timeline_cell_class = (_task: GanttTask, date: Date) => {
-            if (date.getDay() === 0 || date.getDay() === 6) {
-                return "weekend_cell"
+        const isDateInTodayRange = (date: Date, unit: string) => {
+            const cellStart = new Date(date);
+            cellStart.setHours(0, 0, 0, 0);
+            
+            if (unit === 'day') {
+                return cellStart.getTime() === todayStart.getTime();
             }
-            return ""
-        }
+            
+            // 주간/월간 보기에서는 해당 셀의 기간 내에 오늘이 포함되는지 확인
+            const cellEnd = gantt.date.add(cellStart, 1, unit as import('dhtmlx-gantt').Unit);
+            return todayStart >= cellStart && todayStart < cellEnd;
+        };
+
+        // ── 주말 및 오늘 스타일 적용 ──────────────────────
+        gantt.templates.scale_cell_class = (date: Date, scale?: { unit?: string }) => {
+            let classes = "";
+            const unit = scale?.unit || gantt.getState().scale_unit;
+            
+            if (isDateInTodayRange(date, unit)) {
+                classes += " today_scale ";
+            }
+            if (unit === 'day' && (date.getDay() === 0 || date.getDay() === 6)) {
+                classes += " weekend_scale ";
+            }
+            return classes;
+        };
+
+        gantt.templates.timeline_cell_class = (_task: GanttTask, date: Date) => {
+            let classes = "";
+            const currentScale = gantt.getState().scale_unit;
+            if (isDateInTodayRange(date, currentScale)) {
+                classes += " today_cell ";
+            }
+            if (date.getDay() === 0 || date.getDay() === 6) {
+                classes += " weekend_cell ";
+            }
+            return classes;
+        };
 
         const formatDate = (date: Date) => {
             return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`
@@ -493,6 +518,18 @@ export default function GanttChart({
                     background-color: rgba(239, 68, 68, 0.03) !important;
                 }
                 
+                /* ──── 오늘 날짜 하이라이트 (배경 및 헤더) ──── */
+                .today_scale {
+                    color: #2563eb !important;
+                    font-weight: 800 !important;
+                    background-color: rgba(59, 130, 246, 0.08) !important;
+                }
+                .today_cell {
+                    background-color: rgba(59, 130, 246, 0.04) !important;
+                    border-right: 1px dashed rgba(59, 130, 246, 0.2) !important;
+                    border-left: 1px dashed rgba(59, 130, 246, 0.2) !important;
+                }
+
                 /* ──── 공휴일 배경 (붉은 계열) ──── */
                 .gantt_holiday_public.gantt_marker {
                     background-color: rgba(239, 68, 68, 0.12) !important;
