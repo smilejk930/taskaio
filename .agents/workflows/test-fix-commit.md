@@ -1,0 +1,41 @@
+---
+description: TDD(Red-Green-Refactor) 사이클을 준수하며 테스트 실행, 오류 수정 및 리팩토링 후 커밋을 완료하는 품질 관리 워크플로우.
+---
+
+# TDD & Test-Fix-Commit Workflow
+
+이 워크플로우는 **Red-Green-Refactor** 사이클을 준수하여 코드의 안정성을 확보하고 유지보수가 용이한 구조를 만드는 데 집중합니다.
+
+## TDD Cycle Steps
+
+1. **Red: 실패하는 테스트 작성**
+   - 구현하려는 기능의 요구사항을 기반으로 실패하는 테스트 케이스를 먼저 작성한다.
+   - 테스트를 실행하여 작성한 테스트가 **실패(Red)**하는지 반드시 확인한다.
+   - `pnpm test <filename>` 명령을 사용하여 대상 테스트만 집중적으로 실행한다.
+
+2. **Green: 최소한의 코드로 테스트 통과**
+   - 테스트를 통과시키기 위한 **가장 단순하고 최소한의 코드**를 작성한다.
+   - 완벽한 설계보다는 테스트 통과를 최우선으로 한다.
+   - 테스트 결과가 **성공(Green)**으로 바뀌는지 확인한다.
+
+3. **Refactor: 코드 품질 개선**
+   - 테스트가 통과된 상태에서 코드의 중복을 제거하고 가독성을 높이며 구조를 개선한다.
+   - **중요:** 리팩토링 후에도 테스트가 여전히 **성공(Green)** 상태를 유지하는지 확인한다.
+   - 기능적 변경(Behavior Change)이 없는지 검증하는 것이 핵심이다.
+
+## Execution & Commit Steps
+
+4. **전체 테스트 및 회귀 검증 (Regression Check)**
+   - 수정한 모듈 외에 다른 기능에 영향이 없는지 전체 테스트를 1회 실행한다.
+   - `pnpm lint`와 `pnpm build`를 실행하여 정적 오류 및 빌드 안정성을 최종 확인한다.
+
+5. **변경 사항 검토 및 커밋**
+   - `git status`와 `git diff`를 통해 의도한 테스트 코드와 구현 코드만 포함되었는지 확인한다.
+   - `@auto-commit` 규칙에 따라 의미 있는 커밋 메시지를 한글로 작성한다.
+   - **TDD 커밋 예시:** 
+     - `test(tasks): add failing test for task status update` (Red)
+     - `feat(tasks): implement basic task status update` (Green)
+     - `refactor(tasks): optimize status update logic` (Refactor)
+
+6. **완료 보고**
+   - 적용된 TDD 사이클 단계(Red -> Green -> Refactor)와 최종 테스트 결과를 요약하여 보고한다.
