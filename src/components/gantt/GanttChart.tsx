@@ -231,6 +231,17 @@ export default function GanttChart({
                     return `${format(start)} ~ ${format(new Date(end.getTime() - 1000))}`;
                 }
 
+                ganttInstance.templates.tooltip_text = (start: Date, end: Date, task: any) => {
+                    const formatYMD = (d: Date) => {
+                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        return `${d.getFullYear()}-${m}-${day}`;
+                    };
+                    const endDateStr = formatYMD(new Date(end.getTime() - 1000));
+                    const desc = task.description ? task.description : '내용 없음';
+                    return `<div>- 업무명: ${task.text}</div>\n<div>- 업무내용: ${desc}</div>\n<div>- 기간: ${formatYMD(start)} ~ ${endDateStr}</div>`;
+                }
+
                 // 이벤트 핸들러
                 ganttInstance.attachEvent("onBeforeTaskDrag", (id: string) => {
                     isDragging.current = true;
