@@ -18,6 +18,8 @@ interface GanttTask {
     /** WBS리스트에서 지정한 HEX 색상 (간트 바 색상) */
     color?: string
     description?: string | null
+    /** 드래그 시 원래 기간 보존을 위한 확장 필드 */
+    _original_duration?: number
 }
 
 interface Holiday {
@@ -73,7 +75,7 @@ export default function GanttChart({
         // ── 기본 설정 ──────────────────────────────────────────────────────────
         gantt.config.date_format = '%Y-%m-%d %H:%i'
         gantt.config.drag_project = true
-        gantt.config.work_time = true
+        gantt.config.work_time = false
         gantt.config.show_progress = true
 
         // ── 컬럼 설정 ──────────────────────────────────────────────────────────
@@ -261,7 +263,9 @@ export default function GanttChart({
         }
 
         // ── 이벤트 핸들러 바인딩 ──
-        const dragStartEvent = g.attachEvent("onBeforeTaskDrag", () => {
+        const dragStartEvent = g.attachEvent("onBeforeTaskDrag", (id: string, _mode: string) => {
+            const task = g.getTask(id);
+            (task as any)._original_duration = task.duration;
             return true;
         });
 
@@ -270,6 +274,11 @@ export default function GanttChart({
                 const original = g.getTask(id) as GanttTask;
                 task.start_date = original.start_date;
                 task.end_date = original.end_date;
+            } else if (mode === "move") {
+                const originalDuration = (task as any)._original_duration || task.duration;
+                if (task.start_date) {
+                    task.end_date = gantt.calculateEndDate(task.start_date, originalDuration);
+                }
             }
         });
 
