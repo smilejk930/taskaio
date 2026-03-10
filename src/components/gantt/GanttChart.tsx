@@ -459,11 +459,11 @@ export default function GanttChart({
                 /* .gantt_task_line 에 배경색을 직접 지정하면 task.color가 무시될 수 있으므로, 
                    기본색만 지정하고 inline style(task.color)이 먹히도록 합니다. */
                 .gantt_task_line {
-                    background-color: #86efac; /* 기본 연그린 */
+                    /* background-color: #86efac; 제거: 데이터(task.color)가 인라인으로 적용되도록 클래스 차원의 배경색은 지정하지 않음 */
                     border-color: rgba(0,0,0,0.1) !important;
                     border-radius: 6px !important;
                 }
-                /* task.color가 있을 경우 border-color도 맞춰주면 더 예쁨 */
+                /* 개별 태스크 데이터(task.color)가 있을 경우 보더 조정 */
                 .gantt_task_line[style*="background-color"] {
                     border-color: rgba(0,0,0,0.2) !important;
                 }
