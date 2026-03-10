@@ -216,16 +216,6 @@ export default function GanttChart({
                 const todayStart = new Date();
                 todayStart.setHours(0, 0, 0, 0);
 
-                ganttInstance.templates.scale_cell_class = (date: Date, scale?: any) => {
-                    if (scalesRef.current !== 'day' || scale?.unit !== 'day') return "";
-                    let classes = "";
-                    const cellStart = new Date(date);
-                    cellStart.setHours(0, 0, 0, 0);
-                    if (cellStart.getTime() === todayStart.getTime()) classes += " today_scale ";
-                    if (date.getDay() === 0 || date.getDay() === 6) classes += " weekend_scale ";
-                    return classes;
-                };
-
                 ganttInstance.templates.timeline_cell_class = (_task: any, date: Date) => {
                     if (scalesRef.current !== 'day') return "";
                     let classes = "";
@@ -291,7 +281,18 @@ export default function GanttChart({
             case 'day':
                 g.config.scales = [
                     { unit: 'month', step: 1, format: (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월` },
-                    { unit: 'day', step: 1, format: (date: Date) => `${date.getDate()} (${days[date.getDay()]})` }
+                    {
+                        unit: 'day', step: 1, format: (date: Date) => `${date.getDate()} (${days[date.getDay()]})`, css: (date: Date) => {
+                            let classes = "";
+                            const cellStart = new Date(date);
+                            cellStart.setHours(0, 0, 0, 0);
+                            const todayStart = new Date();
+                            todayStart.setHours(0, 0, 0, 0);
+                            if (cellStart.getTime() === todayStart.getTime()) classes += " today_scale ";
+                            if (date.getDay() === 0 || date.getDay() === 6) classes += " weekend_scale ";
+                            return classes;
+                        }
+                    }
                 ]
                 g.config.min_column_width = 70;
                 break
