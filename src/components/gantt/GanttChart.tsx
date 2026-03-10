@@ -275,14 +275,32 @@ export default function GanttChart({
                 task.start_date = original.start_date;
                 task.end_date = original.end_date;
             } else if (mode === "move") {
-                const originalDuration = (task as any)._original_duration || task.duration;
+                const originalDuration = task._original_duration || task.duration;
                 if (task.start_date) {
                     task.end_date = gantt.calculateEndDate(task.start_date, originalDuration);
+                }
+            } else if (mode === "resize") {
+                // 리사이즈 시 dhtmlx-gantt가 자동 계산한 duration을 기반으로 end_date를 정규화
+                if (task.start_date && task.end_date) {
+                    // 시간을 자정으로 정규화하여 오차 방지
+                    task.start_date.setHours(0, 0, 0, 0);
+                    task.end_date.setHours(0, 0, 0, 0);
+                    const duration = gantt.calculateDuration(task.start_date, task.end_date);
+                    task.end_date = gantt.calculateEndDate(task.start_date, duration);
                 }
             }
         });
 
         const updatedEvent = g.attachEvent('onAfterTaskUpdate', (_id: string, item: GanttTask) => {
+            // DB로 보내기 전 최종 날짜 검증: duration과 end_date가 일치하도록 보정
+            if (item.start_date && item.end_date) {
+                item.start_date.setHours(0, 0, 0, 0);
+                item.end_date.setHours(0, 0, 0, 0);
+                const actualDuration = gantt.calculateDuration(item.start_date, item.end_date);
+                if (item.duration !== actualDuration) {
+                    item.duration = actualDuration;
+                }
+            }
             callbacksRef.current.onTaskUpdated?.(item)
             return true
         })
