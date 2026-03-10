@@ -87,7 +87,7 @@ export default function GanttChart({
                 // dhtmlx-gantt 및 CSS 동적 로드
                 const module = await import('dhtmlx-gantt')
                 await import('dhtmlx-gantt/codebase/dhtmlxgantt.css')
-                
+
                 ganttInstance = module.gantt
                 ganttRef.current = ganttInstance
 
@@ -329,31 +329,69 @@ export default function GanttChart({
         if (!isGanttLoaded || !ganttRef.current || isDragging.current) return
         const g = ganttRef.current
         const validTasks = tasks.filter(t => t.start_date instanceof Date && !isNaN(t.start_date.getTime()));
-        
+
         g.clearAll()
         document.querySelectorAll('.gantt_marker').forEach(m => m.remove());
         g.parse({ data: validTasks, links })
 
         if (holidays?.length) {
-            holidays.forEach(holiday => {
-                const start = new Date(holiday.start_date + "T00:00:00")
-                if (isNaN(start.getTime())) return
-                if (scales === 'day') {
+            if (scales === 'day') {
+                // 일자별 휴일 맵핑 (동일 일자 중복 처리)
+                const holidayMap = new Map<string, Holiday[]>();
+                holidays.forEach(holiday => {
+                    const start = new Date(holiday.start_date + "T00:00:00")
                     const end = new Date(holiday.end_date + "T00:00:00")
+                    if (isNaN(start.getTime()) || isNaN(end.getTime())) return
+
                     let current = new Date(start)
                     while (current <= end) {
-                        g.addMarker({
-                            start_date: new Date(current),
-                            css: holiday.type === 'public_holiday' ? 'gantt_holiday_public' : 'gantt_holiday_leave',
-                            text: current.getTime() === start.getTime() ? holiday.name : '',
-                            id: `holiday_${holiday.id}_${current.toISOString().split('T')[0]}`,
-                        })
-                        current.setDate(current.getDate() + 1)
+                        const dateStr = current.toISOString().split('T')[0];
+                        if (!holidayMap.has(dateStr)) {
+                            holidayMap.set(dateStr, []);
+                        }
+                        holidayMap.get(dateStr)?.push(holiday);
+                        current.setDate(current.getDate() + 1);
                     }
-                } else {
-                    g.addMarker({ start_date: start, css: 'gantt_holiday_public', text: holiday.name, id: `holiday_${holiday.id}` })
-                }
-            })
+                });
+
+                // 맵핑된 일자별 휴일로 마커 생성
+                holidayMap.forEach((dailyHolidays, dateStr) => {
+                    if (dailyHolidays.length === 0) return;
+
+                    const markerDate = new Date(dateStr + "T00:00:00");
+
+                    // 우선순위: public_holiday 가 하나라도 있으면 public_holiday 스타일 적용
+                    const hasPublic = dailyHolidays.some(h => h.type === 'public_holiday');
+                    const cssClass = hasPublic ? 'gantt_holiday_public' : 'gantt_holiday_leave';
+
+                    // 텍스트는 첫 번째 휴일명 기준, 여러 개인 경우 "+ N건" 추가
+                    const mainName = dailyHolidays[0].name;
+                    const text = dailyHolidays.length > 1 ? `${mainName} 외 ${dailyHolidays.length - 1}건` : mainName;
+
+                    // 툴팁에서 사용할 수 있도록 전체 휴일 이름 목록을 커스텀 속성으로 저장
+                    const holidayNames = dailyHolidays.map(h => h.name).join('<br/>');
+
+                    g.addMarker({
+                        start_date: markerDate,
+                        css: cssClass,
+                        text: text,
+                        title: holidayNames, // 기본 내장 툴팁 속성 활용
+                        id: `holiday_group_${dateStr}`,
+                    });
+                });
+            } else {
+                holidays.forEach(holiday => {
+                    const start = new Date(holiday.start_date + "T00:00:00")
+                    if (isNaN(start.getTime())) return
+                    g.addMarker({
+                        start_date: start,
+                        css: 'gantt_holiday_public',
+                        text: holiday.name,
+                        title: holiday.name,
+                        id: `holiday_${holiday.id}`
+                    })
+                })
+            }
         }
         g.render()
     }, [isGanttLoaded, tasks, links, holidays, scales])
@@ -371,6 +409,7 @@ export default function GanttChart({
                 .weekend_cell { background-color: rgba(239, 68, 68, 0.15) !important; }
                 .today_scale { color: #1a5be6ff !important; font-weight: 800 !important; background-color: rgba(8, 86, 255, 0.15) !important; }
                 .today_cell { background-color: rgba(8, 86, 255, 0.15) !important; border-right: 1px dashed rgba(8, 86, 255, 0.15) !important; border-left: 1px dashed rgba(8, 86, 255, 0.15) !important; }
+                .gantt_marker { cursor: pointer; } 
                 .gantt_holiday_public.gantt_marker { background-color: rgba(239, 68, 68, 0.12) !important; border-left: 2px solid rgba(239, 68, 68, 0.5) !important; }
                 .gantt_holiday_public.gantt_marker .gantt_marker_content { color: #dc2626; font-size: 11px; font-weight: 600; padding: 2px 4px; }
                 .gantt_holiday_leave.gantt_marker { background-color: rgba(245, 158, 11, 0.12) !important; border-left: 2px solid rgba(245, 158, 11, 0.5) !important; }
