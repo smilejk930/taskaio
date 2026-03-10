@@ -266,7 +266,7 @@ export default function ProjectClientView({
         try {
             // dhtmlx-gantt의 end_date는 보통 종료일의 다음 날 00:00:00(exclusive)임.
             // DB에는 실제 종료일(inclusive)을 저장해야 하므로 1초를 빼서 전날로 변환.
-            const adjustedEndDate = ganttTask.end_date 
+            const adjustedEndDate = ganttTask.end_date
                 ? format(new Date(ganttTask.end_date.getTime() - 1000), 'yyyy-MM-dd')
                 : undefined;
 
@@ -507,7 +507,13 @@ export default function ProjectClientView({
                             tasks={ganttTasks}
                             links={ganttLinks}
                             scales={scale}
-                            holidays={holidays}
+                            holidays={holidays.map((h) => {
+                                const member = h.member_id ? members.find((m) => m.id === h.member_id) : null;
+                                return {
+                                    ...h,
+                                    member_name: member ? (member.display_name ?? member.email ?? '이름 없음') : undefined,
+                                }
+                            })}
                             showOnlyParent={showOnlyParent}
                             onTaskUpdated={handleGanttTaskUpdated}
                             onLinkAdd={handleLinkAdd}

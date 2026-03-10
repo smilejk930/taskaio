@@ -26,6 +26,7 @@ interface Holiday {
     start_date: string
     end_date: string
     type: 'public_holiday' | 'member_leave'
+    member_name?: string
 }
 
 interface GanttLink {
@@ -364,12 +365,15 @@ export default function GanttChart({
                     const hasPublic = dailyHolidays.some(h => h.type === 'public_holiday');
                     const cssClass = hasPublic ? 'gantt_holiday_public' : 'gantt_holiday_leave';
 
+                    const getDisplayName = (h: Holiday) => h.type === 'member_leave' && h.member_name ? `${h.member_name} (${h.name})` : h.name;
+
                     // 텍스트는 첫 번째 휴일명 기준, 여러 개인 경우 "+ N건" 추가
-                    const mainName = dailyHolidays[0].name;
+                    const mainName = getDisplayName(dailyHolidays[0]);
                     const text = dailyHolidays.length > 1 ? `${mainName} 외 ${dailyHolidays.length - 1}건` : mainName;
 
                     // 툴팁에서 사용할 수 있도록 전체 휴일 이름 목록을 커스텀 속성으로 저장
-                    const holidayNames = dailyHolidays.map(h => h.name).join('<br/>');
+                    // title 속성에서는 <br/> 대신 \n 을 사용해야 줄바꿈이 정상적으로 표시됨
+                    const holidayNames = dailyHolidays.map(h => getDisplayName(h)).join('\n');
 
                     g.addMarker({
                         start_date: markerDate,
@@ -383,11 +387,14 @@ export default function GanttChart({
                 holidays.forEach(holiday => {
                     const start = new Date(holiday.start_date + "T00:00:00")
                     if (isNaN(start.getTime())) return
+
+                    const displayName = holiday.type === 'member_leave' && holiday.member_name ? `${holiday.member_name} (${holiday.name})` : holiday.name;
+
                     g.addMarker({
                         start_date: start,
-                        css: 'gantt_holiday_public',
-                        text: holiday.name,
-                        title: holiday.name,
+                        css: holiday.type === 'public_holiday' ? 'gantt_holiday_public' : 'gantt_holiday_leave',
+                        text: displayName,
+                        title: displayName,
                         id: `holiday_${holiday.id}`
                     })
                 })
