@@ -86,6 +86,10 @@ export default function GanttChart({
         gantt.config.duration_unit = "day" // 기간 단위는 '일'
         gantt.config.xml_date = "%Y-%m-%d %H:%i"
         
+        // 그리드 너비 및 리사이징 설정
+        gantt.config.grid_width = 650;
+        gantt.config.grid_resizer = true;
+
         // ── 컬럼 설정 ──────────────────────────────────────────────────────────
         gantt.config.columns = [
             {
@@ -103,7 +107,7 @@ export default function GanttChart({
                                 </div>`;
                 }
             },
-            { name: "text", label: "업무명", tree: true, width: '*' },
+            { name: "text", label: "업무명", tree: true, width: 400, min_width: 300 },
             {
                 name: "progress",
                 label: "진행률",
