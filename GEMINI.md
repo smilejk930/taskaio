@@ -41,9 +41,11 @@
 ## 6. Git 및 커밋 규칙 (Git & Commit Rules)
 - **Conventional Commits:** `feat`, `fix`, `ui`, `db`, `refactor`, `test` 등의 타입을 사용합니다.
 - **Auto Commit:** 단위 작업 완료 시 `git status`와 `diff`를 확인하고 사용자 승인 후 커밋합니다.
-- **명령어 구분자:** 윈도우 환경을 고려하여 git 명령어 실행 시 `;`를 사용합니다.
 - 상세 규칙: @.agents/rules/git-commit.md, @.agents/rules/auto-commit.md
 
 ## 7. 특수 컴포넌트 가이드
 - **간트 차트:** `dhtmlx-gantt` 사용 시 브라우저 전용 로딩(`ssr: false`)과 클린업(`clearAll`)을 준수합니다.
 - 상세 규칙: @.agents/skills/gantt-chart/SKILL.md
+
+## 8. 윈도우 환경 고려
+- **명령어 구분자:** 윈도우 환경을 고려하여 git 또는 명령어 실행 시 `;`를 사용합니다.
