@@ -96,7 +96,7 @@ export default function GanttChart({
                 name: "assignee",
                 label: "담당자",
                 align: "left",
-                width: 130,
+                width: 90,
                 template: (task: GanttTask) => {
                     const name = task.assignee_name || '미지정';
                     return `<div style="display:flex; align-items:center; gap:8px; padding-left:4px;">
