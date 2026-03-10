@@ -273,12 +273,18 @@ export default function GanttChart({
             return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`
         }
 
+        // 종료일을 하루 빼서 표시하기 위한 유틸리티 (dhtmlx의 exclusive end_date를 inclusive로 변환)
+        const formatEndDate = (date: Date) => {
+            const adjusted = new Date(date.getTime() - 1000); // 1초만 빼도 전날로 돌아감
+            return formatDate(adjusted)
+        }
+
         g.templates.task_time = (start: Date, end: Date) => {
-            return `${formatDate(start)} ~ ${formatDate(end)}`
+            return `${formatDate(start)} ~ ${formatEndDate(end)}`
         }
 
         g.templates.tooltip_text = (start: Date, end: Date, task: GanttTask) => {
-            return `<b>업무명:</b> ${task.text}<br/><b>기간:</b> ${formatDate(start)} ~ ${formatDate(end)}<br/><b>소요:</b> ${task.duration}일`
+            return `<b>업무명:</b> ${task.text}<br/><b>기간:</b> ${formatDate(start)} ~ ${formatEndDate(end)}<br/><b>소요:</b> ${task.duration}일`
         }
 
         // ── 이벤트 핸들러 바인딩 ──

@@ -258,10 +258,16 @@ export default function ProjectClientView({
         color?: string
     }) => {
         try {
+            // dhtmlx-gantt의 end_date는 보통 종료일의 다음 날 00:00:00(exclusive)임.
+            // DB에는 실제 종료일(inclusive)을 저장해야 하므로 1초를 빼서 전날로 변환.
+            const adjustedEndDate = ganttTask.end_date 
+                ? format(new Date(ganttTask.end_date.getTime() - 1000), 'yyyy-MM-dd')
+                : undefined;
+
             await updateTask(ganttTask.id, {
                 title: ganttTask.text,
                 start_date: format(ganttTask.start_date, 'yyyy-MM-dd'),
-                end_date: ganttTask.end_date ? format(ganttTask.end_date, 'yyyy-MM-dd') : undefined,
+                end_date: adjustedEndDate,
                 progress: Math.round(ganttTask.progress * 100),
                 description: ganttTask.description ?? null,
                 color: ganttTask.color,
@@ -271,7 +277,7 @@ export default function ProjectClientView({
                     ...t,
                     title: ganttTask.text,
                     start_date: format(ganttTask.start_date, 'yyyy-MM-dd'),
-                    end_date: ganttTask.end_date ? format(ganttTask.end_date, 'yyyy-MM-dd') : null,
+                    end_date: adjustedEndDate ?? null,
                     progress: Math.round(ganttTask.progress * 100),
                     description: ganttTask.description ?? null,
                     color: ganttTask.color ?? t.color,
