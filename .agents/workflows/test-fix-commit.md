@@ -33,9 +33,9 @@ description: TDD(Red-Green-Refactor) 사이클을 준수하며 테스트 실행,
    - `git status`와 `git diff`를 통해 의도한 테스트 코드와 구현 코드만 포함되었는지 확인한다.
    - `@auto-commit` 규칙에 따라 의미 있는 커밋 메시지를 한글로 작성한다.
    - **TDD 커밋 예시:** 
-     - `test(tasks): add failing test for task status update` (Red)
-     - `feat(tasks): implement basic task status update` (Green)
-     - `refactor(tasks): optimize status update logic` (Refactor)
+     - `test(tasks): 업무 현황 수정에 따른 추가` (Red)
+     - `feat(tasks): 기본 업무 현황 향상을 위한 수정` (Green)
+     - `refactor(tasks): 현황 수정을 위한 수정` (Refactor)
 
 6. **완료 보고**
    - 적용된 TDD 사이클 단계(Red -> Green -> Refactor)와 최종 테스트 결과를 요약하여 보고한다.
