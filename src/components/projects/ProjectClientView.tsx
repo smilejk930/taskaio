@@ -333,13 +333,21 @@ export default function ProjectClientView({
         .filter(task => selectedMember === 'all' || task.assignee_id === selectedMember)
         .map(task => {
             const assignee = members.find(m => m.id === task.assignee_id)
+            const startDate = task.start_date ? new Date(task.start_date + "T00:00:00") : new Date()
+            startDate.setHours(0, 0, 0, 0)
+
+            let duration = 1
+            if (task.start_date && task.end_date) {
+                const s = new Date(task.start_date + "T00:00:00")
+                const e = new Date(task.end_date + "T00:00:00")
+                duration = Math.max(1, Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+            }
+
             return {
                 id: task.id,
                 text: task.title,
-                start_date: task.start_date ? new Date(task.start_date) : new Date(),
-                duration: task.start_date && task.end_date
-                    ? Math.max(1, Math.ceil((new Date(task.end_date).getTime() - new Date(task.start_date).getTime()) / (1000 * 60 * 60 * 24)) + 1)
-                    : 1,
+                start_date: startDate,
+                duration: duration,
                 progress: (task.progress ?? 0) / 100,
                 parent: task.parent_id,
                 open: true,

@@ -78,7 +78,13 @@ export default function GanttChart({
         gantt.config.drag_project = true
         gantt.config.work_time = false
         gantt.config.show_progress = true
-
+        
+        // 날짜 정렬 최적화 설정
+        gantt.config.round_dnd_dates = true // 드래그 시 그리드에 맞춤
+        gantt.config.time_step = 1440 // 1일 단위로 스냅 (60분 * 24시간)
+        gantt.config.duration_unit = "day" // 기간 단위는 '일'
+        gantt.config.xml_date = "%Y-%m-%d %H:%i"
+        
         // ── 컬럼 설정 ──────────────────────────────────────────────────────────
         gantt.config.columns = [
             {
@@ -278,6 +284,10 @@ export default function GanttChart({
             } else if (mode === "move") {
                 const originalDuration = task._original_duration || task.duration;
                 if (task.start_date) {
+                    // 이동 시에도 시분초 초기화하여 그리드 정착 보장
+                    const d = new Date(task.start_date);
+                    d.setHours(0, 0, 0, 0);
+                    task.start_date = d;
                     task.end_date = gantt.calculateEndDate(task.start_date, originalDuration);
                 }
             } else if (mode === "resize") {
