@@ -346,7 +346,8 @@ export default function GanttChart({
 
                     let current = new Date(start)
                     while (current <= end) {
-                        const dateStr = current.toISOString().split('T')[0];
+                        const pad = (n: number) => n.toString().padStart(2, '0');
+                        const dateStr = `${current.getFullYear()}-${pad(current.getMonth() + 1)}-${pad(current.getDate())}`;
                         if (!holidayMap.has(dateStr)) {
                             holidayMap.set(dateStr, []);
                         }
