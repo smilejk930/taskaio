@@ -158,7 +158,7 @@ export default function GanttChart({
                 .gantt_delete_btn_set:hover { background-color: #dc2626 !important; }
 
                 /* 아이콘 제거 */
-                .gantt_icon_save, .gantt_icon_cancel, .gantt_icon_delete { display: none !important; }
+                .gantt_icon_save, .gantt_icon_cancel, .gantt_icon_delete, .gantt_delete_btn { display: none !important; }
                 .gantt_btn_label {
                     float: none !important;
                     margin: 0 !important;
