@@ -211,7 +211,7 @@ export default function GanttChart({
                 ganttInstance.config.time_step = 1440
                 ganttInstance.config.duration_unit = "day"
                 ganttInstance.config.xml_date = "%Y-%m-%d %H:%i"
-                ganttInstance.config.grid_width = 650;
+                ganttInstance.config.grid_width = 900;
                 ganttInstance.config.grid_resizer = true;
                 ganttInstance.config.key_navigation = false;
 
@@ -220,22 +220,56 @@ export default function GanttChart({
                     {
                         name: "assignee",
                         label: "담당자",
-                        align: "left",
-                        width: 90,
+                        align: "center",
+                        width: 70,
                         template: (task: GanttTask) => {
                             const name = task.assignee_name || '미지정';
-                            return `<div style="display:flex;align-items:center;gap:8px;padding-left:4px;"><div style="width:24px;height:24px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:bold;color:#64748b;">${name.charAt(0)}</div><span style="font-size:13px;">${name}</span></div>`;
+                            return `<span style="font-size:13px;color:#475569;">${name}</span>`;
                         }
                     },
-                    { name: "text", label: "업무명", tree: true, width: 400, min_width: 300 },
+                    { name: "text", label: "업무명", tree: true, width: 450, min_width: 300 },
+                    {
+                        name: "status",
+                        label: "상태",
+                        align: "center",
+                        width: 75,
+                        template: (task: GanttTask) => {
+                            const option = STATUS_OPTIONS.find(o => o.key === task.status);
+                            const label = option ? option.label : (task.status || '할 일');
+                            const statusKey = task.status || 'todo';
+                            let styles = "display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500;line-height:1.4;";
+                            if (statusKey === 'todo') styles += "background:#f1f5f9;color:#475569;";
+                            else if (statusKey === 'in_progress') styles += "background:#dbeafe;color:#1e40af;";
+                            else if (statusKey === 'review') styles += "background:#fef9c3;color:#854d0e;";
+                            else if (statusKey === 'done') styles += "background:#dcfce7;color:#166534;";
+                            return `<span style="${styles}">${label}</span>`;
+                        }
+                    },
+                    {
+                        name: "priority",
+                        label: "우선순위",
+                        align: "center",
+                        width: 75,
+                        template: (task: GanttTask) => {
+                            const option = PRIORITY_OPTIONS.find(o => o.key === task.priority);
+                            const label = option ? option.label : (task.priority || '보통');
+                            const priorityKey = task.priority || 'medium';
+                            let styles = "display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500;line-height:1.4;";
+                            if (priorityKey === 'urgent') styles += "background:#fee2e2;color:#991b1b;";
+                            else if (priorityKey === 'high') styles += "background:#1e293b;color:#f8fafc;";
+                            else if (priorityKey === 'medium') styles += "background:#f1f5f9;color:#475569;";
+                            else if (priorityKey === 'low') styles += "background:transparent;border:1px solid #e2e8f0;color:#64748b;";
+                            return `<span style="${styles}">${label}</span>`;
+                        }
+                    },
                     {
                         name: "progress",
                         label: "진행률",
                         align: "center",
-                        width: 70,
-                        template: (task: GanttTask) => `<span style="color:#64748b;font-size:13px;">${Math.round(task.progress * 100)}%</span>`
+                        width: 60,
+                        template: (task: GanttTask) => `<span style="color:#64748b;font-size:12px;">${Math.round(task.progress * 100)}%</span>`
                     },
-                    { name: "add", label: "", width: 44 }
+                    { name: "add", label: "", width: 40 }
                 ]
 
                 ganttInstance.plugins({
