@@ -44,7 +44,6 @@ interface GanttChartProps {
     scales: 'day' | 'week' | 'month'
     holidays?: Holiday[]
     members?: { id: string; display_name: string | null; email: string | null }[]
-    showOnlyParent?: boolean
     onTaskUpdated?: (task: GanttTask) => void
     onTaskCreated?: (task: GanttTask) => void
     onTaskDeleted?: (id: string) => void
@@ -58,7 +57,6 @@ export default function GanttChart({
     scales,
     holidays,
     members = [],
-    showOnlyParent = false,
     onTaskUpdated,
     onTaskCreated,
     onTaskDeleted,
@@ -498,9 +496,8 @@ export default function GanttChart({
                 ]
                 break
         }
-        g.filter = (_id: string, item: any) => !(showOnlyParent && item.parent)
         g.render()
-    }, [isGanttLoaded, scales, showOnlyParent])
+    }, [isGanttLoaded, scales])
 
     useEffect(() => {
         if (!isGanttLoaded || !ganttRef.current || isDragging.current) return

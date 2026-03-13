@@ -20,6 +20,7 @@ import { Settings } from 'lucide-react'
 import WbsGrid from '@/components/wbs/WbsGrid'
 import DashboardView from '@/components/dashboard/DashboardView'
 import TeamManagementView from '@/components/projects/members/TeamManagementView'
+import { TaskSearchFilter } from '@/components/projects/TaskSearchFilter'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { updateTask, createTask, deleteTask } from '@/app/actions/tasks'
 import { updateProject, deleteProject } from '@/app/actions/projects'
@@ -29,6 +30,7 @@ import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { normalizeDate, calculateGanttDuration } from '@/lib/gantt-utils'
+import { useTaskFilters } from '@/hooks/use-task-filters'
 
 // ──── 타입 정의 ────────────────────────────────────────────────────────────────
 
@@ -98,9 +100,9 @@ export default function ProjectClientView({
     const [tasks, setTasks] = useState<Task[]>(initialTasks)
     const [links, setLinks] = useState<Link[]>(initialLinks)
     const [scale, setScale] = useState<'day' | 'week' | 'month'>('day')
-    const [showOnlyParent, setShowOnlyParent] = useState(false)
-    const [selectedMember, setSelectedMember] = useState<string>('all')
     const [activeTab, setActiveTab] = useState('dashboard')
+
+    const { filters, setFilters, filteredTasks } = useTaskFilters(tasks)
 
     const router = useRouter()
     const currentMemberRole = members.find(m => m.id === currentUser?.id)?.role
@@ -384,8 +386,7 @@ export default function ProjectClientView({
     }
 
     // ── 간트 데이터 포맷팅 ──────────────────────────────────────────────────────
-    const ganttTasks = tasks
-        .filter(task => selectedMember === 'all' || task.assignee_id === selectedMember)
+    const ganttTasks = filteredTasks
         .map(task => {
             const assignee = members.find(m => m.id === task.assignee_id)
             const startDate = normalizeDate(task.start_date)
@@ -465,50 +466,20 @@ export default function ProjectClientView({
                             <TabsTrigger value="members">👥 팀원 관리</TabsTrigger>
                         </TabsList>
 
-                        {/* 필터 영역 (WBS, Gantt 탭에서만 렌더링) */}
-                        {(activeTab === 'gantt' || activeTab === 'wbs') && (
-                            <div className="flex items-center gap-5">
-                                <div className="flex items-center gap-2">
-                                    <Checkbox
-                                        id="parent-only"
-                                        checked={showOnlyParent}
-                                        onCheckedChange={(checked) => setShowOnlyParent(checked as boolean)}
-                                    />
-                                    <Label htmlFor="parent-only" className="text-sm cursor-pointer">상위 업무만</Label>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm text-muted-foreground">담당자:</span>
-                                    <Select value={selectedMember} onValueChange={setSelectedMember}>
-                                        <SelectTrigger className="w-[140px] h-8 text-xs">
-                                            <SelectValue placeholder="모든 팀원" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="all">모든 팀원</SelectItem>
-                                            {members.map(member => (
-                                                <SelectItem key={member.id} value={member.id}>
-                                                    {member.display_name ?? member.email ?? '이름 없음'}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {activeTab === 'gantt' && (
-                                    <div className="flex bg-muted p-1 rounded-md">
-                                        {(['day', 'week', 'month'] as const).map((s) => (
-                                            <Button
-                                                key={s}
-                                                variant={scale === s ? 'default' : 'ghost'}
-                                                size="sm"
-                                                className="h-7 px-3 text-xs"
-                                                onClick={() => setScale(s)}
-                                            >
-                                                {s === 'day' ? '일' : s === 'week' ? '주' : '월'}
-                                            </Button>
-                                        ))}
-                                    </div>
-                                )}
+                        {/* 간트 차트 스케일 조절 (Gantt 탭에서만 렌더링) */}
+                        {activeTab === 'gantt' && (
+                            <div className="flex bg-muted p-1 rounded-md">
+                                {(['day', 'week', 'month'] as const).map((s) => (
+                                    <Button
+                                        key={s}
+                                        variant={scale === s ? 'default' : 'ghost'}
+                                        size="sm"
+                                        className="h-7 px-3 text-xs"
+                                        onClick={() => setScale(s)}
+                                    >
+                                        {s === 'day' ? '일' : s === 'week' ? '주' : '월'}
+                                    </Button>
+                                ))}
                             </div>
                         )}
                     </div>
@@ -533,9 +504,14 @@ export default function ProjectClientView({
                         />
                     </TabsContent>
 
-                    <TabsContent value="wbs" className="flex-1 mt-0 overflow-auto">
+                    <TabsContent value="wbs" className="flex-1 mt-0 overflow-auto flex flex-col">
+                        <TaskSearchFilter
+                            filters={filters}
+                            setFilters={setFilters}
+                            members={members}
+                        />
                         <WbsGrid
-                            tasks={tasks.filter(t => selectedMember === 'all' || t.assignee_id === selectedMember)}
+                            tasks={filteredTasks}
                             projectId={project.id}
                             members={members}
                             currentMemberRole={currentMemberRole}
@@ -545,7 +521,14 @@ export default function ProjectClientView({
                         />
                     </TabsContent>
 
-                    <TabsContent value="gantt" className="flex-1 mt-0 h-full overflow-hidden">
+                    <TabsContent value="gantt" className="flex-1 mt-0 h-full overflow-hidden flex flex-col">
+                        <div className="mb-4">
+                            <TaskSearchFilter
+                                filters={filters}
+                                setFilters={setFilters}
+                                members={members}
+                            />
+                        </div>
                         <GanttChart
                             tasks={ganttTasks}
                             links={ganttLinks}
@@ -558,7 +541,6 @@ export default function ProjectClientView({
                                 }
                             })}
                             members={members}
-                            showOnlyParent={showOnlyParent}
                             onTaskUpdated={handleGanttTaskUpdated}
                             onTaskCreated={handleGanttTaskCreated}
                             onTaskDeleted={(id) => handleTaskDelete(id, true)}
