@@ -81,7 +81,7 @@ export function TaskSearchFilter({ filters, setFilters, members }: TaskSearchFil
     }
 
     return (
-        <div className="flex flex-col gap-4 bg-muted/20 p-4 rounded-xl border border-border/50 mb-6">
+        <div className="flex flex-col gap-4 bg-muted/20 p-4 rounded-xl border border-border/50">
             <div className="flex flex-wrap items-center gap-3">
                 {/* 업무명 검색 */}
                 <div className="relative w-full sm:w-64">

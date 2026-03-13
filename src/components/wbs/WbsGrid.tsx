@@ -305,18 +305,6 @@ export default function WbsGrid({
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex justify-end mb-2">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 text-xs gap-1.5"
-                    onClick={() => onTaskCreate(null)}
-                >
-                    <Plus className="h-3.5 w-3.5" />
-                    상위 업무 추가
-                </Button>
-            </div>
-
             <div className="flex-1 overflow-auto">
                 <table className="w-full text-sm border-collapse">
                     <thead className="bg-muted/50 sticky top-0 z-10 border-b shadow-sm">

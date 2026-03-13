@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { Settings } from 'lucide-react'
+import { Settings, Plus } from 'lucide-react'
 import WbsGrid from '@/components/wbs/WbsGrid'
 import DashboardView from '@/components/dashboard/DashboardView'
 import TeamManagementView from '@/components/projects/members/TeamManagementView'
@@ -505,11 +505,24 @@ export default function ProjectClientView({
                     </TabsContent>
 
                     <TabsContent value="wbs" className="flex-1 mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col gap-2">
-                        <TaskSearchFilter
-                            filters={filters}
-                            setFilters={setFilters}
-                            members={members}
-                        />
+                        <div className="flex items-start gap-4">
+                            <div className="flex-1">
+                                <TaskSearchFilter
+                                    filters={filters}
+                                    setFilters={setFilters}
+                                    members={members}
+                                />
+                            </div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-9 text-xs gap-1.5 shrink-0 bg-background border-dashed hover:border-primary hover:text-primary transition-all mt-4"
+                                onClick={() => handleTaskCreate(null)}
+                            >
+                                <Plus className="h-4 w-4" />
+                                상위 업무 추가
+                            </Button>
+                        </div>
                         <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
                             <WbsGrid
                                 tasks={filteredTasks}
