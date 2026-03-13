@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 // dhtmlx-gantt는 브라우저 전용 객체(window, document)를 사용하므로 ssr: false로 로드해야 합니다.
 const GanttChart = dynamic(() => import('@/components/gantt/GanttChart'), {
     ssr: false,
-    loading: () => <div className="flex items-center justify-center h-[600px] bg-muted/20 rounded-lg border border-dashed">간트차트를 불러오는 중...</div>
+    loading: () => <div className="flex items-center justify-center h-[600px] bg-muted/20 rounded-lg border border-dashed">일정 현황 불러오는 중...</div>
 })
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -223,7 +223,7 @@ export default function ProjectClientView({
         try {
             const today = format(new Date(), 'yyyy-MM-dd')
             const newTask = await createTask({
-                title: parentId ? '새 하위 업무' : '새 업무',
+                title: parentId ? '' : '',
                 project_id: project.id,
                 parent_id: parentId,
                 start_date: today,
@@ -242,11 +242,13 @@ export default function ProjectClientView({
     }
 
     // ── 업무 삭제 ──────────────────────────────────────────────────────────────
-    const handleTaskDelete = async (id: string) => {
+    const handleTaskDelete = async (id: string, isFromGantt: boolean = false) => {
         try {
             await deleteTask(id)
-            setTasks(prev => prev.filter(t => t.id !== id && t.parent_id !== id))
-            toast.success('업무가 삭제되었습니다.')
+            if (!isFromGantt) {
+                setTasks(prev => prev.filter(t => t.id !== id && t.parent_id !== id))
+            }
+            // toast.success('업무가 삭제되었습니다.') // 사용자 요청으로 토스트 제거
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : '알 수 없는 오류'
             toast.error('업무 삭제 실패', { description: message })
@@ -292,6 +294,46 @@ export default function ProjectClientView({
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : '알 수 없는 오류'
             toast.error('간트 업데이트 실패', { description: message })
+        }
+    }
+
+    const handleGanttTaskCreated = async (ganttTask: {
+        id: string
+        text: string
+        start_date: Date
+        end_date?: Date
+        progress: number
+        parent: string | null
+        assignee_id?: string | null
+        description?: string | null
+        color?: string
+    }) => {
+        try {
+            const adjustedEndDate = ganttTask.end_date
+                ? format(new Date(ganttTask.end_date.getTime() - 1000), 'yyyy-MM-dd')
+                : format(ganttTask.start_date, 'yyyy-MM-dd');
+
+            const newTask = await createTask({
+                title: ganttTask.text || '',
+                project_id: project.id,
+                parent_id: ganttTask.parent || null,
+                start_date: format(ganttTask.start_date, 'yyyy-MM-dd'),
+                end_date: adjustedEndDate,
+                progress: Math.round(ganttTask.progress * 100),
+                priority: 'medium',
+                status: 'todo',
+                assignee_id: ganttTask.assignee_id ?? currentUser?.id ?? null,
+                description: ganttTask.description ?? null,
+                color: ganttTask.color,
+            })
+
+            // dhtmlx-gantt가 생성한 임시 ID를 DB에서 생성된 실제 ID로 갱신하기 위해 
+            // 상태를 업데이트하면 간트 차트가 리렌더링되면서 반영됩니다.
+            setTasks(prev => [...prev.filter(t => t.id !== ganttTask.id), newTask])
+            toast.success('업무가 생성되었습니다.')
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : '알 수 없는 오류'
+            toast.error('업무 생성 실패', { description: message })
         }
     }
 
@@ -357,6 +399,7 @@ export default function ProjectClientView({
                 progress: (task.progress ?? 0) / 100,
                 parent: task.parent_id,
                 open: true,
+                assignee_id: task.assignee_id,
                 assignee_name: assignee?.display_name ?? assignee?.email ?? '',
                 // 업무별 색상 (WBS에서 지정한 color 값을 간트 바에 반영)
                 color: task.color ?? undefined,
@@ -514,8 +557,11 @@ export default function ProjectClientView({
                                     member_name: member ? (member.display_name ?? member.email ?? '이름 없음') : undefined,
                                 }
                             })}
+                            members={members}
                             showOnlyParent={showOnlyParent}
                             onTaskUpdated={handleGanttTaskUpdated}
+                            onTaskCreated={handleGanttTaskCreated}
+                            onTaskDeleted={(id) => handleTaskDelete(id, true)}
                             onLinkAdd={handleLinkAdd}
                             onLinkDelete={handleLinkDelete}
                         />

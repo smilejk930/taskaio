@@ -107,7 +107,8 @@ export default function WbsGrid({
                             />
                             <Input
                                 defaultValue={task.title}
-                                className="h-8 border-none bg-transparent focus-visible:ring-1 text-sm"
+                                placeholder="업무명을 입력하세요"
+                                className="h-8 border-none bg-transparent focus-visible:ring-1 text-sm placeholder:text-muted-foreground/50"
                                 onBlur={(e) => onTaskUpdate(task.id, 'title', e.target.value)}
                             />
                         </div>
