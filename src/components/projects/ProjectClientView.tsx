@@ -394,8 +394,23 @@ export default function ProjectClientView({
     }
 
     // ── 간트 데이터 포맷팅 ──────────────────────────────────────────────────────
-    const ganttTasks = filteredTasks
-        .map(task => {
+    const ganttTasks = React.useMemo(() => {
+        const sortByDate = (a: Task, b: Task) => {
+            if (!a.start_date) return 1
+            if (!b.start_date) return -1
+            return a.start_date.localeCompare(b.start_date)
+        }
+
+        const parents = filteredTasks.filter(t => !t.parent_id).sort(sortByDate)
+        const children = filteredTasks.filter(t => t.parent_id).sort(sortByDate)
+        
+        const sorted: Task[] = []
+        parents.forEach(p => {
+            sorted.push(p)
+            children.filter(c => c.parent_id === p.id).forEach(c => sorted.push(c))
+        })
+
+        return sorted.map(task => {
             const assignee = members.find(m => m.id === task.assignee_id)
             const startDate = normalizeDate(task.start_date)
             const duration = calculateGanttDuration(task.start_date, task.end_date)
@@ -417,6 +432,7 @@ export default function ProjectClientView({
                 description: task.description ?? null,
             }
         })
+    }, [filteredTasks, members])
 
     const ganttLinks = links.map(link => ({
         id: link.id,

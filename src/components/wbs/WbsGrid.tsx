@@ -76,10 +76,17 @@ export default function WbsGrid({
     onTaskCreate,
     onTaskDelete,
 }: WbsGridProps) {
-    /** 상위(부모) 업무 우선 정렬 후 하위 업무 표시 */
+    /** 상위(부모) 업무 우선 정렬 후 하위 업무 표시 (시작일 ASC 정렬 추가) */
     const sortedTasks = useMemo(() => {
-        const parents = tasks.filter(t => !t.parent_id)
-        const children = tasks.filter(t => t.parent_id)
+        const sortByDate = (a: Task, b: Task) => {
+            if (!a.start_date) return 1
+            if (!b.start_date) return -1
+            return a.start_date.localeCompare(b.start_date)
+        }
+
+        const parents = tasks.filter(t => !t.parent_id).sort(sortByDate)
+        const children = tasks.filter(t => t.parent_id).sort(sortByDate)
+        
         const result: Task[] = []
         parents.forEach(p => {
             result.push(p)
