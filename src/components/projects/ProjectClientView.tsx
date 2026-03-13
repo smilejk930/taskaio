@@ -264,6 +264,8 @@ export default function ProjectClientView({
         start_date: Date
         end_date?: Date
         progress: number
+        status: string
+        priority: string
         description?: string | null
         color?: string
     }) => {
@@ -279,6 +281,8 @@ export default function ProjectClientView({
                 start_date: format(ganttTask.start_date, 'yyyy-MM-dd'),
                 end_date: adjustedEndDate,
                 progress: Math.round(ganttTask.progress * 100),
+                status: ganttTask.status,
+                priority: ganttTask.priority,
                 description: ganttTask.description ?? null,
                 color: ganttTask.color,
             })
@@ -289,6 +293,8 @@ export default function ProjectClientView({
                     start_date: format(ganttTask.start_date, 'yyyy-MM-dd'),
                     end_date: adjustedEndDate ?? null,
                     progress: Math.round(ganttTask.progress * 100),
+                    status: ganttTask.status,
+                    priority: ganttTask.priority,
                     description: ganttTask.description ?? null,
                     color: ganttTask.color ?? t.color,
                 } : t
@@ -306,6 +312,8 @@ export default function ProjectClientView({
         end_date?: Date
         progress: number
         parent: string | null
+        status: string
+        priority: string
         assignee_id?: string | null
         description?: string | null
         color?: string
@@ -322,8 +330,8 @@ export default function ProjectClientView({
                 start_date: format(ganttTask.start_date, 'yyyy-MM-dd'),
                 end_date: adjustedEndDate,
                 progress: Math.round(ganttTask.progress * 100),
-                priority: 'medium',
-                status: 'todo',
+                priority: (ganttTask.priority as any) || 'medium',
+                status: (ganttTask.status as any) || 'todo',
                 assignee_id: ganttTask.assignee_id ?? currentUser?.id ?? null,
                 description: ganttTask.description ?? null,
                 color: ganttTask.color,
@@ -400,6 +408,8 @@ export default function ProjectClientView({
                 progress: (task.progress ?? 0) / 100,
                 parent: task.parent_id,
                 open: true,
+                status: task.status ?? 'todo',
+                priority: task.priority ?? 'medium',
                 assignee_id: task.assignee_id,
                 assignee_name: assignee?.display_name ?? assignee?.email ?? '',
                 // 업무별 색상 (WBS에서 지정한 color 값을 간트 바에 반영)

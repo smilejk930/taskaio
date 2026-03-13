@@ -13,6 +13,8 @@ interface GanttTask {
     progress: number
     parent: string | null
     open?: boolean
+    status: string
+    priority: string
     assignee_id?: string | null
     assignee_name?: string
     /** WBS리스트에서 지정한 HEX 색상 (간트 바 색상) */
@@ -21,6 +23,21 @@ interface GanttTask {
     /** 드래그 시 원래 기간 보존을 위한 확장 필드 */
     _original_duration?: number
 }
+
+// ── 상수 정의 (WbsGrid와 통일) ──────────────────────────────────────────────────
+const STATUS_OPTIONS = [
+    { key: 'todo', label: '할 일' },
+    { key: 'in_progress', label: '진행 중' },
+    { key: 'review', label: '리뷰' },
+    { key: 'done', label: '완료' },
+]
+
+const PRIORITY_OPTIONS = [
+    { key: 'urgent', label: '긴급' },
+    { key: 'high', label: '높음' },
+    { key: 'medium', label: '보통' },
+    { key: 'low', label: '낮음' },
+]
 
 interface Holiday {
     id: string
@@ -295,8 +312,11 @@ export default function GanttChart({
                 ganttInstance.locale.labels.section_time = "기간"
                 ganttInstance.locale.labels.section_color = "색상"
                 ganttInstance.locale.labels.section_assignee = "담당자"
+                ganttInstance.locale.labels.section_status = "상태"
+                ganttInstance.locale.labels.section_priority = "우선순위"
 
                 // ── 커스텀 입력을 위한 form_blocks 정의 ────────────────────────
+
                 ganttInstance.form_blocks["text"] = {
                     render: (sns: { height?: number }) => `<div class="gantt_cal_ltext" style="height:${sns.height || 30}px;"><input type="text" placeholder="업무명을 입력하세요" style="width:100%;height:100%;border:1px solid #e2e8f0;border-radius:4px;outline:none;padding:0 8px;font-size:14px;box-sizing:border-box;transition:all 0.2s;"></div>`,
                     set_value: (node: HTMLElement, value: string) => {
@@ -315,6 +335,8 @@ export default function GanttChart({
 
                 ganttInstance.config.lightbox.sections = [
                     { name: "description", height: 38, map_to: "text", type: "text", focus: true },
+                    { name: "status", height: 22, map_to: "status", type: "select", options: STATUS_OPTIONS },
+                    { name: "priority", height: 22, map_to: "priority", type: "select", options: PRIORITY_OPTIONS },
                     { name: "assignee", height: 22, map_to: "assignee_id", type: "select", options: ganttInstance.serverList("staff") },
                     { name: "details", height: 70, map_to: "description", type: "textarea" },
                     { name: "color", height: 38, map_to: "color", type: "color_picker" },
@@ -406,6 +428,8 @@ export default function GanttChart({
                     item.duration = 4;
                     item.end_date = ganttInstance.calculateEndDate(item.start_date, 4);
                     item.progress = 0;
+                    item.status = 'todo';
+                    item.priority = 'medium';
                     item.color = `#${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, '0')}`;
                     return true;
                 }));
