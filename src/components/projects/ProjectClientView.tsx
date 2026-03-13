@@ -520,7 +520,7 @@ export default function ProjectClientView({
                                 onClick={() => handleTaskCreate(null)}
                             >
                                 <Plus className="h-4 w-4" />
-                                상위 업무 추가
+                                업무 추가
                             </Button>
                         </div>
                         <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">

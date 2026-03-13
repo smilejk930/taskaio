@@ -322,7 +322,7 @@ export default function WbsGrid({
                         {table.getRowModel().rows.length === 0 ? (
                             <tr>
                                 <td colSpan={columns.length} className="p-8 text-center text-muted-foreground text-sm">
-                                    등록된 업무가 없습니다. &apos;상위 업무 추가&apos; 버튼으로 업무를 추가해 보세요.
+                                    등록된 업무가 없습니다. &apos;업무 추가&apos; 버튼으로 업무를 추가해 보세요.
                                 </td>
                             </tr>
                         ) : (
