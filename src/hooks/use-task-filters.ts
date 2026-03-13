@@ -31,7 +31,7 @@ export function useTaskFilters(tasks: Task[]) {
     const [filters, setFilters] = useState<TaskFilters>({
         title: '',
         assigneeIds: [],
-        statuses: [],
+        statuses: ['todo', 'in_progress', 'review'],
         priorities: [],
         dateRange: {
             from: undefined,
