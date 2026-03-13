@@ -541,7 +541,7 @@ export default function GanttChart({
     }, [isGanttLoaded, tasks, links, holidays, scales])
 
     return (
-        <div className="w-full h-full flex flex-col">
+        <div className="w-full h-full flex flex-col overflow-hidden">
             <style dangerouslySetInnerHTML={{
                 __html: `
                 .gantt_task_line { border-color: rgba(0, 0, 0, 0.1) !important; border-radius: 6px !important; }
@@ -554,7 +554,7 @@ export default function GanttChart({
                 .gantt_holiday_leave.gantt_marker { background-color: rgba(245, 158, 11, 0.1) !important; border-left: 2px solid #f59e0b !important; }
                 .gantt_marker_content { color: black !important; font-weight: 500 !important; }
             `}} />
-            <div ref={ganttContainer} style={{ width: '100%', height: 'calc(100% - 24px)' }} className="rounded-lg border bg-background shadow-sm overflow-hidden mb-6" />
+            <div ref={ganttContainer} className="flex-1 w-full h-full bg-background" />
         </div>
     )
 }

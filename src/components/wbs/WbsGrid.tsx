@@ -304,8 +304,8 @@ export default function WbsGrid({
     })
 
     return (
-        <div className="flex flex-col gap-3">
-            <div className="flex justify-end">
+        <div className="flex flex-col h-full">
+            <div className="flex justify-end mb-2">
                 <Button
                     variant="outline"
                     size="sm"
@@ -317,13 +317,13 @@ export default function WbsGrid({
                 </Button>
             </div>
 
-            <div className="rounded-md border bg-background overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead className="bg-muted/50 border-b">
+            <div className="flex-1 overflow-auto">
+                <table className="w-full text-sm border-collapse">
+                    <thead className="bg-muted/50 sticky top-0 z-10 border-b shadow-sm">
                         {table.getHeaderGroups().map((headerGroup) => (
                             <tr key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => (
-                                    <th key={header.id} className="h-10 px-3 text-left font-medium text-muted-foreground text-xs whitespace-nowrap">
+                                    <th key={header.id} className="h-10 px-3 text-left font-medium text-muted-foreground text-xs whitespace-nowrap bg-muted/50">
                                         {flexRender(header.column.columnDef.header, header.getContext())}
                                     </th>
                                 ))}

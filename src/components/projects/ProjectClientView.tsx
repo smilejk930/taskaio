@@ -456,9 +456,9 @@ export default function ProjectClientView({
                 </div>
             </header>
 
-            <main className="flex-1 overflow-hidden p-6">
+            <main className="flex-1 overflow-hidden p-4 pt-0">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-                    <div className="flex justify-between items-center mb-4">
+                    <div className="flex justify-between items-center py-2">
                         <TabsList>
                             <TabsTrigger value="dashboard">📈 대시보드</TabsTrigger>
                             <TabsTrigger value="wbs">📋 업무 목록</TabsTrigger>
@@ -484,7 +484,7 @@ export default function ProjectClientView({
                         )}
                     </div>
 
-                    <TabsContent value="dashboard" className="flex-1 mt-0 overflow-auto">
+                    <TabsContent value="dashboard" className="flex-1 mt-0 overflow-auto border rounded-lg bg-background data-[state=active]:flex data-[state=active]:flex-col">
                         <DashboardView
                             tasks={tasks}
                             members={members}
@@ -504,49 +504,51 @@ export default function ProjectClientView({
                         />
                     </TabsContent>
 
-                    <TabsContent value="wbs" className="flex-1 mt-0 overflow-auto flex flex-col">
+                    <TabsContent value="wbs" className="flex-1 mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col gap-2">
                         <TaskSearchFilter
                             filters={filters}
                             setFilters={setFilters}
                             members={members}
                         />
-                        <WbsGrid
-                            tasks={filteredTasks}
-                            projectId={project.id}
-                            members={members}
-                            currentMemberRole={currentMemberRole}
-                            onTaskUpdate={handleTaskUpdate}
-                            onTaskCreate={handleTaskCreate}
-                            onTaskDelete={handleTaskDelete}
-                        />
-                    </TabsContent>
-
-                    <TabsContent value="gantt" className="flex-1 mt-0 h-full overflow-hidden flex flex-col">
-                        <div className="mb-4">
-                            <TaskSearchFilter
-                                filters={filters}
-                                setFilters={setFilters}
+                        <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
+                            <WbsGrid
+                                tasks={filteredTasks}
+                                projectId={project.id}
                                 members={members}
+                                currentMemberRole={currentMemberRole}
+                                onTaskUpdate={handleTaskUpdate}
+                                onTaskCreate={handleTaskCreate}
+                                onTaskDelete={handleTaskDelete}
                             />
                         </div>
-                        <GanttChart
-                            tasks={ganttTasks}
-                            links={ganttLinks}
-                            scales={scale}
-                            holidays={holidays.map((h) => {
-                                const member = h.member_id ? members.find((m) => m.id === h.member_id) : null;
-                                return {
-                                    ...h,
-                                    member_name: member ? (member.display_name ?? member.email ?? '이름 없음') : undefined,
-                                }
-                            })}
+                    </TabsContent>
+
+                    <TabsContent value="gantt" className="flex-1 mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col gap-2">
+                        <TaskSearchFilter
+                            filters={filters}
+                            setFilters={setFilters}
                             members={members}
-                            onTaskUpdated={handleGanttTaskUpdated}
-                            onTaskCreated={handleGanttTaskCreated}
-                            onTaskDeleted={(id) => handleTaskDelete(id, true)}
-                            onLinkAdd={handleLinkAdd}
-                            onLinkDelete={handleLinkDelete}
                         />
+                        <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
+                            <GanttChart
+                                tasks={ganttTasks}
+                                links={ganttLinks}
+                                scales={scale}
+                                holidays={holidays.map((h) => {
+                                    const member = h.member_id ? members.find((m) => m.id === h.member_id) : null;
+                                    return {
+                                        ...h,
+                                        member_name: member ? (member.display_name ?? member.email ?? '이름 없음') : undefined,
+                                    }
+                                })}
+                                members={members}
+                                onTaskUpdated={handleGanttTaskUpdated}
+                                onTaskCreated={handleGanttTaskCreated}
+                                onTaskDeleted={(id) => handleTaskDelete(id, true)}
+                                onLinkAdd={handleLinkAdd}
+                                onLinkDelete={handleLinkDelete}
+                            />
+                        </div>
                     </TabsContent>
 
                     <TabsContent value="members" className="flex-1 mt-0 overflow-auto">
