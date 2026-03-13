@@ -552,6 +552,7 @@ export default function GanttChart({
                 .today_scale, .today_cell { background-color: rgba(37, 99, 235, 0.15) !important; color: #2563eb !important; font-weight: 800 !important; }
                 .gantt_holiday_public.gantt_marker { background-color: rgba(239, 68, 68, 0.1) !important; border-left: 2px solid #ef4444 !important; }
                 .gantt_holiday_leave.gantt_marker { background-color: rgba(245, 158, 11, 0.1) !important; border-left: 2px solid #f59e0b !important; }
+                .gantt_marker_content { color: black !important; font-weight: 500 !important; }
             `}} />
             <div ref={ganttContainer} style={{ width: '100%', height: '600px' }} className="rounded-lg border bg-background shadow-sm overflow-hidden" />
         </div>
