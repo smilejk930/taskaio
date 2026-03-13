@@ -499,7 +499,7 @@ export default function ProjectClientView({
                                         {(['day', 'week', 'month'] as const).map((s) => (
                                             <Button
                                                 key={s}
-                                                variant={scale === s ? 'secondary' : 'ghost'}
+                                                variant={scale === s ? 'default' : 'ghost'}
                                                 size="sm"
                                                 className="h-7 px-3 text-xs"
                                                 onClick={() => setScale(s)}
@@ -545,7 +545,7 @@ export default function ProjectClientView({
                         />
                     </TabsContent>
 
-                    <TabsContent value="gantt" className="flex-1 mt-0">
+                    <TabsContent value="gantt" className="flex-1 mt-0 h-full overflow-hidden">
                         <GanttChart
                             tasks={ganttTasks}
                             links={ganttLinks}
