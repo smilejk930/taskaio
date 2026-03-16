@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { createTask, updateTask, deleteTask } from '@/app/actions/tasks'
 import { toast } from 'sonner'
 import { Database } from '@/types/supabase'
@@ -26,6 +26,11 @@ export interface TaskFormData {
 export function useTasks(initialTasks: Task[]) {
     const [tasks, setTasks] = useState<Task[]>(initialTasks)
     const [isLoading, setIsLoading] = useState(false)
+
+    // 서버 사이드에서 전달받은 데이터가 변경될 때(router.refresh() 등) 상태 동기화
+    useEffect(() => {
+        setTasks(initialTasks)
+    }, [initialTasks])
 
     const handleCreate = useCallback(async (formData: TaskFormData) => {
         setIsLoading(true)
@@ -55,7 +60,7 @@ export function useTasks(initialTasks: Task[]) {
         try {
             // 비즈니스 로직: 진척률 변경 시 상태 자동 연동
             const updates: TaskUpdate = { ...formData } as any
-            if (updates.progress !== undefined) {
+            if (updates.progress !== undefined && updates.progress !== null) {
                 if (updates.progress === 100) {
                     updates.status = 'done'
                 } else if (updates.progress > 0 && updates.status === 'todo') {

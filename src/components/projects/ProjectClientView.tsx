@@ -28,7 +28,7 @@ import { createLink, deleteLink } from '@/app/actions/links'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { format, addDays } from 'date-fns'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { normalizeDate, calculateGanttDuration } from '@/lib/gantt-utils'
 import { useTaskFilters } from '@/hooks/use-task-filters'
 
@@ -110,8 +110,16 @@ export default function ProjectClientView({
     } = useTasks(initialTasks as any)
 
     const [links, setLinks] = useState<Link[]>(initialLinks)
+
+    // 서버 사이드에서 전달받은 데이터가 변경될 때 상태 동기화
+    React.useEffect(() => {
+        setLinks(initialLinks)
+    }, [initialLinks])
+
     const [scale, setScale] = useState<'day' | 'week' | 'month'>('day')
-    const [activeTab, setActiveTab] = useState('dashboard')
+    const searchParams = useSearchParams()
+    const viewParam = searchParams.get('view')
+    const [activeTab, setActiveTab] = useState(viewParam || 'dashboard')
 
     const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
     const [selectedTask, setSelectedTask] = useState<Partial<TaskFormData> & { id?: string } | null>(null)
@@ -155,10 +163,18 @@ export default function ProjectClientView({
         }
     }, [project.id, setTasks])
 
-    // 탭 변경 시 데이터 갱신 (서버로부터 최신 데이터 요청)
-    React.useEffect(() => {
+    // 탭 변경 핸들러: URL 업데이트 및 데이터 갱신
+    const handleTabChange = (value: string) => {
+        setActiveTab(value)
+
+        // URL을 즉시 변경 (Next.js 라우터 지연 없이)
+        const url = new URL(window.location.href)
+        url.searchParams.set('view', value)
+        window.history.replaceState(null, '', url.toString())
+
+        // 서버 데이터 비동기 갱신
         router.refresh()
-    }, [activeTab, router])
+    }
 
     const [isEditProjectOpen, setIsEditProjectOpen] = useState(false)
     const [editProjectName, setEditProjectName] = useState(project.name)
@@ -432,7 +448,7 @@ export default function ProjectClientView({
             </header>
 
             <main className="flex-1 overflow-hidden p-4 pt-0">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+                <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
                     <div className="flex justify-between items-center py-2">
                         <TabsList>
                             <TabsTrigger value="dashboard">📈 대시보드</TabsTrigger>
