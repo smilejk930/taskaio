@@ -89,6 +89,7 @@ export default function GanttChart({
     const scalesRef = useRef(scales)
     const creatingIdsRef = useRef<Set<string>>(new Set());
     const eventIdsRef = useRef<string[]>([]);
+    const lastUpdateKeyRef = useRef<string>('');
 
     // 스케일 상태를 템플릿 함수 안에서 항상 최신으로 유지하기 위한 Ref
     useEffect(() => {
@@ -470,10 +471,14 @@ export default function GanttChart({
 
                 eventIdsRef.current.push(ganttInstance.attachEvent("onAfterTaskDrag", (id: string) => {
                     isDragging.current = false;
-                    // 드래그 종료 시 최종 데이터 저장 보장
+                    // 드래그 종료 시 최종 데이터 저장 보장 (중복 체크 포함)
                     const task = ganttInstance.getTask(id);
                     if (task) {
-                        callbacksRef.current.onTaskUpdated?.(task);
+                        const updateKey = `${task.id}-${task.start_date.getTime()}-${task.end_date?.getTime()}-${task.progress}`;
+                        if (lastUpdateKeyRef.current !== updateKey) {
+                            lastUpdateKeyRef.current = updateKey;
+                            callbacksRef.current.onTaskUpdated?.(task);
+                        }
                     }
                 }));
 
@@ -496,6 +501,11 @@ export default function GanttChart({
                     const isTempId = typeof id === 'number' || (typeof id === 'string' && !id.includes('-'));
                     if (isDragging.current || isTempId || creatingIdsRef.current.has(id.toString())) return true;
 
+                    // 데이터 실질 변경 여부 체크 (중복 토스트 방지)
+                    const updateKey = `${item.id}-${item.start_date.getTime()}-${item.end_date?.getTime()}-${item.progress}`;
+                    if (lastUpdateKeyRef.current === updateKey) return true;
+
+                    lastUpdateKeyRef.current = updateKey;
                     callbacksRef.current.onTaskUpdated?.(item);
                     return true;
                 }));
