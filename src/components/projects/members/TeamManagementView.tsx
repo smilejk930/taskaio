@@ -20,15 +20,18 @@ interface TeamManagementViewProps {
     projectId: string
     members: Member[]
     currentMemberRole?: 'owner' | 'manager' | 'member' | null
+    currentUserId?: string
+    isSystemAdmin?: boolean | null
 }
 
-export default function TeamManagementView({ projectId, members, currentMemberRole }: TeamManagementViewProps) {
+export default function TeamManagementView({ projectId, members, currentMemberRole, currentUserId, isSystemAdmin }: TeamManagementViewProps) {
     const [searchQuery, setSearchQuery] = useState('')
     const [searchResults, setSearchResults] = useState<{ id: string, display_name: string, email: string }[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
 
-    const canManage = currentMemberRole === 'owner' || currentMemberRole === 'manager'
+    // 시스템 관리자이거나, 프로젝트의 owner/manager인 경우 관리 가능
+    const canManage = isSystemAdmin || currentMemberRole === 'owner' || currentMemberRole === 'manager'
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -66,10 +69,26 @@ export default function TeamManagementView({ projectId, members, currentMemberRo
     }
 
     const handleUpdateRole = async (userId: string, newRole: 'owner' | 'manager' | 'member') => {
-        if (newRole === 'owner' && currentMemberRole !== 'owner') {
-            toast.error('소유자 권한은 소유자만 부여할 수 있습니다.')
+        // 클라이언트 사이드 검증 추가
+        const targetMember = members.find(m => m.id === userId)
+        
+        // 1. 자기 자신의 역할은 수정 불가 (시스템 관리자는 예외일 수 있으나 일반적인 정책상 방지)
+        if (userId === currentUserId && !isSystemAdmin) {
+            toast.error('본인의 역할은 변경할 수 없습니다.')
             return
         }
+
+        // 2. 다른 Owner의 역할 변경은 시스템 관리자만 가능
+        if (targetMember?.role === 'owner' && !isSystemAdmin) {
+            toast.error('다른 소유자의 역할은 시스템 관리자만 변경할 수 있습니다.')
+            return
+        }
+
+        if (newRole === 'owner' && currentMemberRole !== 'owner' && !isSystemAdmin) {
+            toast.error('소유자 권한은 소유자나 시스템 관리자만 부여할 수 있습니다.')
+            return
+        }
+        
         setIsSaving(true)
         try {
             await updateRole(projectId, userId, newRole)
@@ -82,7 +101,23 @@ export default function TeamManagementView({ projectId, members, currentMemberRo
     }
 
     const handleRemoveMember = async (userId: string) => {
+        // 클라이언트 사이드 검증 추가
+        const targetMember = members.find(m => m.id === userId)
+        
+        // 1. 본인은 탈퇴 버튼을 통해서만 가능 (여기서는 제외 불가)
+        if (userId === currentUserId && !isSystemAdmin) {
+            toast.error('본인을 제외할 수 없습니다.')
+            return
+        }
+
+        // 2. Owner를 제외하는 것은 시스템 관리자만 가능
+        if (targetMember?.role === 'owner' && !isSystemAdmin) {
+            toast.error('소유자는 시스템 관리자만 제외할 수 있습니다.')
+            return
+        }
+
         if (!window.confirm('정말로 이 팀원을 프로젝트에서 제외하시겠습니까?')) return
+        
         setIsSaving(true)
         try {
             await removeMember(projectId, userId)
@@ -139,7 +174,10 @@ export default function TeamManagementView({ projectId, members, currentMemberRo
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Shield className="w-5 h-5" /> 소속 팀원 ({members.length})</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                        <Shield className="w-5 h-5" /> 소속 팀원 ({members.length})
+                        {isSystemAdmin && <span className="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-normal">시스템 관리자 모드</span>}
+                    </CardTitle>
                     <CardDescription>프로젝트에 참여 중인 전체 팀원 목록입니다.</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -155,21 +193,31 @@ export default function TeamManagementView({ projectId, members, currentMemberRo
                             </thead>
                             <tbody className="divide-y">
                                 {members.map(member => {
+                                    // 시스템 관리자는 모든 권한 무시하고 관리 가능
+                                    // 일반 유저는 타인이 owner면 조작 불가
+                                    // 자기 자신은 변경/삭제 불가
+                                    const isSelf = member.id === currentUserId
+                                    const isTargetOwner = member.role === 'owner'
+                                    const isDisabled = !canManage || isSaving || (!isSystemAdmin && (isSelf || isTargetOwner))
+                                    
                                     return (
                                         <tr key={member.id} className="hover:bg-muted/30 transition-colors">
-                                            <td className="py-3 px-4 font-medium">{member.display_name || '이름 없음'}</td>
+                                            <td className="py-3 px-4 font-medium">
+                                                {member.display_name || '이름 없음'}
+                                                {isSelf && <span className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">나</span>}
+                                            </td>
                                             <td className="py-3 px-4 text-muted-foreground">{member.email || '-'}</td>
                                             <td className="py-3 px-4">
                                                 <Select
                                                     value={member.role || 'member'}
                                                     onValueChange={(val) => handleUpdateRole(member.id, val as 'owner' | 'manager' | 'member')}
-                                                    disabled={!canManage || isSaving || member.role === 'owner'}
+                                                    disabled={isDisabled}
                                                 >
                                                     <SelectTrigger className="h-8 text-xs border-transparent hover:border-input bg-transparent w-[110px]">
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {currentMemberRole === 'owner' && <SelectItem value="owner">Owner</SelectItem>}
+                                                        {(currentMemberRole === 'owner' || isSystemAdmin) && <SelectItem value="owner">Owner</SelectItem>}
                                                         <SelectItem value="manager">Manager</SelectItem>
                                                         <SelectItem value="member">Member</SelectItem>
                                                     </SelectContent>
@@ -182,8 +230,8 @@ export default function TeamManagementView({ projectId, members, currentMemberRo
                                                         size="icon"
                                                         className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
                                                         onClick={() => handleRemoveMember(member.id)}
-                                                        disabled={isSaving || member.role === 'owner'}
-                                                        title="팀원 제외"
+                                                        disabled={isDisabled}
+                                                        title={isSelf ? "본인은 제외할 수 없습니다" : (isTargetOwner && !isSystemAdmin ? "소유자는 제외할 수 없습니다" : "팀원 제외")}
                                                     >
                                                         <UserMinus className="w-4 h-4" />
                                                     </Button>

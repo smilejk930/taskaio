@@ -89,6 +89,7 @@ interface ProjectClientViewProps {
         email?: string
         display_name?: string | null
         avatar_url?: string | null
+        is_admin?: boolean | null
     } | null
 }
 
@@ -589,6 +590,8 @@ export default function ProjectClientView({
                                 projectId={project.id}
                                 members={members}
                                 currentMemberRole={currentMemberRole}
+                                currentUserId={currentUser?.id}
+                                isSystemAdmin={currentUser?.is_admin}
                             />
                         )}
                     </TabsContent>
