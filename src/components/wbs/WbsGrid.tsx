@@ -103,7 +103,7 @@ export default function WbsGrid({
                 const task = row.original
                 const isChild = !!task.parent_id
                 return (
-                    <div className={`${isChild ? 'pl-6' : ''} cursor-pointer hover:underline`} onClick={() => onTaskClick(task)}>
+                    <div className={`${isChild ? 'pl-6' : ''} cursor-pointer`} onClick={() => onTaskClick(task)}>
                         <div className="flex items-center gap-1">
                             {isChild && <span className="text-muted-foreground text-xs">└</span>}
                             {/* 좌측의 색상 인디케이터 */}

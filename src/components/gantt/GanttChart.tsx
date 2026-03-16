@@ -119,6 +119,9 @@ export default function GanttChart({
                 }
                 .gantt_color_picker input:focus { outline: 2px solid #3b82f6 !important; outline-offset: 2px; }
                 
+                /* 그리드 행 및 업무 바 포인터 커서 추가 */
+                .gantt_row, .gantt_task_line, .gantt_grid_data .gantt_row { cursor: pointer !important; }
+                
                 /* 라이트박스 하단 버튼 영역 - Flexbox를 이용한 레이아웃 */
                 .gantt_cal_light_footer {
                     display: flex !important;
