@@ -15,17 +15,18 @@ interface ProjectMember {
 export default async function ProjectsPage() {
     const supabase = createClient()
 
+    const user = await getUser()
+
     // 현재 사용자의 프로젝트 목록 조회 (소프트 딜리트 제외)
     const { data: projects, error } = await supabase
         .from('projects')
         .select(`
       *,
-      project_members!inner(role)
+      project_members!inner(role, user_id)
     `)
         .eq('is_deleted', false)
+        .eq('project_members.user_id', user?.id || '')
         .order('created_at', { ascending: false })
-
-    const user = await getUser()
 
     if (error) {
         // 서버 컴포넌트에서는 에러 경계로 처리
@@ -72,27 +73,31 @@ export default async function ProjectsPage() {
                 </Card>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {projects.map((project) => (
-                        <Link key={project.id} href={`/projects/${project.id}`}>
-                            <Card className="hover:border-primary transition-colors cursor-pointer h-full">
-                                <CardHeader>
-                                    <CardTitle className="text-xl">{project.name}</CardTitle>
-                                    <CardDescription className="line-clamp-2">
-                                        {project.description || '설명이 없습니다.'}
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                        <span className="capitalize px-2 py-0.5 bg-secondary rounded text-xs font-medium">
-                                            {(project.project_members as unknown as ProjectMember[])[0]?.role ?? 'member'}
-                                        </span>
-                                        <span>•</span>
-                                        <span>생성일: {project.created_at ? new Date(project.created_at).toLocaleDateString() : '-'}</span>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </Link>
-                    ))}
+                    {projects.map((project) => {
+                        const rawRole = (project.project_members as unknown as ProjectMember[])[0]?.role ?? 'member'
+                        const displayRole = rawRole === 'owner' ? '소유자' : rawRole === 'manager' ? '관리자' : '멤버'
+                        return (
+                            <Link key={project.id} href={`/projects/${project.id}`}>
+                                <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+                                    <CardHeader>
+                                        <CardTitle className="text-xl">{project.name}</CardTitle>
+                                        <CardDescription className="line-clamp-2">
+                                            {project.description || '설명이 없습니다.'}
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <span className="px-2 py-0.5 bg-secondary rounded text-xs font-medium">
+                                                {displayRole}
+                                            </span>
+                                            <span>•</span>
+                                            <span>생성일: {project.created_at ? new Date(project.created_at).toLocaleDateString() : '-'}</span>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </Link>
+                        )
+                    })}
                 </div>
             )}
         </div>

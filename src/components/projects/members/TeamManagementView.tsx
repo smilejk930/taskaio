@@ -217,9 +217,9 @@ export default function TeamManagementView({ projectId, members, currentMemberRo
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
-                                                        {(currentMemberRole === 'owner' || isSystemAdmin) && <SelectItem value="owner">Owner</SelectItem>}
-                                                        <SelectItem value="manager">Manager</SelectItem>
-                                                        <SelectItem value="member">Member</SelectItem>
+                                                        {(currentMemberRole === 'owner' || isSystemAdmin) && <SelectItem value="owner">소유자</SelectItem>}
+                                                        <SelectItem value="manager">관리자</SelectItem>
+                                                        <SelectItem value="member">멤버</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             </td>
