@@ -468,7 +468,23 @@ export default function GanttChart({
                     return false;
                 }));
 
-                eventIdsRef.current.push(ganttInstance.attachEvent("onAfterTaskDrag", () => { isDragging.current = false; }));
+                eventIdsRef.current.push(ganttInstance.attachEvent("onAfterTaskDrag", (id: string) => {
+                    isDragging.current = false;
+                    // 드래그 종료 시 최종 데이터 저장 보장
+                    const task = ganttInstance.getTask(id);
+                    if (task) {
+                        callbacksRef.current.onTaskUpdated?.(task);
+                    }
+                }));
+
+                eventIdsRef.current.push(ganttInstance.attachEvent("onTaskDrag", (id: string, mode: string, task: any) => {
+                    if (mode === "progress") {
+                        // 진행률을 0.1(10%) 단위로 반올림하여 스냅 적용
+                        task.progress = Math.round(task.progress * 10) / 10;
+                        ganttInstance.refreshTask(id);
+                    }
+                    return true;
+                }));
 
                 eventIdsRef.current.push(ganttInstance.attachEvent('onAfterTaskAdd', (id: string | number, item: GanttTask) => {
                     // 공통 다이얼로그를 사용하므로 이 이벤트는 더 이상 내부 저장을 처리하지 않음
@@ -476,10 +492,9 @@ export default function GanttChart({
                 }));
 
                 eventIdsRef.current.push(ganttInstance.attachEvent('onAfterTaskUpdate', (id: string | number, item: GanttTask) => {
-                    // dhtmlx-gantt의 임시 ID는 숫자이거나 하이픈이 없는 문자열인 경우가 많음
-                    // 생성 직후 업데이트가 발생할 수 있으므로, 이미 생성 중인 ID이거나 임시 ID 형태면 무시
+                    // 드래그 중이거나 임시 ID인 경우 업데이트 무시 (DB 부하 방지 가드)
                     const isTempId = typeof id === 'number' || (typeof id === 'string' && !id.includes('-'));
-                    if (isTempId || creatingIdsRef.current.has(id.toString())) return true;
+                    if (isDragging.current || isTempId || creatingIdsRef.current.has(id.toString())) return true;
 
                     callbacksRef.current.onTaskUpdated?.(item);
                     return true;
