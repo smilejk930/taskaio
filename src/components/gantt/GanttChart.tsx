@@ -441,7 +441,7 @@ export default function GanttChart({
                     const nowStart = new Date().setHours(0, 0, 0, 0);
                     let classes = "";
                     if (cellStart === nowStart && scalesRef.current === 'day') classes += " today_cell ";
-                    if (date.getDay() === 0 || date.getDay() === 6) classes += " weekend_cell ";
+                    if (scalesRef.current === 'day' && (date.getDay() === 0 || date.getDay() === 6)) classes += " weekend_cell ";
                     return classes;
                 };
 
