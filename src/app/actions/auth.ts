@@ -97,5 +97,6 @@ export async function getUser() {
         ...user,
         display_name: profile?.display_name,
         avatar_url: profile?.avatar_url,
+        is_admin: profile?.is_admin || false,
     }
 }
