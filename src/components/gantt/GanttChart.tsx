@@ -586,35 +586,26 @@ export default function GanttChart({
         document.querySelectorAll('.gantt_marker').forEach(m => m.remove());
         g.parse({ data: validTasks, links })
 
-        if (holidays?.length) {
-            if (scales === 'day') {
-                const holidayMap = new Map<string, Holiday[]>();
-                holidays.forEach(holiday => {
-                    const start = new Date(holiday.start_date + "T00:00:00")
-                    const end = new Date(holiday.end_date + "T00:00:00")
-                    if (isNaN(start.getTime()) || isNaN(end.getTime())) return
-                    let cur = new Date(start)
-                    while (cur <= end) {
-                        const dateStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
-                        if (!holidayMap.has(dateStr)) holidayMap.set(dateStr, []);
-                        holidayMap.get(dateStr)?.push(holiday);
-                        cur.setDate(cur.getDate() + 1);
-                    }
-                });
-                holidayMap.forEach((dailyHolidays, dateStr) => {
-                    const hasPublic = dailyHolidays.some(h => h.type === 'public_holiday');
-                    const cls = hasPublic ? 'gantt_holiday_public' : 'gantt_holiday_leave';
-                    const names = dailyHolidays.map(h => h.type === 'member_leave' && h.member_name ? `${h.member_name} (${h.name})` : h.name).join('\n');
-                    g.addMarker({ start_date: new Date(dateStr + "T00:00:00"), css: cls, text: dailyHolidays[0].name, title: names, id: `holiday_group_${dateStr}` });
-                });
-            } else {
-                holidays.forEach(h => {
-                    const start = new Date(h.start_date + "T00:00:00")
-                    if (isNaN(start.getTime())) return
-                    const name = h.type === 'member_leave' && h.member_name ? `${h.member_name} (${h.name})` : h.name;
-                    g.addMarker({ start_date: start, css: h.type === 'public_holiday' ? 'gantt_holiday_public' : 'gantt_holiday_leave', text: h.name, title: name, id: `holiday_${h.id}` })
-                })
-            }
+        if (holidays?.length && scales === 'day') {
+            const holidayMap = new Map<string, Holiday[]>();
+            holidays.forEach(holiday => {
+                const start = new Date(holiday.start_date + "T00:00:00")
+                const end = new Date(holiday.end_date + "T00:00:00")
+                if (isNaN(start.getTime()) || isNaN(end.getTime())) return
+                let cur = new Date(start)
+                while (cur <= end) {
+                    const dateStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
+                    if (!holidayMap.has(dateStr)) holidayMap.set(dateStr, []);
+                    holidayMap.get(dateStr)?.push(holiday);
+                    cur.setDate(cur.getDate() + 1);
+                }
+            });
+            holidayMap.forEach((dailyHolidays, dateStr) => {
+                const hasPublic = dailyHolidays.some(h => h.type === 'public_holiday');
+                const cls = hasPublic ? 'gantt_holiday_public' : 'gantt_holiday_leave';
+                const names = dailyHolidays.map(h => h.type === 'member_leave' && h.member_name ? `${h.member_name} (${h.name})` : h.name).join('\n');
+                g.addMarker({ start_date: new Date(dateStr + "T00:00:00"), css: cls, text: dailyHolidays[0].name, title: names, id: `holiday_group_${dateStr}` });
+            });
         }
         g.render()
     }, [isGanttLoaded, tasks, links, holidays, scales])
