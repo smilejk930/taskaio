@@ -3,7 +3,7 @@
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { differenceInDays, format, parseISO } from 'date-fns'
+import { differenceInDays, format, isBefore, parseISO, startOfToday } from 'date-fns'
 
 interface Task {
     id: string
@@ -68,7 +68,7 @@ function formatDate(dateStr: string | null): string {
 }
 
 export default function DashboardView({ tasks, members, onTaskClick }: DashboardViewProps) {
-    const today = new Date()
+    const today = startOfToday()
 
     const getMemberName = (id: string | null) => {
         if (!id) return '할당 안됨'
@@ -76,87 +76,127 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
         return m?.display_name ?? m?.email ?? '알 수 없음'
     }
 
+    // 지연된 업무 (마감일이 오늘 이전이며 완료되지 않은 업무)
+    const overdueTasks = tasks.filter(t => {
+        if (t.status === 'done' || !t.end_date) return false
+        const end = parseISO(t.end_date)
+        return isBefore(end, today)
+    }).sort((a, b) => (a.end_date || '').localeCompare(b.end_date || ''))
+
     // 미완료 업무 중 urgent / high 우선순위만 필터 (하위 업무 포함)
     const urgentTasks = tasks.filter(t =>
         t.status !== 'done' &&
         (t.priority === 'urgent' || t.priority === 'high')
-    )
+    ).sort((a, b) => (a.end_date || '9999').localeCompare(b.end_date || '9999'))
 
-    // 3일 이내 마감 임박 업무 (완료 제외)
+    // 3일 이내 마감 임박 업무 (완료 및 지연 업무 제외)
     const imminentTasks = tasks.filter(t => {
         if (t.status === 'done' || !t.end_date) return false
         const end = parseISO(t.end_date)
         const diff = differenceInDays(end, today)
         return diff >= 0 && diff <= 3
-    })
+    }).sort((a, b) => (a.end_date || '9999').localeCompare(b.end_date || '9999'))
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
-            {/* 고우선순위 업무 */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">🔥 고우선순위 업무 ({urgentTasks.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {urgentTasks.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">우선순위가 높은 진행 대기/중 업무가 없습니다.</p>
-                    ) : (
-                        <ul className="space-y-4">
-                            {urgentTasks.slice(0, 5).map(task => (
+        <div className="flex flex-col gap-6 p-4">
+            {/* 지연된 업무 (있을 때만 표시) */}
+            {overdueTasks.length > 0 && (
+                <Card className="border-destructive/50 bg-destructive/5">
+                    <CardHeader>
+                        <CardTitle className="text-lg text-destructive flex items-center gap-2">
+                            🚨 지연된 업무 ({overdueTasks.length})
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {overdueTasks.map(task => (
                                 <li
                                     key={task.id}
-                                    className="flex flex-col gap-1 border-b pb-3 last:border-0 last:pb-0 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors"
+                                    className="flex flex-col gap-2 p-3 bg-background border rounded-lg cursor-pointer hover:border-destructive transition-colors shadow-sm"
                                     onClick={() => onTaskClick?.(task.id)}
                                 >
-                                    <div className="flex justify-between items-center">
-                                        <span className="font-medium text-sm">{task.title}</span>
-                                        <Badge variant={priorityVariant[task.priority as keyof typeof priorityVariant] || 'outline'}>
-                                            {priorityLabel[task.priority as keyof typeof priorityLabel] ?? task.priority}
-                                        </Badge>
+                                    <div className="flex justify-between items-start">
+                                        <span className="font-semibold text-sm line-clamp-1">{task.title}</span>
+                                        <Badge variant="destructive" className="shrink-0">지연</Badge>
                                     </div>
-                                    <div className="flex justify-between items-center text-xs text-muted-foreground mt-1">
+                                    <div className="flex justify-between items-center text-xs text-muted-foreground">
                                         <span>담당: {getMemberName(task.assignee_id)}</span>
-                                        <span>마감일: {formatDate(task.end_date)}</span>
+                                        <span className="text-destructive font-bold">마감: {formatDate(task.end_date)}</span>
                                     </div>
                                 </li>
                             ))}
                         </ul>
-                    )}
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
+            )}
 
-            {/* 마감 임박 업무 */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="text-lg">⏰ 마감 임박 업무 (3일 이내) ({imminentTasks.length})</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {imminentTasks.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">마감이 임박한 진행 대기/중 업무가 없습니다.</p>
-                    ) : (
-                        <ul className="space-y-4">
-                            {imminentTasks.slice(0, 5).map(task => (
-                                <li
-                                    key={task.id}
-                                    className="flex flex-col gap-1 border-b pb-3 last:border-0 last:pb-0 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors"
-                                    onClick={() => onTaskClick?.(task.id)}
-                                >
-                                    <div className="flex justify-between items-center">
-                                        <span className="font-medium text-sm">{task.title}</span>
-                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusStyle[task.status as keyof typeof statusStyle] || statusStyle.todo}`}>
-                                            {statusLabel[task.status ?? 'todo'] ?? task.status}
-                                        </span>
-                                    </div>
-                                    <div className="flex justify-between items-center text-xs text-muted-foreground mt-1">
-                                        <span>담당: {getMemberName(task.assignee_id)}</span>
-                                        <span className="text-destructive font-semibold">마감일: {formatDate(task.end_date)}</span>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* 고우선순위 업무 */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">🔥 고우선순위 업무 ({urgentTasks.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent className="max-h-[350px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
+                        {urgentTasks.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">우선순위가 높은 진행 대기/중 업무가 없습니다.</p>
+                        ) : (
+                            <ul className="space-y-4">
+                                {urgentTasks.map(task => (
+                                    <li
+                                        key={task.id}
+                                        className="flex flex-col gap-1 border-b pb-3 last:border-0 last:pb-0 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors"
+                                        onClick={() => onTaskClick?.(task.id)}
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <span className="font-medium text-sm">{task.title}</span>
+                                            <Badge variant={priorityVariant[task.priority as keyof typeof priorityVariant] || 'outline'}>
+                                                {priorityLabel[task.priority as keyof typeof priorityLabel] ?? task.priority}
+                                            </Badge>
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs text-muted-foreground mt-1">
+                                            <span>담당: {getMemberName(task.assignee_id)}</span>
+                                            <span>마감일: {formatDate(task.end_date)}</span>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* 마감 임박 업무 */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">⏰ 마감 임박 업무 (3일 이내) ({imminentTasks.length})</CardTitle>
+                    </CardHeader>
+                    <CardContent className="max-h-[350px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-muted-foreground/20">
+                        {imminentTasks.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">마감이 임박한 진행 대기/중 업무가 없습니다.</p>
+                        ) : (
+                            <ul className="space-y-4">
+                                {imminentTasks.map(task => (
+                                    <li
+                                        key={task.id}
+                                        className="flex flex-col gap-1 border-b pb-3 last:border-0 last:pb-0 cursor-pointer hover:bg-muted/30 rounded px-1 transition-colors"
+                                        onClick={() => onTaskClick?.(task.id)}
+                                    >
+                                        <div className="flex justify-between items-center">
+                                            <span className="font-medium text-sm">{task.title}</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusStyle[task.status as keyof typeof statusStyle] || statusStyle.todo}`}>
+                                                {statusLabel[task.status ?? 'todo'] ?? task.status}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-xs text-muted-foreground mt-1">
+                                            <span>담당: {getMemberName(task.assignee_id)}</span>
+                                            <span className="text-orange-600 font-semibold">마감일: {formatDate(task.end_date)}</span>
+                                        </div>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     )
 }
