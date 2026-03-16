@@ -127,7 +127,10 @@ export default function ProjectClientView({
     const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
     const [selectedTask, setSelectedTask] = useState<Partial<TaskFormData> & { id?: string } | null>(null)
 
-    const { filters, setFilters, filteredTasks } = useTaskFilters(tasks as any)
+    const { filters, setFilters, resetFilters, filteredTasks } = useTaskFilters(
+        tasks as any,
+        currentUser?.id ? [currentUser.id] : []
+    )
 
     const router = useRouter()
     const currentMemberRole = members.find(m => m.id === currentUser?.id)?.role
@@ -515,6 +518,7 @@ export default function ProjectClientView({
                                             filters={filters}
                                             setFilters={setFilters}
                                             members={members}
+                                            onReset={resetFilters}
                                         />
                                     </div>
                                     <Button
@@ -550,6 +554,7 @@ export default function ProjectClientView({
                                     filters={filters}
                                     setFilters={setFilters}
                                     members={members}
+                                    onReset={resetFilters}
                                 />
                                 <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
                                     <GanttChart

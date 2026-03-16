@@ -38,6 +38,7 @@ interface TaskSearchFilterProps {
     filters: TaskFilters
     setFilters: React.Dispatch<React.SetStateAction<TaskFilters>>
     members: Member[]
+    onReset: () => void
 }
 
 const STATUS_OPTIONS = [
@@ -54,7 +55,7 @@ const PRIORITY_OPTIONS = [
     { value: 'low', label: '낮음', variant: 'outline' as const },
 ]
 
-export function TaskSearchFilter({ filters, setFilters, members }: TaskSearchFilterProps) {
+export function TaskSearchFilter({ filters, setFilters, members, onReset }: TaskSearchFilterProps) {
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFilters(prev => ({ ...prev, title: e.target.value }))
     }
@@ -66,17 +67,6 @@ export function TaskSearchFilter({ filters, setFilters, members }: TaskSearchFil
                 ? current.filter(v => v !== value)
                 : [...current, value]
             return { ...prev, [key]: next }
-        })
-    }
-
-    const clearFilters = () => {
-        setFilters({
-            title: '',
-            assigneeIds: [],
-            statuses: [],
-            priorities: [],
-            dateRange: { from: undefined, to: undefined },
-            showOnlyParent: false,
         })
     }
 
@@ -183,7 +173,7 @@ export function TaskSearchFilter({ filters, setFilters, members }: TaskSearchFil
                 <Button
                     variant="ghost"
                     size="sm"
-                    onClick={clearFilters}
+                    onClick={onReset}
                     className="h-9 px-2 lg:px-3 text-muted-foreground hover:text-foreground"
                 >
                     초기화
