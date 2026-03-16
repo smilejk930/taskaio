@@ -93,6 +93,7 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
     const imminentTasks = tasks.filter(t => {
         if (t.status === 'done' || !t.end_date) return false
         const end = parseISO(t.end_date)
+        if (isBefore(end, today)) return false
         const diff = differenceInDays(end, today)
         return diff >= 0 && diff <= 3
     }).sort((a, b) => (a.end_date || '9999').localeCompare(b.end_date || '9999'))
