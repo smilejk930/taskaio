@@ -27,10 +27,13 @@ import { updateProject, deleteProject } from '@/app/actions/projects'
 import { createLink, deleteLink } from '@/app/actions/links'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { format } from 'date-fns'
+import { format, addDays } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { normalizeDate, calculateGanttDuration } from '@/lib/gantt-utils'
 import { useTaskFilters } from '@/hooks/use-task-filters'
+
+import { useTasks, TaskFormData } from '@/hooks/use-tasks'
+import TaskDialog from './TaskDialog'
 
 // ──── 타입 정의 ────────────────────────────────────────────────────────────────
 
@@ -97,12 +100,23 @@ export default function ProjectClientView({
     members,
     currentUser,
 }: ProjectClientViewProps) {
-    const [tasks, setTasks] = useState<Task[]>(initialTasks)
+    const {
+        tasks,
+        setTasks,
+        isLoading: isTaskLoading,
+        createTask: handleCreateTask,
+        updateTask: handleUpdateTask,
+        deleteTask: handleDeleteTask
+    } = useTasks(initialTasks as any)
+
     const [links, setLinks] = useState<Link[]>(initialLinks)
     const [scale, setScale] = useState<'day' | 'week' | 'month'>('day')
     const [activeTab, setActiveTab] = useState('dashboard')
 
-    const { filters, setFilters, filteredTasks } = useTaskFilters(tasks)
+    const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
+    const [selectedTask, setSelectedTask] = useState<Partial<TaskFormData> & { id?: string } | null>(null)
+
+    const { filters, setFilters, filteredTasks } = useTaskFilters(tasks as any)
 
     const router = useRouter()
     const currentMemberRole = members.find(m => m.id === currentUser?.id)?.role
@@ -125,10 +139,10 @@ export default function ProjectClientView({
                     if (eventType === 'INSERT') {
                         setTasks(prev => {
                             if (prev.find(t => t.id === newRecord.id)) return prev
-                            return [...prev, newRecord as Task]
+                            return [...prev, newRecord as any]
                         })
                     } else if (eventType === 'UPDATE') {
-                        setTasks(prev => prev.map(t => t.id === newRecord.id ? { ...t, ...newRecord } as Task : t))
+                        setTasks(prev => prev.map(t => t.id === newRecord.id ? { ...t, ...newRecord } as any : t))
                     } else if (eventType === 'DELETE') {
                         setTasks(prev => prev.filter(t => t.id !== oldRecord.id))
                     }
@@ -139,48 +153,54 @@ export default function ProjectClientView({
         return () => {
             supabase.removeChannel(channel)
         }
-    }, [project.id])
+    }, [project.id, setTasks])
 
     // 탭 변경 시 데이터 갱신 (서버로부터 최신 데이터 요청)
     React.useEffect(() => {
         router.refresh()
     }, [activeTab, router])
 
-    // 서버 프롭스(initialTasks, initialLinks) 변경 시 클라이언트 상태 동기화
-    React.useEffect(() => {
-        setTasks(initialTasks)
-    }, [initialTasks])
-
-    React.useEffect(() => {
-        setLinks(initialLinks)
-    }, [initialLinks])
-
     const [isEditProjectOpen, setIsEditProjectOpen] = useState(false)
     const [editProjectName, setEditProjectName] = useState(project.name)
     const [editProjectDesc, setEditProjectDesc] = useState(project.description || '')
     const [deleteConfirmInput, setDeleteConfirmInput] = useState('')
 
-    // ── 업무 수정 ──────────────────────────────────────────────────────────────
-    const handleTaskUpdate = async (id: string, field: string, value: string | number | null) => {
-        try {
-            const updates: Record<string, unknown> = { [field]: value }
+    // ── 업무 다이얼로그 핸들러 ──────────────────────────────────────────────
+    const openTaskDialog = (taskOrId?: any) => {
+        if (typeof taskOrId === 'string') {
+            const task = tasks.find(t => t.id === taskOrId)
+            setSelectedTask(task || null)
+        } else {
+            setSelectedTask(taskOrId || null)
+        }
+        setIsTaskDialogOpen(true)
+    }
 
-            // 진척률 변경 시 상태 자동 연동
-            if (field === 'progress') {
-                const progressVal = typeof value === 'string' ? parseInt(value) : (value as number)
-                if (progressVal === 100) {
-                    updates.status = 'done'
-                } else if (progressVal > 0) {
-                    updates.status = 'in_progress'
-                }
-            }
+    const openCreateTaskDialog = (parentId: string | null = null) => {
+        const today = new Date()
+        const startDate = format(today, 'yyyy-MM-dd')
+        const endDate = format(addDays(today, 3), 'yyyy-MM-dd')
+        const randomColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`
 
-            const updatedTask = await updateTask(id, updates)
-            setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updatedTask } : t))
-            toast.success('업무가 업데이트되었습니다.')
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : '알 수 없는 오류'
-            toast.error('업무 업데이트 실패', { description: message })
+        setSelectedTask({
+            parent_id: parentId,
+            project_id: project.id,
+            status: 'todo',
+            priority: 'medium',
+            progress: 0,
+            assignee_id: currentUser?.id ?? null,
+            start_date: startDate,
+            end_date: endDate,
+            color: randomColor
+        })
+        setIsTaskDialogOpen(true)
+    }
+
+    const handleTaskDialogSubmit = async (formData: TaskFormData) => {
+        if (selectedTask?.id) {
+            return await handleUpdateTask(selectedTask.id, formData)
+        } else {
+            return await handleCreateTask(formData)
         }
     }
 
@@ -220,132 +240,45 @@ export default function ProjectClientView({
         }
     }
 
-    // ── 업무 생성 ──────────────────────────────────────────────────────────────
-    const handleTaskCreate = async (parentId: string | null) => {
-        try {
-            const today = format(new Date(), 'yyyy-MM-dd')
-            const newTask = await createTask({
-                title: parentId ? '' : '',
-                project_id: project.id,
-                parent_id: parentId,
-                start_date: today,
-                end_date: today,
-                progress: 0,
-                priority: 'medium',
-                status: 'todo',
-                assignee_id: currentUser?.id ?? null, // 생성한 사람을 담당자로 자동 지정
-            })
-            setTasks(prev => [...prev, newTask])
-            toast.success('업무가 추가되었습니다.')
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : '알 수 없는 오류'
-            toast.error('업무 추가 실패', { description: message })
-        }
-    }
-
-    // ── 업무 삭제 ──────────────────────────────────────────────────────────────
-    const handleTaskDelete = async (id: string, isFromGantt: boolean = false) => {
-        try {
-            await deleteTask(id)
-            if (!isFromGantt) {
-                setTasks(prev => prev.filter(t => t.id !== id && t.parent_id !== id))
-            }
-            // toast.success('업무가 삭제되었습니다.') // 사용자 요청으로 토스트 제거
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : '알 수 없는 오류'
-            toast.error('업무 삭제 실패', { description: message })
-        }
-    }
-
     // ── 간트 태스크/링크 콜백 핸들러 ──────────────────────────────────────────────
-    const handleGanttTaskUpdated = async (ganttTask: {
-        id: string
-        text: string
-        start_date: Date
-        end_date?: Date
-        progress: number
-        status: string
-        priority: string
-        description?: string | null
-        color?: string
-    }) => {
-        try {
-            // dhtmlx-gantt의 end_date는 보통 종료일의 다음 날 00:00:00(exclusive)임.
-            // DB에는 실제 종료일(inclusive)을 저장해야 하므로 1초를 빼서 전날로 변환.
-            const adjustedEndDate = ganttTask.end_date
-                ? format(new Date(ganttTask.end_date.getTime() - 1000), 'yyyy-MM-dd')
-                : undefined;
+    const handleGanttTaskUpdated = async (ganttTask: any) => {
+        const adjustedEndDate = ganttTask.end_date
+            ? format(new Date(new Date(ganttTask.end_date).getTime() - 1000), 'yyyy-MM-dd')
+            : undefined;
 
-            await updateTask(ganttTask.id, {
-                title: ganttTask.text,
-                start_date: format(ganttTask.start_date, 'yyyy-MM-dd'),
-                end_date: adjustedEndDate,
-                progress: Math.round(ganttTask.progress * 100),
-                status: ganttTask.status,
-                priority: ganttTask.priority,
-                description: ganttTask.description ?? null,
-                color: ganttTask.color,
-            })
-            setTasks(prev => prev.map(t =>
-                t.id === ganttTask.id ? {
-                    ...t,
-                    title: ganttTask.text,
-                    start_date: format(ganttTask.start_date, 'yyyy-MM-dd'),
-                    end_date: adjustedEndDate ?? null,
-                    progress: Math.round(ganttTask.progress * 100),
-                    status: ganttTask.status,
-                    priority: ganttTask.priority,
-                    description: ganttTask.description ?? null,
-                    color: ganttTask.color ?? t.color,
-                } : t
-            ))
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : '알 수 없는 오류'
-            toast.error('간트 업데이트 실패', { description: message })
-        }
+        await handleUpdateTask(ganttTask.id, {
+            title: ganttTask.text,
+            start_date: format(new Date(ganttTask.start_date), 'yyyy-MM-dd'),
+            end_date: adjustedEndDate,
+            progress: Math.round(ganttTask.progress * 100),
+            status: ganttTask.status,
+            priority: ganttTask.priority,
+            description: ganttTask.description ?? null,
+            color: ganttTask.color,
+        })
     }
 
-    const handleGanttTaskCreated = async (ganttTask: {
-        id: string
-        text: string
-        start_date: Date
-        end_date?: Date
-        progress: number
-        parent: string | null
-        status: string
-        priority: string
-        assignee_id?: string | null
-        description?: string | null
-        color?: string
-    }) => {
-        try {
-            const adjustedEndDate = ganttTask.end_date
-                ? format(new Date(ganttTask.end_date.getTime() - 1000), 'yyyy-MM-dd')
-                : format(ganttTask.start_date, 'yyyy-MM-dd');
+    const handleGanttTaskCreated = async (ganttTask: any) => {
+        const adjustedEndDate = ganttTask.end_date
+            ? format(new Date(new Date(ganttTask.end_date).getTime() - 1000), 'yyyy-MM-dd')
+            : format(new Date(ganttTask.start_date), 'yyyy-MM-dd');
 
-            const newTask = await createTask({
-                title: ganttTask.text || '',
-                project_id: project.id,
-                parent_id: ganttTask.parent || null,
-                start_date: format(ganttTask.start_date, 'yyyy-MM-dd'),
-                end_date: adjustedEndDate,
-                progress: Math.round(ganttTask.progress * 100),
-                priority: (ganttTask.priority as any) || 'medium',
-                status: (ganttTask.status as any) || 'todo',
-                assignee_id: ganttTask.assignee_id ?? currentUser?.id ?? null,
-                description: ganttTask.description ?? null,
-                color: ganttTask.color,
-            })
-
-            // dhtmlx-gantt가 생성한 임시 ID를 DB에서 생성된 실제 ID로 갱신하기 위해 
-            // 상태를 업데이트하면 간트 차트가 리렌더링되면서 반영됩니다.
-            setTasks(prev => [...prev.filter(t => t.id !== ganttTask.id), newTask])
-            toast.success('업무가 생성되었습니다.')
-        } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : '알 수 없는 오류'
-            toast.error('업무 생성 실패', { description: message })
-        }
+        await handleCreateTask({
+            title: ganttTask.text || '',
+            project_id: project.id,
+            parent_id: ganttTask.parent || null,
+            start_date: format(new Date(ganttTask.start_date), 'yyyy-MM-dd'),
+            end_date: adjustedEndDate,
+            progress: Math.round(ganttTask.progress * 100),
+            priority: (ganttTask.priority as any) || 'medium',
+            status: (ganttTask.status as any) || 'todo',
+            assignee_id: ganttTask.assignee_id ?? currentUser?.id ?? null,
+            description: ganttTask.description ?? null,
+            color: ganttTask.color,
+        })
     }
+
+
 
     const handleLinkAdd = async (id: string, source: string, target: string, type: string) => {
         // dhtmlx-gantt에서 자동생성된 id를 그대로 사용하거나, DB에서 생성된 id를 반환받아 사용
@@ -403,7 +336,7 @@ export default function ProjectClientView({
 
         const parents = filteredTasks.filter(t => !t.parent_id).sort(sortByDate)
         const children = filteredTasks.filter(t => t.parent_id).sort(sortByDate)
-        
+
         const sorted: Task[] = []
         parents.forEach(p => {
             sorted.push(p)
@@ -543,21 +476,21 @@ export default function ProjectClientView({
                                 variant="outline"
                                 size="sm"
                                 className="h-9 text-xs gap-1.5 shrink-0 bg-background border-dashed hover:border-primary hover:text-primary transition-all mt-4"
-                                onClick={() => handleTaskCreate(null)}
+                                onClick={() => openCreateTaskDialog(null)}
                             >
                                 <Plus className="h-4 w-4" />
-                                업무 추가
+                                업무 등록
                             </Button>
                         </div>
                         <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
                             <WbsGrid
-                                tasks={filteredTasks}
+                                tasks={filteredTasks as any}
                                 projectId={project.id}
                                 members={members}
-                                currentMemberRole={currentMemberRole}
-                                onTaskUpdate={handleTaskUpdate}
-                                onTaskCreate={handleTaskCreate}
-                                onTaskDelete={handleTaskDelete}
+                                currentMemberRole={currentMemberRole as any}
+                                onTaskClick={openTaskDialog}
+                                onTaskCreate={openCreateTaskDialog}
+                                onTaskDelete={handleDeleteTask}
                             />
                         </div>
                     </TabsContent>
@@ -581,9 +514,10 @@ export default function ProjectClientView({
                                     }
                                 })}
                                 members={members}
+                                onTaskClick={openTaskDialog}
                                 onTaskUpdated={handleGanttTaskUpdated}
                                 onTaskCreated={handleGanttTaskCreated}
-                                onTaskDeleted={(id) => handleTaskDelete(id, true)}
+                                onTaskDeleted={handleDeleteTask}
                                 onLinkAdd={handleLinkAdd}
                                 onLinkDelete={handleLinkDelete}
                             />
@@ -663,6 +597,18 @@ export default function ProjectClientView({
                     )}
                 </DialogContent>
             </Dialog>
+
+            {/* 업무 상세 다이얼로그 (WBS & Gantt 공통) */}
+            <TaskDialog
+                open={isTaskDialogOpen}
+                onOpenChange={setIsTaskDialogOpen}
+                initialData={selectedTask as any}
+                members={members}
+                projectId={project.id}
+                onSubmit={handleTaskDialogSubmit}
+                onDelete={handleDeleteTask}
+                isLoading={isTaskLoading}
+            />
         </div>
     )
 }

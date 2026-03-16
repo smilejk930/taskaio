@@ -61,7 +61,7 @@ interface WbsGridProps {
     members: Member[]
     /** 현재 접속자 역할 (owner/manager: 담당자 선택 가능, member: 읽기 전용) */
     currentMemberRole: 'owner' | 'manager' | 'member' | null | undefined
-    onTaskUpdate: (id: string, field: string, value: string | number | null) => void
+    onTaskClick: (task: Task) => void
     onTaskCreate: (parentId: string | null) => void
     onTaskDelete: (id: string) => void
 }
@@ -72,9 +72,8 @@ export default function WbsGrid({
     tasks,
     members,
     currentMemberRole,
-    onTaskUpdate,
+    onTaskClick,
     onTaskCreate,
-    onTaskDelete,
 }: WbsGridProps) {
     /** 상위(부모) 업무 우선 정렬 후 하위 업무 표시 (시작일 ASC 정렬 추가) */
     const sortedTasks = useMemo(() => {
@@ -86,7 +85,7 @@ export default function WbsGrid({
 
         const parents = tasks.filter(t => !t.parent_id).sort(sortByDate)
         const children = tasks.filter(t => t.parent_id).sort(sortByDate)
-        
+
         const result: Task[] = []
         parents.forEach(p => {
             result.push(p)
@@ -104,7 +103,7 @@ export default function WbsGrid({
                 const task = row.original
                 const isChild = !!task.parent_id
                 return (
-                    <div className={`${isChild ? 'pl-6' : ''}`}>
+                    <div className={`${isChild ? 'pl-6' : ''} cursor-pointer hover:underline`} onClick={() => onTaskClick(task)}>
                         <div className="flex items-center gap-1">
                             {isChild && <span className="text-muted-foreground text-xs">└</span>}
                             {/* 좌측의 색상 인디케이터 */}
@@ -112,22 +111,14 @@ export default function WbsGrid({
                                 className="w-2 h-5 rounded-sm flex-shrink-0"
                                 style={{ backgroundColor: task.color ?? '#94a3b8' }}
                             />
-                            <Input
-                                defaultValue={task.title}
-                                placeholder="업무명을 입력하세요"
-                                className="h-8 border-none bg-transparent focus-visible:ring-1 text-sm placeholder:text-muted-foreground/50"
-                                onBlur={(e) => onTaskUpdate(task.id, 'title', e.target.value)}
-                            />
+                            <span className="text-sm font-medium">{task.title || '(제목 없음)'}</span>
                         </div>
                         {/* 업무 설명 (description) */}
-                        <div className="pl-4 pt-0.5 pb-1">
-                            <Input
-                                defaultValue={task.description ?? ''}
-                                placeholder="업무 내용 입력..."
-                                className="h-6 border-none bg-transparent focus-visible:ring-1 text-xs text-muted-foreground p-0 placeholder:text-muted-foreground/50"
-                                onBlur={(e) => onTaskUpdate(task.id, 'description', e.target.value || null)}
-                            />
-                        </div>
+                        {task.description && (
+                            <div className="pl-4 pt-0.5 pb-1">
+                                <p className="text-xs text-muted-foreground truncate max-w-[300px]">{task.description}</p>
+                            </div>
+                        )}
                     </div>
                 )
             },
@@ -135,142 +126,57 @@ export default function WbsGrid({
         // ── 시작일 ───────────────────────────────────────────
         columnHelper.accessor('start_date', {
             header: '시작일',
-            cell: (info) => (
-                <Input
-                    type="date"
-                    defaultValue={info.getValue()?.split('T')[0] ?? ''}
-                    className="h-8 border-none bg-transparent focus-visible:ring-1 text-xs"
-                    onBlur={(e) => onTaskUpdate(info.row.original.id, 'start_date', e.target.value)}
-                />
-            ),
+            cell: (info) => <span className="text-xs text-muted-foreground">{info.getValue()?.split('T')[0] ?? '-'}</span>,
         }),
         // ── 종료일 ───────────────────────────────────────────
         columnHelper.accessor('end_date', {
             header: '종료일',
-            cell: (info) => (
-                <Input
-                    type="date"
-                    defaultValue={info.getValue()?.split('T')[0] ?? ''}
-                    className="h-8 border-none bg-transparent focus-visible:ring-1 text-xs"
-                    onBlur={(e) => onTaskUpdate(info.row.original.id, 'end_date', e.target.value)}
-                />
-            ),
+            cell: (info) => <span className="text-xs text-muted-foreground">{info.getValue()?.split('T')[0] ?? '-'}</span>,
         }),
-        // ── 진척률 (10% 단위 Select) ──────────────────────────
+        // ── 진척률 ──────────────────────────
         columnHelper.accessor('progress', {
             header: '진척률',
-            cell: (info) => {
-                const id = info.row.original.id
-                const val = info.getValue() ?? 0
-                return (
-                    <Select defaultValue={String(val)} onValueChange={(v) => onTaskUpdate(id, 'progress', parseInt(v))}>
-                        <SelectTrigger className="h-8 w-[80px] border-none bg-transparent text-xs">
-                            <SelectValue>{val}%</SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                            {PROGRESS_OPTIONS.map(p => (
-                                <SelectItem key={p} value={String(p)}>{p}%</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                )
-            },
+            cell: (info) => <span className="text-xs font-mono">{info.getValue() ?? 0}%</span>,
         }),
-        // ── 우선순위 (드롭다운) ───────────────────────────────
+        // ── 우선순위 ───────────────────────────────
         columnHelper.accessor('priority', {
             header: '우선순위',
             cell: (info) => {
-                const id = info.row.original.id
                 const val = info.getValue() ?? 'medium'
                 const found = PRIORITY_OPTIONS.find(p => p.value === val) ?? PRIORITY_OPTIONS[2]
-                return (
-                    <Select defaultValue={val} onValueChange={(v) => onTaskUpdate(id, 'priority', v)}>
-                        <SelectTrigger className="h-8 border-none bg-transparent text-xs p-1">
-                            <Badge variant={found.variant} className="text-xs cursor-pointer">{found.label}</Badge>
-                        </SelectTrigger>
-                        <SelectContent>
-                            {PRIORITY_OPTIONS.map(p => (
-                                <SelectItem key={p.value} value={p.value}>
-                                    <Badge variant={p.variant} className="text-xs">{p.label}</Badge>
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                )
+                return <Badge variant={found.variant} className="text-[10px] px-1.5 py-0 h-5 font-normal">{found.label}</Badge>
             },
         }),
-        // ── 상태 (드롭다운) ───────────────────────────────────
+        // ── 상태 ───────────────────────────────────
         columnHelper.accessor('status', {
             header: '상태',
             cell: (info) => {
-                const id = info.row.original.id
                 const val = info.getValue() ?? 'todo'
                 const found = STATUS_OPTIONS.find(s => s.value === val) ?? STATUS_OPTIONS[0]
-                return (
-                    <Select defaultValue={val} onValueChange={(v) => onTaskUpdate(id, 'status', v)}>
-                        <SelectTrigger className="h-8 border-none bg-transparent text-xs p-1">
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${found.style}`}>{found.label}</span>
-                        </SelectTrigger>
-                        <SelectContent>
-                            {STATUS_OPTIONS.map(s => (
-                                <SelectItem key={s.value} value={s.value}>
-                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${s.style}`}>{s.label}</span>
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                )
+                return <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${found.style}`}>{found.label}</span>
             },
         }),
         // ── 담당자 ───────────────────────────────────────────
         columnHelper.accessor('assignee_id', {
             header: '담당자',
             cell: (info) => {
-                const id = info.row.original.id
                 const val = info.getValue() ?? ''
-                const canChange = currentMemberRole === 'owner' || currentMemberRole === 'manager'
                 const displayMember = members.find(m => m.id === val)
                 const displayName = displayMember?.display_name ?? displayMember?.email ?? '미지정'
-
-                if (!canChange) {
-                    // 일반 팀원: 읽기 전용으로 본인 이름 표시
-                    return <span className="text-xs text-muted-foreground">{displayName}</span>
-                }
-
-                return (
-                    <Select defaultValue={val || 'unassigned'} onValueChange={(v) => onTaskUpdate(id, 'assignee_id', v === 'unassigned' ? null : v)}>
-                        <SelectTrigger className="h-8 w-[110px] border-none bg-transparent text-xs">
-                            <SelectValue>{displayName}</SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="unassigned">미지정</SelectItem>
-                            {members.map(m => (
-                                <SelectItem key={m.id} value={m.id}>
-                                    {m.display_name ?? m.email ?? '이름 없음'}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                )
+                return <span className="text-xs text-muted-foreground">{displayName}</span>
             },
         }),
         // ── 색상 ─────────────────────────────────────────────
         columnHelper.accessor('color', {
             header: '색상',
-            cell: (info) => {
-                const id = info.row.original.id
-                return (
-                    <input
-                        type="color"
-                        defaultValue={info.getValue() ?? '#94a3b8'}
-                        className="h-7 w-10 cursor-pointer border-none bg-transparent rounded"
-                        onBlur={(e) => onTaskUpdate(id, 'color', e.target.value)}
-                        title="간트차트 표시 색상"
-                    />
-                )
-            },
+            cell: (info) => (
+                <div
+                    className="h-4 w-4 rounded-full border border-muted"
+                    style={{ backgroundColor: info.getValue() ?? '#94a3b8' }}
+                />
+            ),
         }),
-        // ── 액션 (추가/삭제) ──────────────────────────────────
+        // ── 액션 (추가) ──────────────────────────────────
         columnHelper.display({
             id: 'actions',
             header: '',
@@ -283,26 +189,20 @@ export default function WbsGrid({
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                                title="하위 업무 추가"
-                                onClick={() => onTaskCreate(task.id)}
+                                title="하위 업무 등록"
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    onTaskCreate(task.id)
+                                }}
                             >
                                 <Plus className="h-3.5 w-3.5" />
                             </Button>
                         )}
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                            title="삭제"
-                            onClick={() => onTaskDelete(task.id)}
-                        >
-                            <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
                     </div>
                 )
             },
         }),
-    ], [onTaskUpdate, onTaskCreate, onTaskDelete, members, currentMemberRole])
+    ], [onTaskClick, onTaskCreate, members])
 
     const table = useReactTable({
         data: sortedTasks,
@@ -329,7 +229,7 @@ export default function WbsGrid({
                         {table.getRowModel().rows.length === 0 ? (
                             <tr>
                                 <td colSpan={columns.length} className="p-8 text-center text-muted-foreground text-sm">
-                                    등록된 업무가 없습니다. &apos;업무 추가&apos; 버튼으로 업무를 추가해 보세요.
+                                    등록된 업무가 없습니다. &apos;업무 등록&apos; 버튼으로 업무를 등록해 보세요.
                                 </td>
                             </tr>
                         ) : (
@@ -338,7 +238,8 @@ export default function WbsGrid({
                                 <tr
                                     key={row.id}
                                     id={`task-row-${row.original.id}`}
-                                    className={`border-b transition-colors duration-700 hover:bg-muted/30 ${row.original.parent_id ? 'bg-muted/10' : ''}`}
+                                    className={`border-b transition-colors duration-700 hover:bg-muted/30 cursor-pointer ${row.original.parent_id ? 'bg-muted/10' : ''}`}
+                                    onClick={() => onTaskClick(row.original)}
                                 >
                                     {row.getVisibleCells().map((cell) => (
                                         <td key={cell.id} className="p-1">

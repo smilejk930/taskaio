@@ -60,9 +60,10 @@ interface GanttChartProps {
     links?: GanttLink[]
     scales: 'day' | 'week' | 'month'
     holidays?: Holiday[]
-    members?: { id: string; display_name: string | null; email: string | null }[]
-    onTaskUpdated?: (task: GanttTask) => void
+    members: any[] // members 추가
+    onTaskClick?: (id: string) => void
     onTaskCreated?: (task: GanttTask) => void
+    onTaskUpdated?: (task: GanttTask) => void // onTaskUpdated 추가
     onTaskDeleted?: (id: string) => void
     onLinkAdd?: (id: string, source: string, target: string, type: string) => void
     onLinkDelete?: (id: string) => void
@@ -73,9 +74,10 @@ export default function GanttChart({
     links = [],
     scales,
     holidays,
-    members = [],
-    onTaskUpdated,
+    members,
+    onTaskClick,
     onTaskCreated,
+    onTaskUpdated,
     onTaskDeleted,
     onLinkAdd,
     onLinkDelete,
@@ -94,10 +96,10 @@ export default function GanttChart({
     }, [scales])
 
     // 콜백 함수들을 최신 상태로 유지하기 위한 Ref
-    const callbacksRef = useRef({ onTaskUpdated, onTaskCreated, onTaskDeleted, onLinkAdd, onLinkDelete })
+    const callbacksRef = useRef({ onTaskClick, onTaskCreated, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete })
     useEffect(() => {
-        callbacksRef.current = { onTaskUpdated, onTaskCreated, onTaskDeleted, onLinkAdd, onLinkDelete }
-    }, [onTaskUpdated, onTaskCreated, onTaskDeleted, onLinkAdd, onLinkDelete])
+        callbacksRef.current = { onTaskClick, onTaskCreated, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete }
+    }, [onTaskClick, onTaskCreated, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete])
 
     // ── 라이브러리 동기화 및 초기 설정 ──────────────────────
     useEffect(() => {
@@ -420,6 +422,16 @@ export default function GanttChart({
                     return true;
                 }));
 
+                eventIdsRef.current.push(ganttInstance.attachEvent("onTaskDblClick", (id: string) => {
+                    callbacksRef.current.onTaskClick?.(id);
+                    return false; // 기본 라이트박스 방지
+                }));
+
+                eventIdsRef.current.push(ganttInstance.attachEvent("onEmptyClick", (e: any) => {
+                    // 빈 공간 클릭 시 처리는 필요하면 추가 (현재는 WBS나 버튼을 통해 추가 권장)
+                    return true;
+                }));
+
                 ganttInstance.templates.timeline_cell_class = (_task: any, date: Date) => {
                     const cellStart = new Date(date).setHours(0, 0, 0, 0);
                     const nowStart = new Date().setHours(0, 0, 0, 0);
@@ -437,7 +449,7 @@ export default function GanttChart({
                 ganttInstance.templates.tooltip_text = (start: Date, end: Date, task: any) => {
                     const formatYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                     const desc = task.description || '내용 없음';
-                    return `<div>- 업무명: ${task.text}</div><div>- 업무내용: ${desc}</div><div>- 기간: ${formatYMD(start)} ~ ${formatYMD(new Date(end.getTime() - 1000))}</div>`;
+                    return `<div>- 업무명: ${task.text}</div><div>- 업무설명: ${desc}</div><div>- 기간: ${formatYMD(start)} ~ ${formatYMD(new Date(end.getTime() - 1000))}</div>`;
                 }
 
                 eventIdsRef.current.push(ganttInstance.attachEvent("onBeforeTaskDrag", (id: string) => {
