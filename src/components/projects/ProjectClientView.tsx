@@ -258,25 +258,7 @@ export default function ProjectClientView({
         })
     }
 
-    const handleGanttTaskCreated = async (ganttTask: any) => {
-        const adjustedEndDate = ganttTask.end_date
-            ? format(new Date(new Date(ganttTask.end_date).getTime() - 1000), 'yyyy-MM-dd')
-            : format(new Date(ganttTask.start_date), 'yyyy-MM-dd');
 
-        await handleCreateTask({
-            title: ganttTask.text || '',
-            project_id: project.id,
-            parent_id: ganttTask.parent || null,
-            start_date: format(new Date(ganttTask.start_date), 'yyyy-MM-dd'),
-            end_date: adjustedEndDate,
-            progress: Math.round(ganttTask.progress * 100),
-            priority: (ganttTask.priority as any) || 'medium',
-            status: (ganttTask.status as any) || 'todo',
-            assignee_id: ganttTask.assignee_id ?? currentUser?.id ?? null,
-            description: ganttTask.description ?? null,
-            color: ganttTask.color,
-        })
-    }
 
 
 
@@ -515,7 +497,7 @@ export default function ProjectClientView({
                                 members={members}
                                 onTaskClick={openTaskDialog}
                                 onTaskUpdated={handleGanttTaskUpdated}
-                                onTaskCreated={handleGanttTaskCreated}
+                                onTaskCreate={openCreateTaskDialog}
                                 onTaskDeleted={handleDeleteTask}
                                 onLinkAdd={handleLinkAdd}
                                 onLinkDelete={handleLinkDelete}

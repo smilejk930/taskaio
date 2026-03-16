@@ -62,8 +62,8 @@ interface GanttChartProps {
     holidays?: Holiday[]
     members: any[] // members 추가
     onTaskClick?: (id: string) => void
-    onTaskCreated?: (task: GanttTask) => void
-    onTaskUpdated?: (task: GanttTask) => void // onTaskUpdated 추가
+    onTaskCreate?: (parentId: string | null) => void
+    onTaskUpdated?: (task: GanttTask) => void
     onTaskDeleted?: (id: string) => void
     onLinkAdd?: (id: string, source: string, target: string, type: string) => void
     onLinkDelete?: (id: string) => void
@@ -76,7 +76,7 @@ export default function GanttChart({
     holidays,
     members,
     onTaskClick,
-    onTaskCreated,
+    onTaskCreate,
     onTaskUpdated,
     onTaskDeleted,
     onLinkAdd,
@@ -96,10 +96,10 @@ export default function GanttChart({
     }, [scales])
 
     // 콜백 함수들을 최신 상태로 유지하기 위한 Ref
-    const callbacksRef = useRef({ onTaskClick, onTaskCreated, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete })
+    const callbacksRef = useRef({ onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete })
     useEffect(() => {
-        callbacksRef.current = { onTaskClick, onTaskCreated, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete }
-    }, [onTaskClick, onTaskCreated, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete])
+        callbacksRef.current = { onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete }
+    }, [onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete])
 
     // ── 라이브러리 동기화 및 초기 설정 ──────────────────────
     useEffect(() => {
@@ -463,34 +463,15 @@ export default function GanttChart({
                 }));
 
                 eventIdsRef.current.push(ganttInstance.attachEvent("onTaskCreated", (item: GanttTask) => {
-                    if (item.parent) {
-                        const parentTask = ganttInstance.getTask(item.parent);
-                        if (parentTask && parentTask.parent) {
-                            toast.error("업무 계층은 2단계까지만 생성 가능합니다.");
-                            return false;
-                        }
-                    }
-                    const now = new Date();
-                    now.setHours(0, 0, 0, 0);
-                    item.text = ""; // 추가 버튼 클릭 시 업무명 초기값 제거 (빈 칸으로 시작)
-                    item.start_date = now;
-                    item.duration = 4;
-                    item.end_date = ganttInstance.calculateEndDate(item.start_date, 4);
-                    item.progress = 0;
-                    item.status = 'todo';
-                    item.priority = 'medium';
-                    item.color = `#${Math.floor(Math.random() * 0x1000000).toString(16).padStart(6, '0')}`;
-                    return true;
+                    // 기본 생성 로직 차단하고 공통 다이얼로그 호출
+                    callbacksRef.current.onTaskCreate?.(item.parent || null);
+                    return false;
                 }));
 
                 eventIdsRef.current.push(ganttInstance.attachEvent("onAfterTaskDrag", () => { isDragging.current = false; }));
 
                 eventIdsRef.current.push(ganttInstance.attachEvent('onAfterTaskAdd', (id: string | number, item: GanttTask) => {
-                    const strId = id.toString();
-                    if (creatingIdsRef.current.has(strId)) return true;
-                    creatingIdsRef.current.add(strId);
-
-                    callbacksRef.current.onTaskCreated?.(item);
+                    // 공통 다이얼로그를 사용하므로 이 이벤트는 더 이상 내부 저장을 처리하지 않음
                     return true;
                 }));
 
