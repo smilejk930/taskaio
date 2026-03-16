@@ -77,22 +77,56 @@ export default function WbsGrid({
 }: WbsGridProps) {
     /** 상위(부모) 업무 우선 정렬 후 하위 업무 표시 (시작일 ASC 정렬 추가) */
     const sortedTasks = useMemo(() => {
-        const sortByDate = (a: Task, b: Task) => {
-            if (!a.start_date) return 1
-            if (!b.start_date) return -1
-            return a.start_date.localeCompare(b.start_date)
-        }
+        const priorityWeight = {
+            urgent: 3,
+            high: 2,
+            medium: 1,
+            low: 0
+        };
 
-        const parents = tasks.filter(t => !t.parent_id).sort(sortByDate)
-        const children = tasks.filter(t => t.parent_id).sort(sortByDate)
+        const multiLevelSort = (a: Task, b: Task) => {
+            // 1. 시작일 ASC
+            const dateA = a.start_date || '9999-12-31';
+            const dateB = b.start_date || '9999-12-31';
+            if (dateA !== dateB) return dateA.localeCompare(dateB);
 
-        const result: Task[] = []
+            // 2. 종료일 ASC
+            const endA = a.end_date || '9999-12-31';
+            const endB = b.end_date || '9999-12-31';
+            if (endA !== endB) return endA.localeCompare(endB);
+
+            // 3. 우선순위 DESC (긴급 > 높음 > 보통 > 낮음)
+            const pA = priorityWeight[a.priority as keyof typeof priorityWeight] ?? -1;
+            const pB = priorityWeight[b.priority as keyof typeof priorityWeight] ?? -1;
+            if (pA !== pB) return pB - pA;
+
+            // 4. 상태 DESC (할 일 > 리뷰 > 진행 중 > 완료)
+            const statusWeight = { todo: 3, review: 2, in_progress: 1, done: 0 };
+            const sA = statusWeight[a.status as keyof typeof statusWeight] ?? -1;
+            const sB = statusWeight[b.status as keyof typeof statusWeight] ?? -1;
+            if (sA !== sB) return sB - sA;
+
+            // 5. 담당자 이름 ASC
+            const memberA = members.find(m => m.id === a.assignee_id);
+            const nameA = memberA?.display_name || memberA?.email || '';
+            const memberB = members.find(m => m.id === b.assignee_id);
+            const nameB = memberB?.display_name || memberB?.email || '';
+            if (nameA !== nameB) return nameA.localeCompare(nameB);
+
+            // 6. 업무명 ASC
+            return (a.title || '').localeCompare(b.title || '');
+        };
+
+        const parents = tasks.filter(t => !t.parent_id).sort(multiLevelSort);
+        const children = tasks.filter(t => t.parent_id).sort(multiLevelSort);
+
+        const result: Task[] = [];
         parents.forEach(p => {
-            result.push(p)
-            children.filter(c => c.parent_id === p.id).forEach(c => result.push(c))
-        })
-        return result
-    }, [tasks])
+            result.push(p);
+            children.filter(c => c.parent_id === p.id).forEach(c => result.push(c));
+        });
+        return result;
+    }, [tasks, members])
 
     const columns = useMemo(() => [
         // ── 업무명 + description (계층 인덴트) ───────────────
