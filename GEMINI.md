@@ -36,7 +36,7 @@
 - **DB 마이그레이션:** `/db-migrate` (@.agents/workflows/db-migrate.md)
 - **코드 리뷰:** `/review` (@.agents/workflows/review.md)
 - **배포 검증:** `/deploy` (@.agents/workflows/deploy.md)
-- **TDD/버그 수정:** `/test-fix-commit` (@.agents/workflows/test-fix-commit.md)
+- **TDD/버그 수정:** `/test-feature` (@.agents/workflows/test-feature.md)
 
 ## 6. Git 및 커밋 규칙 (Git & Commit Rules)
 - **Conventional Commits:** `feat`, `fix`, `ui`, `db`, `refactor`, `test` 등의 타입을 사용합니다.
