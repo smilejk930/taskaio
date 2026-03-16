@@ -35,11 +35,15 @@ export function useTasks(initialTasks: Task[]) {
     const handleCreate = useCallback(async (formData: TaskFormData) => {
         setIsLoading(true)
         try {
-            // 비즈니스 로직: 진척률에 따른 상태 자동 설정
+            // 비즈니스 로직: 상태와 진척률 자동 연동
             const data: TaskInsert = { ...formData } as any
-            if (data.progress === 100) {
+            if (data.status === 'done') {
+                data.progress = 100
+            } else if (data.progress === 100) {
                 data.status = 'done'
-            } else if ((data.progress ?? 0) > 0 && data.status === 'todo') {
+            } else if (data.progress === 0) {
+                data.status = 'todo'
+            } else if (data.progress !== undefined && data.progress !== null && data.progress > 0 && data.progress < 100) {
                 data.status = 'in_progress'
             }
 
@@ -58,12 +62,20 @@ export function useTasks(initialTasks: Task[]) {
     const handleUpdate = useCallback(async (id: string, formData: Partial<TaskFormData>) => {
         setIsLoading(true)
         try {
-            // 비즈니스 로직: 진척률 변경 시 상태 자동 연동
+            // 비즈니스 로직: 상태와 진척률 자동 연동
             const updates: TaskUpdate = { ...formData } as any
-            if (updates.progress !== undefined && updates.progress !== null) {
+
+            // 상태가 완료로 변경된 경우 진척률 강제 100
+            if (updates.status === 'done') {
+                updates.progress = 100
+            }
+            // 진척률이 변경된 경우 상태 자동 연동
+            else if (updates.progress !== undefined && updates.progress !== null) {
                 if (updates.progress === 100) {
                     updates.status = 'done'
-                } else if (updates.progress > 0 && updates.status === 'todo') {
+                } else if (updates.progress === 0) {
+                    updates.status = 'todo'
+                } else {
                     updates.status = 'in_progress'
                 }
             }

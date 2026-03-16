@@ -114,7 +114,28 @@ export default function TaskDialog({
     const isEdit = Boolean(initialData?.id)
 
     const setField = <K extends keyof TaskFormData>(key: K, value: TaskFormData[K]) => {
-        setForm(prev => ({ ...prev, [key]: value }))
+        setForm(prev => {
+            const next = { ...prev, [key]: value }
+
+            // 상태가 'done'으로 변경되면 진척률을 100%로 설정
+            if (key === 'status' && value === 'done') {
+                next.progress = 100
+            }
+
+            // 진척률이 변경되면 상태를 자동 연동
+            if (key === 'progress') {
+                const progressValue = value as number
+                if (progressValue === 100) {
+                    next.status = 'done'
+                } else if (progressValue === 0) {
+                    next.status = 'todo'
+                } else {
+                    next.status = 'in_progress'
+                }
+            }
+
+            return next
+        })
         if (errors[key]) setErrors(prev => ({ ...prev, [key]: undefined }))
     }
 
