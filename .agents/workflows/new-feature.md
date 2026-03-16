@@ -40,9 +40,6 @@ description: 새 기능 개발하는 Workflow. 소규모(컴포넌트 1~2개, DB
 
    ```
    ✅ Feature Spec 승인 완료.
-
-   이제 새 대화창(+ 버튼)을 열고 아래를 입력해주세요:
-
-   /build-feature
-   [위 Feature Spec Artifact 내용 붙여넣기]
+   
+   새 대화창에서 /build-feature를 실행해주세요.
    ```

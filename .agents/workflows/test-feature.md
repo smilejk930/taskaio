@@ -1,8 +1,8 @@
 ---
-description: TDD(Red-Green-Refactor) 사이클을 준수하며 테스트 실행, 오류 수정 및 리팩토링 후 커밋을 완료하는 품질 관리 워크플로우.
+description: TDD(Red-Green-Refactor) 사이클을 준수하며 테스트 실행, 오류 수정 및 리팩토링 후 품질 관리 워크플로우.
 ---
 
-# TDD & Test-Fix-Commit Workflow
+# TDD & Test-Fix Workflow
 
 이 워크플로우는 **Red-Green-Refactor** 사이클을 준수하여 코드의 안정성을 확보하고 유지보수가 용이한 구조를 만드는 데 집중합니다.
 
@@ -23,19 +23,11 @@ description: TDD(Red-Green-Refactor) 사이클을 준수하며 테스트 실행,
    - **중요:** 리팩토링 후에도 테스트가 여전히 **성공(Green)** 상태를 유지하는지 확인한다.
    - 기능적 변경(Behavior Change)이 없는지 검증하는 것이 핵심이다.
 
-## Execution & Commit Steps
+## Execution Steps
 
 4. **전체 테스트 및 회귀 검증 (Regression Check)**
    - 수정한 모듈 외에 다른 기능에 영향이 없는지 전체 테스트를 1회 실행한다.
    - `pnpm lint`와 `pnpm build`를 실행하여 정적 오류 및 빌드 안정성을 최종 확인한다.
 
-5. **변경 사항 검토 및 커밋**
-   - `git status`와 `git diff`를 통해 의도한 테스트 코드와 구현 코드만 포함되었는지 확인한다.
-   - `@auto-commit` 규칙에 따라 의미 있는 커밋 메시지를 한글로 작성한다.
-   - **TDD 커밋 예시:** 
-     - `test(tasks): 업무 현황 수정에 따른 추가` (Red)
-     - `feat(tasks): 기본 업무 현황 향상을 위한 수정` (Green)
-     - `refactor(tasks): 현황 수정을 위한 수정` (Refactor)
-
-6. **완료 보고**
+5. **완료 보고**
    - 적용된 TDD 사이클 단계(Red -> Green -> Refactor)와 최종 테스트 결과를 요약하여 보고한다.
