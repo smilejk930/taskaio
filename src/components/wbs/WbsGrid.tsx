@@ -16,17 +16,17 @@ import { Badge } from '@/components/ui/badge'
 // ── 상수 정의 ─────────────────────────────────────────────────────────────────
 
 const STATUS_OPTIONS = [
-    { value: 'todo', label: '할 일', style: 'bg-slate-100 text-slate-700' },
-    { value: 'in_progress', label: '진행 중', style: 'bg-blue-100 text-blue-700' },
-    { value: 'review', label: '리뷰', style: 'bg-yellow-100 text-yellow-700' },
-    { value: 'done', label: '완료', style: 'bg-green-100 text-green-700' },
+    { value: 'todo', label: '할 일', style: 'bg-[#f1f5f9] text-[#475569]' },
+    { value: 'in_progress', label: '진행 중', style: 'bg-[#dbeafe] text-[#1e40af]' },
+    { value: 'review', label: '리뷰', style: 'bg-[#fef9c3] text-[#854d0e]' },
+    { value: 'done', label: '완료', style: 'bg-[#dcfce7] text-[#166534]' },
 ]
 
 const PRIORITY_OPTIONS = [
-    { value: 'urgent', label: '긴급', variant: 'destructive' as const },
-    { value: 'high', label: '높음', variant: 'default' as const },
-    { value: 'medium', label: '보통', variant: 'secondary' as const },
-    { value: 'low', label: '낮음', variant: 'outline' as const },
+    { value: 'urgent', label: '긴급', style: 'bg-[#fee2e2] text-[#991b1b]' },
+    { value: 'high', label: '높음', style: 'bg-[#1e293b] text-[#f8fafc]' },
+    { value: 'medium', label: '보통', style: 'bg-[#f1f5f9] text-[#475569]' },
+    { value: 'low', label: '낮음', style: 'bg-transparent border border-[#e2e8f0] text-[#64748b]' },
 ]
 
 /** 0~100% 범위를 10% 단위로 표현하는 진척률 옵션 */
@@ -125,55 +125,67 @@ export default function WbsGrid({
         }),
         // ── 시작일 ───────────────────────────────────────────
         columnHelper.accessor('start_date', {
-            header: '시작일',
-            cell: (info) => <span className="text-xs text-muted-foreground">{info.getValue()?.split('T')[0] ?? '-'}</span>,
+            header: () => <div className="text-center">시작일</div>,
+            cell: (info) => <div className="text-center text-xs text-muted-foreground">{info.getValue()?.split('T')[0] ?? '-'}</div>,
         }),
         // ── 종료일 ───────────────────────────────────────────
         columnHelper.accessor('end_date', {
-            header: '종료일',
-            cell: (info) => <span className="text-xs text-muted-foreground">{info.getValue()?.split('T')[0] ?? '-'}</span>,
+            header: () => <div className="text-center">종료일</div>,
+            cell: (info) => <div className="text-center text-xs text-muted-foreground">{info.getValue()?.split('T')[0] ?? '-'}</div>,
         }),
         // ── 진척률 ──────────────────────────
         columnHelper.accessor('progress', {
-            header: '진척률',
-            cell: (info) => <span className="text-xs font-mono">{info.getValue() ?? 0}%</span>,
+            header: () => <div className="text-center">진척률</div>,
+            cell: (info) => <div className="text-center text-xs text-[#64748b] font-medium">{info.getValue() ?? 0}%</div>,
         }),
         // ── 우선순위 ───────────────────────────────
         columnHelper.accessor('priority', {
-            header: '우선순위',
+            header: () => <div className="text-center">우선순위</div>,
             cell: (info) => {
                 const val = info.getValue() ?? 'medium'
                 const found = PRIORITY_OPTIONS.find(p => p.value === val) ?? PRIORITY_OPTIONS[2]
-                return <Badge variant={found.variant} className="text-[10px] px-1.5 py-0 h-5 font-normal">{found.label}</Badge>
+                return (
+                    <div className="text-center">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium leading-[1.4] ${found.style}`}>
+                            {found.label}
+                        </span>
+                    </div>
+                )
             },
         }),
         // ── 상태 ───────────────────────────────────
         columnHelper.accessor('status', {
-            header: '상태',
+            header: () => <div className="text-center">상태</div>,
             cell: (info) => {
                 const val = info.getValue() ?? 'todo'
                 const found = STATUS_OPTIONS.find(s => s.value === val) ?? STATUS_OPTIONS[0]
-                return <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${found.style}`}>{found.label}</span>
+                return (
+                    <div className="text-center">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium leading-[1.4] ${found.style}`}>{found.label}</span>
+                    </div>
+                )
             },
         }),
         // ── 담당자 ───────────────────────────────────────────
         columnHelper.accessor('assignee_id', {
-            header: '담당자',
+            header: () => <div className="text-center">담당자</div>,
             cell: (info) => {
                 const val = info.getValue() ?? ''
                 const displayMember = members.find(m => m.id === val)
                 const displayName = displayMember?.display_name ?? displayMember?.email ?? '미지정'
-                return <span className="text-xs text-muted-foreground">{displayName}</span>
+                return <div className="text-center text-[13px] text-[#475569]">{displayName}</div>
             },
         }),
         // ── 색상 ─────────────────────────────────────────────
         columnHelper.accessor('color', {
-            header: '색상',
+            header: () => <div className="text-center">색상</div>,
             cell: (info) => (
-                <div
-                    className="h-4 w-4 rounded-full border border-muted"
-                    style={{ backgroundColor: info.getValue() ?? '#94a3b8' }}
-                />
+                <div className="flex justify-center">
+                    <div
+                        className="h-4 w-4 rounded-full border border-muted"
+                        style={{ backgroundColor: info.getValue() ?? '#94a3b8' }}
+                    />
+                </div>
             ),
         }),
         // ── 액션 (추가) ──────────────────────────────────
@@ -183,7 +195,7 @@ export default function WbsGrid({
             cell: ({ row }) => {
                 const task = row.original
                 return (
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-center gap-1">
                         {!task.parent_id && (
                             <Button
                                 variant="ghost"

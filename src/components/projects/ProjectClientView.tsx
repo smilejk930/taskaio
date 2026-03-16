@@ -473,9 +473,8 @@ export default function ProjectClientView({
                                 />
                             </div>
                             <Button
-                                variant="outline"
                                 size="sm"
-                                className="h-9 text-xs gap-1.5 shrink-0 bg-background border-dashed hover:border-primary hover:text-primary transition-all mt-4"
+                                className="gap-2 bg-primary hover:bg-primary/90 shadow-md"
                                 onClick={() => openCreateTaskDialog(null)}
                             >
                                 <Plus className="h-4 w-4" />
