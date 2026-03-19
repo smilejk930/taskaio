@@ -63,7 +63,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 </CardTitle>
                 <CardDescription>
                     {mode === 'login'
-                        ? '이메일과 비밀번호를 입력하여 접속하세요'
+                        ? '이메일과 비밀번호를 입력하여 접속해주세요'
                         : 'TaskAIO에 오신 것을 환영합니다'}
                 </CardDescription>
             </CardHeader>
