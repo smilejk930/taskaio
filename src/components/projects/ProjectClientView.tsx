@@ -24,6 +24,7 @@ import DashboardView from '@/components/dashboard/DashboardView'
 import TeamManagementView from '@/components/projects/members/TeamManagementView'
 import { TaskSearchFilter } from '@/components/projects/TaskSearchFilter'
 import { UserMenu } from '@/components/auth/UserMenu'
+import { AppLogo } from '@/components/common/AppLogo'
 import { updateTask, createTask, deleteTask } from '@/app/actions/tasks'
 import { updateProject, deleteProject } from '@/app/actions/projects'
 import { createLink, deleteLink } from '@/app/actions/links'
@@ -422,18 +423,24 @@ export default function ProjectClientView({
 
     return (
         <div className="flex flex-col h-screen">
-            <header className="border-b px-8 py-4 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div>
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-2xl font-bold">{project.name}</h1>
-                        {(currentMemberRole === 'owner' || currentMemberRole === 'manager') && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-muted" onClick={() => setIsEditProjectOpen(true)}>
-                                <Settings className="h-4 w-4" />
-                            </Button>
+            <header className="border-b px-6 py-3 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
+                {/* [아이콘] [프로젝트명 + 설명] [설정] [완료율] */}
+                <div className="flex items-center gap-2 min-w-0">
+                    <AppLogo showText={false} />
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-base font-bold truncate">{project.name}</h1>
+                            {(currentMemberRole === 'owner' || currentMemberRole === 'manager') && (
+                                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:bg-muted shrink-0" onClick={() => setIsEditProjectOpen(true)}>
+                                    <Settings className="h-3.5 w-3.5" />
+                                </Button>
+                            )}
+                            <Badge variant="outline" className="shrink-0">{totalProgress}% 완료</Badge>
+                        </div>
+                        {project.description && (
+                            <p className="text-xs text-muted-foreground truncate mt-0.5">{project.description}</p>
                         )}
-                        <Badge variant="outline">{totalProgress}% 완료</Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
                 </div>
 
                 <div className="flex items-center gap-6 text-sm">

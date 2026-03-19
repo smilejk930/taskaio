@@ -1,16 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, CalendarDays, List, Calendar as CalendarIcon } from 'lucide-react'
+import { Plus, List, Calendar as CalendarIcon } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { UserMenu } from '@/components/auth/UserMenu'
-import Link from 'next/link'
 import { Holiday, HolidayFormData, HolidayProfile, useHolidays } from '@/hooks/use-holidays'
 import HolidayDialog from '@/components/holidays/HolidayDialog'
 import HolidayClientView from '@/components/holidays/HolidayClientView'
 import HolidayCalendarView from '@/components/holidays/HolidayCalendarView'
+import { AppLogo } from '@/components/common/AppLogo'
 
 interface HolidayTabsProps {
     initialHolidays: Holiday[]
@@ -69,10 +69,10 @@ export default function HolidayTabs({
 
     return (
         <div className="flex flex-col h-screen overflow-hidden">
-            <header className="border-b px-8 py-3 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0 h-14">
+            <header className="border-b px-6 py-3 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
                 <div className="flex items-center gap-2">
-                    <CalendarDays className="h-5 w-5 text-primary" />
-                    <h1 className="text-xl font-bold">휴일 관리</h1>
+                    <AppLogo showText={false} />
+                    <span className="text-base font-bold">휴일 관리</span>
                 </div>
                 {currentUser && <UserMenu user={currentUser} />}
             </header>

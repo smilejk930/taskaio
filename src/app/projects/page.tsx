@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { getUser } from '@/app/actions/auth'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { CreateProjectDialog } from '@/components/projects/CreateProjectDialog'
+import { AppLogo } from '@/components/common/AppLogo'
 
 // Supabase 조인 결과 타입
 interface ProjectMember {
@@ -34,72 +35,77 @@ export default async function ProjectsPage() {
     }
 
     return (
-        <div className="container mx-auto py-10 px-4">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">프로젝트</h1>
-                    <p className="text-muted-foreground">참여 중인 모든 프로젝트를 한눈에 관리하세요.</p>
-                </div>
-                <div className="flex items-center gap-4">
+        <div className="flex flex-col min-h-screen">
+            {/* 상단 헤더 — GitHub 스타일 브랜드 바 */}
+            <header className="border-b px-6 py-3 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 h-14">
+                <AppLogo />
+                <div className="flex items-center gap-2">
                     <Link href="/holidays">
-                        <Button variant="outline" className="gap-2">
+                        <Button variant="ghost" size="sm" className="gap-2">
                             <CalendarDays className="w-4 h-4" />
                             휴일 관리
                         </Button>
                     </Link>
                     <CreateProjectDialog>
-                        <Button className="gap-2">
+                        <Button size="sm" className="gap-2">
                             <Plus className="w-4 h-4" />
                             신규 프로젝트
                         </Button>
                     </CreateProjectDialog>
                     {user && <UserMenu user={user} />}
                 </div>
-            </div>
+            </header>
 
-            {!projects || projects.length === 0 ? (
-                <Card className="border-dashed flex flex-col items-center justify-center p-12 text-center">
-                    <div className="bg-primary/10 p-4 rounded-full mb-4">
-                        <Layout className="w-8 h-8 text-primary" />
-                    </div>
-                    <CardTitle className="mb-2">프로젝트가 없습니다</CardTitle>
-                    <CardDescription className="mb-6">
-                        아직 참여 중인 프로젝트가 없습니다. <br />
-                        새로운 프로젝트를 생성하여 시작해 보세요.
-                    </CardDescription>
-                    <CreateProjectDialog>
-                        <Button variant="outline">신규 프로젝트 생성하기</Button>
-                    </CreateProjectDialog>
-                </Card>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {projects.map((project) => {
-                        const rawRole = (project.project_members as unknown as ProjectMember[])[0]?.role ?? 'member'
-                        const displayRole = rawRole === 'owner' ? '소유자' : rawRole === 'manager' ? '관리자' : '멤버'
-                        return (
-                            <Link key={project.id} href={`/projects/${project.id}`}>
-                                <Card className="hover:border-primary transition-colors cursor-pointer h-full">
-                                    <CardHeader>
-                                        <CardTitle className="text-xl">{project.name}</CardTitle>
-                                        <CardDescription className="line-clamp-2">
-                                            {project.description || '설명이 없습니다.'}
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <span className="px-2 py-0.5 bg-secondary rounded text-xs font-medium">
-                                                {displayRole}
-                                            </span>
-                                            <span>•</span>
-                                            <span>생성일: {project.created_at ? new Date(project.created_at).toLocaleDateString() : '-'}</span>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </Link>
-                        )
-                    })}
+            <main className="container mx-auto py-10 px-4">
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold tracking-tight">프로젝트</h1>
+                    <p className="text-muted-foreground">참여 중인 모든 프로젝트를 한눈에 관리하세요.</p>
                 </div>
-            )}
+
+                {!projects || projects.length === 0 ? (
+                    <Card className="border-dashed flex flex-col items-center justify-center p-12 text-center">
+                        <div className="bg-primary/10 p-4 rounded-full mb-4">
+                            <Layout className="w-8 h-8 text-primary" />
+                        </div>
+                        <CardTitle className="mb-2">프로젝트가 없습니다</CardTitle>
+                        <CardDescription className="mb-6">
+                            아직 참여 중인 프로젝트가 없습니다. <br />
+                            새로운 프로젝트를 생성하여 시작해 보세요.
+                        </CardDescription>
+                        <CreateProjectDialog>
+                            <Button variant="outline">신규 프로젝트 생성하기</Button>
+                        </CreateProjectDialog>
+                    </Card>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {projects.map((project) => {
+                            const rawRole = (project.project_members as unknown as ProjectMember[])[0]?.role ?? 'member'
+                            const displayRole = rawRole === 'owner' ? '소유자' : rawRole === 'manager' ? '관리자' : '멤버'
+                            return (
+                                <Link key={project.id} href={`/projects/${project.id}`}>
+                                    <Card className="hover:border-primary transition-colors cursor-pointer h-full">
+                                        <CardHeader>
+                                            <CardTitle className="text-xl">{project.name}</CardTitle>
+                                            <CardDescription className="line-clamp-2">
+                                                {project.description || '설명이 없습니다.'}
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <span className="px-2 py-0.5 bg-secondary rounded text-xs font-medium">
+                                                    {displayRole}
+                                                </span>
+                                                <span>•</span>
+                                                <span>생성일: {project.created_at ? new Date(project.created_at).toLocaleDateString() : '-'}</span>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </Link>
+                            )
+                        })}
+                    </div>
+                )}
+            </main>
         </div>
     )
 }
