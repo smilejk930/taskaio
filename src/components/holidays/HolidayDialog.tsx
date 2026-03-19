@@ -31,6 +31,7 @@ interface HolidayDialogProps {
     initialData?: HolidayFormData & { id?: string }
     profiles: HolidayProfile[]
     onSubmit: (data: HolidayFormData) => Promise<boolean>
+    onDelete?: (id: string) => Promise<boolean>
     isLoading: boolean
 }
 
@@ -51,6 +52,7 @@ export default function HolidayDialog({
     initialData,
     profiles,
     onSubmit,
+    onDelete,
     isLoading,
 }: HolidayDialogProps) {
     const [form, setForm] = useState<HolidayFormData>(EMPTY_FORM)
@@ -83,9 +85,9 @@ export default function HolidayDialog({
         if (form.start_date && form.end_date && form.end_date < form.start_date) {
             newErrors.end_date = '종료일은 시작일 이후여야 합니다.'
         }
-        // 팀원 휴가 타입일 때 팀원 선택 필수 (엣지 케이스)
-        if (form.type === 'member_leave' && !form.member_id) {
-            newErrors.member_id = '팀원 휴가를 선택하면 대상 팀원을 지정해야 합니다.'
+        // 공휴일과 워크샵, 기타를 제외한 개인 일정(휴가, 출장)일 때 팀원 선택 필수
+        if (['member_leave', 'business_trip'].includes(form.type) && !form.member_id) {
+            newErrors.member_id = '해당 일정은 대상 팀원을 지정해야 합니다.'
         }
 
         setErrors(newErrors)
@@ -96,6 +98,15 @@ export default function HolidayDialog({
         if (!validate()) return
 
         const success = await onSubmit(form)
+        if (success) {
+            onOpenChange(false)
+        }
+    }
+
+    const handleDelete = async () => {
+        if (!initialData?.id || !onDelete) return
+        if (!confirm('정말로 이 일정을 삭제하시겠습니까?')) return
+        const success = await onDelete(initialData.id)
         if (success) {
             onOpenChange(false)
         }
@@ -118,8 +129,8 @@ export default function HolidayDialog({
                         <Select
                             value={form.type}
                             onValueChange={(v) => {
-                                setField('type', v as 'public_holiday' | 'member_leave')
-                                // 공휴일로 변경 시 member_id 초기화
+                                setField('type', v as HolidayFormData['type'])
+                                // 공휴일일 때는 member_id 초기화
                                 if (v === 'public_holiday') setField('member_id', null)
                             }}
                         >
@@ -129,12 +140,15 @@ export default function HolidayDialog({
                             <SelectContent>
                                 <SelectItem value="public_holiday">🗓️ 공휴일</SelectItem>
                                 <SelectItem value="member_leave">👤 팀원 휴가</SelectItem>
+                                <SelectItem value="business_trip">🏢 출장</SelectItem>
+                                <SelectItem value="workshop">🎤 워크샵</SelectItem>
+                                <SelectItem value="other">📌 기타</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
-                    {/* 팀원 선택 (팀원 휴가일 때만 표시) */}
-                    {form.type === 'member_leave' && (
+                    {/* 팀원 선택 (공휴일 외 모든 유형에서 선택 가능, 휴가/출장의 경우 필수) */}
+                    {form.type !== 'public_holiday' && (
                         <div className="space-y-2">
                             <Label htmlFor="holiday-member">
                                 대상 팀원 <span className="text-destructive">*</span>
@@ -219,17 +233,31 @@ export default function HolidayDialog({
                     </div>
                 </div>
 
-                <DialogFooter>
-                    <Button
-                        variant="outline"
-                        onClick={() => onOpenChange(false)}
-                        disabled={isLoading}
-                    >
-                        취소
-                    </Button>
-                    <Button onClick={handleSubmit} disabled={isLoading}>
-                        {isLoading ? '저장 중...' : isEdit ? '수정' : '등록'}
-                    </Button>
+                <DialogFooter className={isEdit && onDelete ? 'sm:justify-between flex-row-reverse sm:flex-row' : ''}>
+                    {isEdit && onDelete && (
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={handleDelete}
+                            disabled={isLoading}
+                            className="mr-auto"
+                        >
+                            삭제
+                        </Button>
+                    )}
+                    <div className="flex justify-end gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                            disabled={isLoading}
+                        >
+                            취소
+                        </Button>
+                        <Button type="button" onClick={handleSubmit} disabled={isLoading}>
+                            {isLoading ? '저장 중...' : isEdit ? '수정' : '등록'}
+                        </Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

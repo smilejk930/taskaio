@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import ProjectClientView from '@/components/projects/ProjectClientView'
 import { getUser } from '@/app/actions/auth'
+import { Holiday } from '@/hooks/use-holidays'
 
 interface ProjectDetailPageProps {
     params: {
@@ -72,7 +73,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             project={project}
             initialTasks={tasks || []}
             initialLinks={links || []}
-            holidays={holidays || []}
+            holidays={(holidays || []).map(h => ({ ...h, type: h.type as Holiday['type'], profiles: null }))}
             members={formattedMembers}
             currentUser={user}
         />

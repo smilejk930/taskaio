@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getUser } from '@/app/actions/auth'
 import { getHolidays } from '@/app/actions/holidays'
-import HolidayClientView from '@/components/holidays/HolidayClientView'
+import HolidayTabs from '@/components/holidays/HolidayTabs'
 import { Holiday, HolidayProfile } from '@/hooks/use-holidays'
 
 // ──── 페이지 컴포넌트 (Server Component) ─────────────────────────────────────
@@ -32,7 +32,7 @@ export default async function HolidaysPage() {
     const currentUser = await getUser()
 
     return (
-        <HolidayClientView
+        <HolidayTabs
             initialHolidays={holidays}
             profiles={(profiles ?? []) as HolidayProfile[]}
             currentUser={currentUser}

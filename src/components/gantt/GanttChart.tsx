@@ -44,7 +44,7 @@ interface Holiday {
     name: string
     start_date: string
     end_date: string
-    type: 'public_holiday' | 'member_leave'
+    type: 'public_holiday' | 'member_leave' | 'business_trip' | 'workshop' | 'other'
     member_name?: string
 }
 
@@ -601,9 +601,9 @@ export default function GanttChart({
                 }
             });
             holidayMap.forEach((dailyHolidays, dateStr) => {
-                const hasPublic = dailyHolidays.some(h => h.type === 'public_holiday');
+                const hasPublic = dailyHolidays.some(h => ['public_holiday', 'workshop'].includes(h.type));
                 const cls = hasPublic ? 'gantt_holiday_public' : 'gantt_holiday_leave';
-                const names = dailyHolidays.map(h => h.type === 'member_leave' && h.member_name ? `${h.member_name} (${h.name})` : h.name).join('\n');
+                const names = dailyHolidays.map(h => ['member_leave', 'business_trip'].includes(h.type) && h.member_name ? `${h.member_name} (${h.name})` : h.name).join('\n');
                 g.addMarker({ start_date: new Date(dateStr + "T00:00:00"), css: cls, text: dailyHolidays[0].name, title: names, id: `holiday_group_${dateStr}` });
             });
         }

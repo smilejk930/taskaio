@@ -73,7 +73,7 @@ interface Holiday {
     name: string
     start_date: string
     end_date: string
-    type: 'public_holiday' | 'member_leave'
+    type: 'public_holiday' | 'member_leave' | 'business_trip' | 'workshop' | 'other'
     member_id: string | null
     note: string | null
 }

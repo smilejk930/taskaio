@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import {
     Table,
     TableBody,
@@ -21,7 +22,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Search } from 'lucide-react'
 import { Holiday, HolidayFormData, HolidayProfile } from '@/hooks/use-holidays'
 import HolidayDialog from './HolidayDialog'
 
@@ -32,7 +33,7 @@ interface HolidayListProps {
     profiles: HolidayProfile[]
     isLoading: boolean
     onUpdate: (id: string, data: HolidayFormData) => Promise<boolean>
-    onDelete: (id: string) => Promise<void>
+    onDelete: (id: string) => Promise<boolean>
 }
 
 // ──── 헬퍼 ────────────────────────────────────────────────────────────────────
@@ -54,6 +55,7 @@ export default function HolidayList({
 }: HolidayListProps) {
     const [editTarget, setEditTarget] = useState<Holiday | null>(null)
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
+    const [searchQuery, setSearchQuery] = useState('')
 
     const handleEditSubmit = async (data: HolidayFormData): Promise<boolean> => {
         if (!editTarget) return false
@@ -65,6 +67,29 @@ export default function HolidayList({
         await onDelete(deleteTargetId)
         setDeleteTargetId(null)
     }
+
+    const filteredHolidays = holidays.filter(holiday => {
+        if (!searchQuery.trim()) return true
+        const query = searchQuery.toLowerCase()
+        const matchName = holiday.name.toLowerCase().includes(query)
+        const memberName = ['member_leave', 'business_trip'].includes(holiday.type) && holiday.member_id
+            ? (holiday.profiles?.display_name ?? profiles.find(p => p.id === holiday.member_id)?.display_name ?? '')
+            : ''
+        const matchMember = memberName.toLowerCase().includes(query)
+        
+        const typeNames: Record<string, string> = {
+            public_holiday: '공휴일',
+            member_leave: '팀원 휴가',
+            business_trip: '출장',
+            workshop: '워크샵',
+            other: '기타',
+        }
+        const matchType = (typeNames[holiday.type] || '').toLowerCase().includes(query)
+        
+        const matchDate = formatDateRange(holiday.start_date, holiday.end_date).toLowerCase().includes(query)
+
+        return matchName || matchMember || matchType || matchDate
+    })
 
     if (holidays.length === 0) {
         return (
@@ -78,6 +103,19 @@ export default function HolidayList({
 
     return (
         <>
+            <div className="flex items-center justify-between mb-4">
+                <div className="relative w-full max-w-sm">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        type="search"
+                        placeholder="유형, 이름, 기간, 대상 팀원 검색..."
+                        className="pl-8"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
+            </div>
+
             <div className="rounded-lg border overflow-hidden">
                 <Table>
                     <TableHeader>
@@ -91,13 +129,25 @@ export default function HolidayList({
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {holidays.map((holiday) => (
+                        {filteredHolidays.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                                    검색 결과가 없습니다.
+                                </TableCell>
+                            </TableRow>
+                        ) : filteredHolidays.map((holiday) => (
                             <TableRow key={holiday.id}>
                                 <TableCell>
                                     {holiday.type === 'public_holiday' ? (
                                         <Badge variant="secondary">🗓️ 공휴일</Badge>
-                                    ) : (
+                                    ) : holiday.type === 'member_leave' ? (
                                         <Badge variant="outline">👤 팀원 휴가</Badge>
+                                    ) : holiday.type === 'business_trip' ? (
+                                        <Badge variant="outline" className="border-purple-200 text-purple-700 bg-purple-50">🏢 출장</Badge>
+                                    ) : holiday.type === 'workshop' ? (
+                                        <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50">🎤 워크샵</Badge>
+                                    ) : (
+                                        <Badge variant="outline" className="border-orange-200 text-orange-700 bg-orange-50">📌 기타</Badge>
                                     )}
                                 </TableCell>
                                 <TableCell className="font-medium">{holiday.name}</TableCell>
@@ -106,7 +156,7 @@ export default function HolidayList({
                                 </TableCell>
                                 <TableCell className="text-sm text-muted-foreground">
                                     {/* profiles join 결과 또는 profiles 목록에서 이름 조회 */}
-                                    {holiday.type === 'member_leave' && holiday.member_id
+                                    {['member_leave', 'business_trip'].includes(holiday.type) && holiday.member_id
                                         ? (holiday.profiles?.display_name
                                             ?? profiles.find(p => p.id === holiday.member_id)?.display_name
                                             ?? '—')
@@ -156,6 +206,7 @@ export default function HolidayList({
                 } : undefined}
                 profiles={profiles}
                 onSubmit={handleEditSubmit}
+                onDelete={onDelete}
                 isLoading={isLoading}
             />
 

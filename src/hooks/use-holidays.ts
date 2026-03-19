@@ -21,7 +21,7 @@ export interface Holiday {
     name: string
     start_date: string
     end_date: string
-    type: 'public_holiday' | 'member_leave'
+    type: 'public_holiday' | 'member_leave' | 'business_trip' | 'workshop' | 'other'
     member_id: string | null
     note: string | null
     created_at: string | null
@@ -33,7 +33,7 @@ export interface HolidayFormData {
     name: string
     start_date: string
     end_date: string
-    type: 'public_holiday' | 'member_leave'
+    type: 'public_holiday' | 'member_leave' | 'business_trip' | 'workshop' | 'other'
     member_id: string | null
     note: string
 }
@@ -57,7 +57,7 @@ export function useHolidays(initialHolidays: Holiday[]) {
                 note: formData.note || null,
             })
             // 서버 응답을 목록에 추가 (profiles는 없으므로 null 처리)
-            setHolidays(prev => [...prev, { ...created, profiles: null }])
+            setHolidays(prev => [...prev, { ...created, type: created.type as Holiday['type'], profiles: null }])
             toast.success('휴일이 등록되었습니다.')
             return true
         } catch (error: unknown) {
@@ -82,7 +82,7 @@ export function useHolidays(initialHolidays: Holiday[]) {
                 note: formData.note || null,
             })
             setHolidays(prev =>
-                prev.map(h => h.id === id ? { ...h, ...updated } : h)
+                prev.map(h => h.id === id ? { ...h, ...updated, type: updated.type as Holiday['type'] } : h)
             )
             toast.success('휴일이 수정되었습니다.')
             return true
@@ -95,16 +95,17 @@ export function useHolidays(initialHolidays: Holiday[]) {
         }
     }, [])
 
-    // 휴일 삭제
     const handleDelete = useCallback(async (id: string) => {
         setIsLoading(true)
         try {
             await deleteHoliday(id)
             setHolidays(prev => prev.filter(h => h.id !== id))
             toast.success('휴일이 삭제되었습니다.')
+            return true
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : '알 수 없는 오류'
             toast.error('휴일 삭제 실패', { description: message })
+            return false
         } finally {
             setIsLoading(false)
         }
