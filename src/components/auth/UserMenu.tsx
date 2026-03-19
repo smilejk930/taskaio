@@ -71,11 +71,11 @@ export function UserMenu({ user }: UserMenuProps) {
                     <CalendarDays className="mr-2 h-4 w-4" />
                     <span>휴일 관리</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/profile')}>
                     <User className="mr-2 h-4 w-4" />
                     <span>프로필 설정</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>설정</span>
                 </DropdownMenuItem>
