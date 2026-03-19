@@ -56,93 +56,110 @@ export function AuthForm({ mode }: AuthFormProps) {
     }
 
     return (
-        <Card className="w-[400px]">
-            <CardHeader className="space-y-1 text-center">
-                <CardTitle className="text-2xl font-bold">
-                    {mode === 'login' ? '로그인' : '계정 생성'}
-                </CardTitle>
-                <CardDescription>
-                    {mode === 'login'
-                        ? '이메일과 비밀번호를 입력하여 접속해주세요'
-                        : 'TaskAIO에 오신 것을 환영합니다'}
-                </CardDescription>
-            </CardHeader>
-            <form onSubmit={handleSubmit}>
-                <CardContent className="grid gap-4">
-                    {mode === 'signup' && (
+        <div className="flex flex-col items-center gap-6">
+            {/* 브랜드 로고 + 타이틀 */}
+            <div className="flex flex-col items-center gap-2">
+                <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg">
+                    <svg viewBox="0 0 512 512" className="w-10 h-10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M 120 265 L 215 360 L 385 175" stroke="white" strokeWidth="65" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                </div>
+                <div className="text-center">
+                    <h1 className="text-3xl font-extrabold tracking-tight">
+                        task<span className="text-primary">AIO</span>
+                    </h1>
+                    <p className="text-sm text-muted-foreground font-medium mt-0.5">일정관리 All in One</p>
+                </div>
+            </div>
+
+            <Card className="w-[400px]">
+                <CardHeader className="space-y-1 text-center">
+                    <CardTitle className="text-xl font-bold">
+                        {mode === 'login' ? '로그인' : '계정 생성'}
+                    </CardTitle>
+                    <CardDescription>
+                        {mode === 'login'
+                            ? '이메일과 비밀번호를 입력하여 접속해주세요'
+                            : 'taskAIO에 오신 것을 환영합니다'}
+                    </CardDescription>
+                </CardHeader>
+                <form onSubmit={handleSubmit}>
+                    <CardContent className="grid gap-4">
+                        {mode === 'signup' && (
+                            <div className="grid gap-2">
+                                <Label htmlFor="displayName">이름</Label>
+                                <Input
+                                    id="displayName"
+                                    name="displayName"
+                                    placeholder=" 홍길동"
+                                    type="text"
+                                    required
+                                    disabled={isLoading}
+                                />
+                            </div>
+                        )}
                         <div className="grid gap-2">
-                            <Label htmlFor="displayName">이름</Label>
+                            <Label htmlFor="email">이메일</Label>
                             <Input
-                                id="displayName"
-                                name="displayName"
-                                placeholder=" 홍길동"
-                                type="text"
+                                id="email"
+                                name="email"
+                                placeholder="name@example.com"
+                                type="email"
+                                autoCapitalize="none"
+                                autoComplete="email"
+                                autoCorrect="off"
                                 required
                                 disabled={isLoading}
                             />
                         </div>
-                    )}
-                    <div className="grid gap-2">
-                        <Label htmlFor="email">이메일</Label>
-                        <Input
-                            id="email"
-                            name="email"
-                            placeholder="name@example.com"
-                            type="email"
-                            autoCapitalize="none"
-                            autoComplete="email"
-                            autoCorrect="off"
-                            required
-                            disabled={isLoading}
-                        />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="password">비밀번호</Label>
-                        <Input
-                            id="password"
-                            name="password"
-                            type="password"
-                            required
-                            disabled={isLoading}
-                        />
-                    </div>
-                    {mode === 'signup' && (
                         <div className="grid gap-2">
-                            <Label htmlFor="confirmPassword">비밀번호 확인</Label>
+                            <Label htmlFor="password">비밀번호</Label>
                             <Input
-                                id="confirmPassword"
-                                name="confirmPassword"
+                                id="password"
+                                name="password"
                                 type="password"
                                 required
                                 disabled={isLoading}
                             />
                         </div>
-                    )}
-                </CardContent>
-                <CardFooter className="flex flex-col gap-4">
-                    <Button className="w-full" type="submit" disabled={isLoading}>
-                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {mode === 'login' ? '로그인' : '회원가입'}
-                    </Button>
-                    <div className="text-center text-sm text-muted-foreground">
-                        {mode === 'login' ? (
-                            <>
-                                계정이 없으신가요?{' '}
-                                <Link href="/signup" className="underline hover:text-primary">
-                                    회원가입
-                                </Link>
-                            </>
-                        ) : (
-                            <>
-                                이미 계정이 있으신가요?{' '}
-                                <Link href="/login" className="underline hover:text-primary">
-                                    로그인
-                                </Link>
-                            </>
+                        {mode === 'signup' && (
+                            <div className="grid gap-2">
+                                <Label htmlFor="confirmPassword">비밀번호 확인</Label>
+                                <Input
+                                    id="confirmPassword"
+                                    name="confirmPassword"
+                                    type="password"
+                                    required
+                                    disabled={isLoading}
+                                />
+                            </div>
                         )}
-                    </div>
-                </CardFooter>
-            </form>
-        </Card>
+                    </CardContent>
+                    <CardFooter className="flex flex-col gap-4">
+                        <Button className="w-full" type="submit" disabled={isLoading}>
+                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {mode === 'login' ? '로그인' : '회원가입'}
+                        </Button>
+                        <div className="text-center text-sm text-muted-foreground">
+                            {mode === 'login' ? (
+                                <>
+                                    계정이 없으신가요?{' '}
+                                    <Link href="/signup" className="underline hover:text-primary">
+                                        회원가입
+                                    </Link>
+                                </>
+                            ) : (
+                                <>
+                                    이미 계정이 있으신가요?{' '}
+                                    <Link href="/login" className="underline hover:text-primary">
+                                        로그인
+                                    </Link>
+                                </>
+                            )}
+                        </div>
+                    </CardFooter>
+                </form>
+            </Card>
+        </div>
     )
 }
