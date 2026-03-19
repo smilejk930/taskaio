@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { LayoutDashboard, LogOut, Settings, User } from 'lucide-react'
+import { LayoutDashboard, LogOut, Settings, User, CalendarDays } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -66,6 +66,10 @@ export function UserMenu({ user }: UserMenuProps) {
                 <DropdownMenuItem onClick={() => router.push('/projects')}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     <span>프로젝트 목록</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/holidays')}>
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    <span>휴일 관리</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                     <User className="mr-2 h-4 w-4" />

@@ -69,31 +69,16 @@ export default function HolidayTabs({
 
     return (
         <div className="flex flex-col h-screen overflow-hidden">
-            <header className="border-b px-8 py-4 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
-                <div className="flex items-center gap-4">
-                    <Link
-                        href="/projects"
-                        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                        ← 프로젝트 목록
-                    </Link>
-                    <div className="flex items-center gap-2">
-                        <CalendarDays className="h-5 w-5 text-primary" />
-                        <h1 className="text-xl font-bold">휴일 관리</h1>
-                    </div>
+            <header className="border-b px-8 py-3 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0 h-14">
+                <div className="flex items-center gap-2">
+                    <CalendarDays className="h-5 w-5 text-primary" />
+                    <h1 className="text-xl font-bold">휴일 관리</h1>
                 </div>
-
-                <div className="flex items-center gap-4">
-                    <Button onClick={() => openCreateDialog()} size="sm">
-                        <Plus className="h-4 w-4 mr-1" />
-                        휴일 등록
-                    </Button>
-                    {currentUser && <UserMenu user={currentUser} />}
-                </div>
+                {currentUser && <UserMenu user={currentUser} />}
             </header>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col h-full overflow-hidden">
-                <div className="px-6 pt-4 border-b bg-card shrink-0">
+                <div className="px-6 py-3 border-b bg-card shrink-0 flex items-center justify-between">
                     <TabsList className="grid w-[400px] grid-cols-2">
                         <TabsTrigger value="calendar">
                             <CalendarIcon className="w-4 h-4 mr-2" />
@@ -104,10 +89,15 @@ export default function HolidayTabs({
                             목록 뷰
                         </TabsTrigger>
                     </TabsList>
+
+                    <Button onClick={() => openCreateDialog()} size="sm">
+                        <Plus className="h-4 w-4 mr-1" />
+                        휴일 등록
+                    </Button>
                 </div>
-                
+
                 <TabsContent value="calendar" className="flex-1 overflow-hidden m-0 p-0 data-[state=active]:flex data-[state=active]:flex-col">
-                    <HolidayCalendarView 
+                    <HolidayCalendarView
                         holidays={holidays}
                         profiles={profiles}
                         isLoading={isLoading}
@@ -117,7 +107,7 @@ export default function HolidayTabs({
                 </TabsContent>
 
                 <TabsContent value="list" className="flex-1 overflow-hidden m-0 p-0 data-[state=active]:flex data-[state=active]:flex-col">
-                    <HolidayClientView 
+                    <HolidayClientView
                         holidays={holidays}
                         profiles={profiles}
                         isLoading={isLoading}
