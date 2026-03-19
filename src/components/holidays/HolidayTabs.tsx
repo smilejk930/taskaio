@@ -38,7 +38,7 @@ export default function HolidayTabs({
     currentUser,
 }: HolidayTabsProps) {
     const { holidays, isLoading, handleCreate, handleUpdate, handleDelete } =
-        useHolidays(initialHolidays)
+        useHolidays(initialHolidays, profiles)
 
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [dialogInitialData, setDialogInitialData] = useState<HolidayFormData & { id?: string }>(EMPTY_FORM)

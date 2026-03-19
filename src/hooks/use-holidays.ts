@@ -40,7 +40,7 @@ export interface HolidayFormData {
 
 // ──── 훅 ──────────────────────────────────────────────────────────────────────
 
-export function useHolidays(initialHolidays: Holiday[]) {
+export function useHolidays(initialHolidays: Holiday[], profiles: HolidayProfile[] = []) {
     const [holidays, setHolidays] = useState<Holiday[]>(initialHolidays)
     const [isLoading, setIsLoading] = useState(false)
 
@@ -56,8 +56,9 @@ export function useHolidays(initialHolidays: Holiday[]) {
                 member_id: formData.member_id,
                 note: formData.note || null,
             })
-            // 서버 응답을 목록에 추가 (profiles는 없으므로 null 처리)
-            setHolidays(prev => [...prev, { ...created, type: created.type as Holiday['type'], profiles: null }])
+            const profile = created.member_id ? profiles.find(p => p.id === created.member_id) ?? null : null
+            // 서버 응답을 목록에 추가
+            setHolidays(prev => [...prev, { ...created, type: created.type as Holiday['type'], profiles: profile }])
             toast.success('휴일이 등록되었습니다.')
             return true
         } catch (error: unknown) {
@@ -67,7 +68,7 @@ export function useHolidays(initialHolidays: Holiday[]) {
         } finally {
             setIsLoading(false)
         }
-    }, [])
+    }, [profiles])
 
     // 휴일 수정
     const handleUpdate = useCallback(async (id: string, formData: HolidayFormData) => {
@@ -81,8 +82,9 @@ export function useHolidays(initialHolidays: Holiday[]) {
                 member_id: formData.member_id,
                 note: formData.note || null,
             })
+            const profile = updated.member_id ? profiles.find(p => p.id === updated.member_id) ?? null : null
             setHolidays(prev =>
-                prev.map(h => h.id === id ? { ...h, ...updated, type: updated.type as Holiday['type'] } : h)
+                prev.map(h => h.id === id ? { ...h, ...updated, type: updated.type as Holiday['type'], profiles: profile } : h)
             )
             toast.success('휴일이 수정되었습니다.')
             return true
@@ -93,7 +95,7 @@ export function useHolidays(initialHolidays: Holiday[]) {
         } finally {
             setIsLoading(false)
         }
-    }, [])
+    }, [profiles])
 
     const handleDelete = useCallback(async (id: string) => {
         setIsLoading(true)
