@@ -23,22 +23,20 @@ export function AppLogo({ href = '/projects', size = 'sm', showText = true, clas
 
     return (
         <Link href={href} className={cn('flex items-center gap-2 hover:opacity-80 transition-opacity', className)}>
-            {/* 체크마크 아이콘 */}
-            <div className={cn('rounded-lg bg-primary flex items-center justify-center shrink-0', iconSize)}>
-                <svg viewBox="0 0 512 512" className={svgSize} fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                        d="M 120 265 L 215 360 L 385 175"
-                        stroke="white"
-                        strokeWidth="70"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                    />
+            {/* icon.svg와 동일한 색상/형태의 아이콘 */}
+            <div
+                className={cn('flex items-center justify-center shrink-0 rounded-xl overflow-hidden', iconSize)}
+                style={{ backgroundColor: '#2563EB' }}
+            >
+                <svg viewBox="0 0 512 512" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M 130 275 L 225 370 L 395 185" stroke="rgba(0,0,0,0.2)" strokeWidth="60" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M 120 265 L 215 360 L 385 175" stroke="white" strokeWidth="60" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
             </div>
             {/* 앱 이름 (showText가 true일 때만 표시) */}
             {showText && (
                 <span className={cn('font-extrabold tracking-tight', textSize)}>
-                    task<span className="text-primary">AIO</span>
+                    task<span style={{ color: '#2563EB' }}>AIO</span>
                 </span>
             )}
         </Link>

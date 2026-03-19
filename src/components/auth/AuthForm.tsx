@@ -59,14 +59,18 @@ export function AuthForm({ mode }: AuthFormProps) {
         <div className="flex flex-col items-center gap-6">
             {/* 브랜드 로고 + 타이틀 */}
             <div className="flex flex-col items-center gap-2">
-                <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg">
-                    <svg viewBox="0 0 512 512" className="w-10 h-10" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M 120 265 L 215 360 L 385 175" stroke="white" strokeWidth="65" strokeLinecap="round" strokeLinejoin="round" />
+                <div
+                    className="w-16 h-16 rounded-xl flex items-center justify-center shadow-lg overflow-hidden"
+                    style={{ backgroundColor: '#2563EB' }}
+                >
+                    <svg viewBox="0 0 512 512" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M 130 275 L 225 370 L 395 185" stroke="rgba(0,0,0,0.2)" strokeWidth="60" strokeLinecap="round" strokeLinejoin="round" />
+                        <path d="M 120 265 L 215 360 L 385 175" stroke="white" strokeWidth="60" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </div>
                 <div className="text-center">
                     <h1 className="text-3xl font-extrabold tracking-tight">
-                        task<span className="text-primary">AIO</span>
+                        task<span style={{ color: '#2563EB' }}>AIO</span>
                     </h1>
                     <p className="text-sm text-muted-foreground font-medium mt-0.5">일정관리 All in One</p>
                 </div>
