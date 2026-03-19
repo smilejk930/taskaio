@@ -58,20 +58,18 @@ export async function middleware(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    // 보호된 경로 설정
-    const isProtectedPath = request.nextUrl.pathname.startsWith('/projects') ||
-        request.nextUrl.pathname.startsWith('/tasks')
-
     // 인증 관련 경로 설정
     const isAuthPath = request.nextUrl.pathname.startsWith('/login') ||
         request.nextUrl.pathname.startsWith('/signup')
 
-    if (!user && isProtectedPath) {
+    // 인증되지 않은 사용자가 인증이 필요한 경로에 접근할 경우 로그인 페이지로 리다이렉트
+    if (!user && !isAuthPath) {
         const url = request.nextUrl.clone()
         url.pathname = '/login'
         return NextResponse.redirect(url)
     }
 
+    // 이미 인증된 사용자가 로그인/회원가입 페이지에 접근할 경우 프로젝트 목록 페이지로 리다이렉트
     if (user && isAuthPath) {
         const url = request.nextUrl.clone()
         url.pathname = '/projects'
