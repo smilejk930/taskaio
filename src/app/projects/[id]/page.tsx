@@ -33,16 +33,22 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         .eq('is_deleted', false)
         .order('created_at', { ascending: true })
 
-    // 휴일 정보 조회
-    const { data: holidays } = await supabase
-        .from('holidays')
-        .select('*')
-
     // 팀원 정보 조회
     const { data: members } = await supabase
         .from('project_members')
         .select('*, profiles(*)')
         .eq('project_id', projectId)
+
+    const memberIds = members?.map(m => m.user_id) || []
+
+    // 휴일 정보 조회 (팀원 필터링)
+    let holidaysQuery = supabase.from('holidays').select('*')
+    if (memberIds.length > 0) {
+        holidaysQuery = holidaysQuery.or(`type.in.(public_holiday,workshop),member_id.in.(${memberIds.join(',')})`)
+    } else {
+        holidaysQuery = holidaysQuery.in('type', ['public_holiday', 'workshop'])
+    }
+    const { data: holidays } = await holidaysQuery
 
     // 업무 연관성(링크) 조회
     const { data: links } = await supabase
