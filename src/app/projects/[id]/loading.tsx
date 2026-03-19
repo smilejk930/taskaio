@@ -4,13 +4,17 @@ import { DashboardSkeleton, ProjectStatsSkeleton } from "@/components/projects/P
 export default function ProjectDetailLoading() {
     return (
         <div className="flex flex-col h-screen">
-            <header className="border-b px-8 py-4 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div>
-                    <div className="flex items-center gap-3">
-                        <Skeleton className="h-8 w-64" />
-                        <Skeleton className="h-4 w-12 rounded-full" />
+            <header className="border-b px-6 py-3 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
+                <div className="flex items-center gap-2 min-w-0">
+                    {/* AppLogo 아이콘 스켈레톤 */}
+                    <Skeleton className="w-7 h-7 rounded-xl" />
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                            <Skeleton className="h-6 w-48" />
+                            <Skeleton className="h-5 w-20 rounded-full" />
+                        </div>
+                        <Skeleton className="h-4 w-64 mt-1" />
                     </div>
-                    <Skeleton className="h-5 w-96 mt-2" />
                 </div>
 
                 {/* 통계 섹션 */}
