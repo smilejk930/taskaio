@@ -25,6 +25,7 @@ import {
 import { Pencil, Trash2, Search } from 'lucide-react'
 import { Holiday, HolidayFormData, HolidayProfile } from '@/hooks/use-holidays'
 import HolidayDialog from './HolidayDialog'
+import { Skeleton } from '@/components/ui/skeleton'
 
 // ──── 타입 정의 ────────────────────────────────────────────────────────────────
 
@@ -91,7 +92,7 @@ export default function HolidayList({
         return matchName || matchMember || matchType || matchDate
     })
 
-    if (holidays.length === 0) {
+    if (!isLoading && holidays.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
                 <p className="text-4xl mb-3">🗓️</p>
@@ -129,7 +130,18 @@ export default function HolidayList({
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredHolidays.length === 0 ? (
+                        {isLoading ? (
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <TableRow key={`skeleton-${i}`}>
+                                    <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-40" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-32" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : filteredHolidays.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                                     검색 결과가 없습니다.

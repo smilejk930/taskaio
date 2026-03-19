@@ -35,6 +35,7 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { Calendar } from '@/components/ui/calendar'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface HolidayCalendarViewProps {
     holidays: Holiday[]
@@ -293,12 +294,21 @@ export default function HolidayCalendarView({
                                         today && "bg-primary text-primary-foreground font-bold",
                                         !today && (day.getDay() === 0 || hasPublicHoliday) && "text-red-500 font-semibold"
                                     )}>
-                                        {format(day, 'd')}
+                                        {isLoading ? (
+                                            <Skeleton className="h-4 w-4 rounded-full" />
+                                        ) : (
+                                            format(day, 'd')
+                                        )}
                                     </span>
                                 </div>
 
-                                <div className="flex-1 overflow-hidden space-y-1">
-                                    {dayHolidays.slice(0, 3).map(holiday => {
+                                <div className="flex-1 overflow-hidden space-y-1 p-1">
+                                    {isLoading ? (
+                                        <>
+                                            <Skeleton className="h-5 w-[90%] mx-auto" />
+                                            <Skeleton className="h-5 w-[70%] mx-auto" />
+                                        </>
+                                    ) : dayHolidays.slice(0, 3).map(holiday => {
                                         const isStart = holiday.start_date === dayStr
                                         const isEnd = holiday.end_date === dayStr
                                         const colorClass = HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS['other']
