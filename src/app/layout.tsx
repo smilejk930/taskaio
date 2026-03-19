@@ -16,7 +16,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "TaskAIO - 일정관리 All in One",
+  title: "taskAIO - 일정관리 All in One",
   description: "WBS 일정관리 APP",
 };
 
