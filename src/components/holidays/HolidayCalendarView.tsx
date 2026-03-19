@@ -17,6 +17,7 @@ import {
     addDays,
     parseISO,
 } from 'date-fns'
+import { ko } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -167,12 +168,51 @@ export default function HolidayCalendarView({
                                 {format(currentDate, 'yyyy년 MM월')}
                             </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="center">
+                        <PopoverContent className="w-auto p-3 shadow-xl" align="center">
+                            <div className="flex items-center justify-between gap-2 mb-2 px-1">
+                                <Select 
+                                    value={currentDate.getFullYear().toString()} 
+                                    onValueChange={(year) => setCurrentDate(new Date(parseInt(year), currentDate.getMonth(), 1))}
+                                >
+                                    <SelectTrigger className="h-8 w-[100px] text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-[200px]">
+                                        {Array.from({ length: 31 }, (_, i) => 2020 + i).map(year => (
+                                            <SelectItem key={year} value={year.toString()}>{year}년</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Select 
+                                    value={currentDate.getMonth().toString()} 
+                                    onValueChange={(month) => setCurrentDate(new Date(currentDate.getFullYear(), parseInt(month), 1))}
+                                >
+                                    <SelectTrigger className="h-8 w-[80px] text-sm">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-[200px]">
+                                        {Array.from({ length: 12 }, (_, i) => i).map(month => (
+                                            <SelectItem key={month} value={month.toString()}>{month + 1}월</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                             <Calendar
+                                locale={ko}
                                 mode="single"
                                 selected={currentDate}
-                                onSelect={(d) => d && setCurrentDate(d)}
+                                onSelect={(d) => {
+                                    if (d) {
+                                        setCurrentDate(d)
+                                    }
+                                }}
+                                month={currentDate}
+                                onMonthChange={setCurrentDate}
                                 initialFocus
+                                classNames={{
+                                    month_caption: "hidden",
+                                    nav: "hidden"
+                                }}
                             />
                         </PopoverContent>
                     </Popover>
