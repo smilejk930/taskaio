@@ -277,10 +277,10 @@ export default function ProjectClientView({
             start_date: format(new Date(ganttTask.start_date), 'yyyy-MM-dd'),
             end_date: adjustedEndDate,
             progress: Math.round(ganttTask.progress * 100),
-            status: (ganttTask.status || 'todo') as ProjectTask['status'],
-            priority: (ganttTask.priority || 'medium') as ProjectTask['priority'],
+            status: (ganttTask.status || 'todo') as TaskFormData['status'],
+            priority: (ganttTask.priority || 'medium') as TaskFormData['priority'],
             description: ganttTask.description ?? null,
-            color: ganttTask.color,
+            color: ganttTask.color ?? null,
         })
     }
 
