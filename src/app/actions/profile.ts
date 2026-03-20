@@ -68,7 +68,7 @@ export async function deleteAccount() {
     }
 
     // RPC 함수를 통해 auth.users 에서 계정 삭제 호출 (보안 정의(SECURITY DEFINER) 함수 필요)
-    const { error } = await supabase.rpc('delete_own_account')
+    const { error } = await supabase.rpc('delete_own_account', {})
 
     if (error) {
         return { error: '회원 탈퇴 처리에 실패했습니다.', details: error.message }

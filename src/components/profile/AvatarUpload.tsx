@@ -46,8 +46,9 @@ export function AvatarUpload({ userId, url, onUpload }: AvatarUploadProps) {
       onUpload(data.publicUrl)
       toast.success('아바타 이미지가 로드되었습니다. 우측 상단의 변경사항 저장 버튼을 누르시면 적용됩니다.')
 
-    } catch (error: any) {
-      toast.error('업로드 실패', { description: error.message })
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'
+      toast.error('업로드 실패', { description: message })
     } finally {
       setUploading(false)
     }

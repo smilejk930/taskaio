@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { ProjectTask } from '@/types/project'
 
 export interface TaskFilters {
     title: string
@@ -12,22 +13,7 @@ export interface TaskFilters {
     showOnlyParent: boolean
 }
 
-interface Task {
-    id: string
-    title: string
-    start_date: string | null
-    end_date: string | null
-    progress: number | null
-    priority: string | null
-    status: string | null
-    parent_id: string | null
-    project_id: string
-    assignee_id: string | null
-    description?: string | null
-    color?: string | null
-}
-
-export function useTaskFilters(tasks: Task[], initialAssigneeIds: string[] = []) {
+export function useTaskFilters(tasks: ProjectTask[], initialAssigneeIds: string[] = []) {
     // 첫 진입 시 기본값 (초기화 버튼의 복원 대상)
     const defaultFilters: TaskFilters = useMemo(() => ({
         title: '',

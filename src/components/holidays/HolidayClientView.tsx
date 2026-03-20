@@ -1,13 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Plus, CalendarDays } from 'lucide-react'
-import { Holiday, HolidayFormData, HolidayProfile, useHolidays } from '@/hooks/use-holidays'
+import { Holiday, HolidayFormData, HolidayProfile } from '@/hooks/use-holidays'
 import HolidayList from '@/components/holidays/HolidayList'
-import HolidayDialog from '@/components/holidays/HolidayDialog'
-import { UserMenu } from '@/components/auth/UserMenu'
-import Link from 'next/link'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // ──── 타입 정의 ────────────────────────────────────────────────────────────────

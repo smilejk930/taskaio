@@ -4,25 +4,45 @@
  */
 declare module 'dhtmlx-gantt' {
     interface GanttStatic {
-        config: Record<string, unknown>
+        config: Record<string, unknown> & {
+            lightbox: {
+                sections: unknown[]
+            }
+        }
         init(container: HTMLElement): void
         clearAll(): void
-        parse(data: unknown): void
+        parse(data: { data: unknown[], links?: unknown[] }): void
         render(): void
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        attachEvent(event: string, handler: (...args: any[]) => any): string
+        attachEvent(event: string, handler: (...args: unknown[]) => unknown): string
         detachEvent(id: string): void
         addMarker(marker: {
             start_date: Date
             css?: string
             text?: string
             id?: string
+            title?: string
         }): string
         deleteMarker(id: string): void
-        filter: ((id: string, item: Record<string, unknown>) => boolean) | null
+        calculateDuration(start: Date, end: Date): number
+        getLightbox(): HTMLElement
+        getTask(id: string | number): Record<string, unknown>
+        refreshTask(id: string | number): void
+        plugins(obj: Record<string, boolean>): void
+        serverList(name: string, data?: unknown[]): unknown[]
+        locale: Record<string, unknown> & {
+            labels: Record<string, string>
+        }
+        keys: Record<string, unknown>
+        templates: Record<string, unknown> & {
+            timeline_cell_class: (task: Record<string, unknown>, date: Date) => string
+            task_time: (start: Date, end: Date) => string
+            tooltip_text: (start: Date, end: Date, task: Record<string, unknown>) => string
+        }
+        form_blocks: Record<string, unknown>
     }
 
-    export const gantt: GanttStatic
+    const gantt: GanttStatic
+    export default gantt
 }
 
 declare module 'dhtmlx-gantt/codebase/dhtmlxgantt.css'

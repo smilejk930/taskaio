@@ -7,11 +7,8 @@ import {
     flexRender,
     createColumnHelper,
 } from '@tanstack/react-table'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Trash2 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { Plus } from 'lucide-react'
 
 // ── 상수 정의 ─────────────────────────────────────────────────────────────────
 
@@ -30,48 +27,29 @@ const PRIORITY_OPTIONS = [
 ]
 
 /** 0~100% 범위를 10% 단위로 표현하는 진척률 옵션 */
-const PROGRESS_OPTIONS = Array.from({ length: 11 }, (_, i) => i * 10)
+/** 0~100% 범위를 10% 단위로 표현하는 진척률 옵션 (현재 그리드에서는 사용 안 함) */
+// const PROGRESS_OPTIONS = Array.from({ length: 11 }, (_, i) => i * 10)
 
 // ── 타입 정의 ─────────────────────────────────────────────────────────────────
 
-interface Task {
-    id: string
-    title: string
-    start_date: string | null
-    end_date: string | null
-    progress: number | null
-    priority: string | null
-    status: string | null
-    parent_id: string | null
-    project_id: string
-    assignee_id: string | null
-    description?: string | null
-    color?: string | null
-}
-
-interface Member {
-    id: string
-    display_name: string | null
-    email: string | null
-}
+import { ProjectTask, Member } from '@/types/project'
 
 interface WbsGridProps {
-    tasks: Task[]
+    tasks: ProjectTask[]
     projectId: string
     members: Member[]
     /** 현재 접속자 역할 (owner/manager: 담당자 선택 가능, member: 읽기 전용) */
     currentMemberRole: 'owner' | 'manager' | 'member' | null | undefined
-    onTaskClick: (task: Task) => void
+    onTaskClick: (task: ProjectTask) => void
     onTaskCreate: (parentId: string | null) => void
     onTaskDelete: (id: string) => void
 }
 
-const columnHelper = createColumnHelper<Task>()
+const columnHelper = createColumnHelper<ProjectTask>()
 
 export default function WbsGrid({
     tasks,
     members,
-    currentMemberRole,
     onTaskClick,
     onTaskCreate,
 }: WbsGridProps) {
@@ -84,7 +62,7 @@ export default function WbsGrid({
             low: 0
         };
 
-        const multiLevelSort = (a: Task, b: Task) => {
+        const multiLevelSort = (a: ProjectTask, b: ProjectTask) => {
             // 1. 시작일 ASC
             const dateA = a.start_date || '9999-12-31';
             const dateB = b.start_date || '9999-12-31';
@@ -120,7 +98,7 @@ export default function WbsGrid({
         const parents = tasks.filter(t => !t.parent_id).sort(multiLevelSort);
         const children = tasks.filter(t => t.parent_id).sort(multiLevelSort);
 
-        const result: Task[] = [];
+        const result: ProjectTask[] = [];
         parents.forEach(p => {
             result.push(p);
             children.filter(c => c.parent_id === p.id).forEach(c => result.push(c));

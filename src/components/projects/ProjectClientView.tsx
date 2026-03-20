@@ -15,8 +15,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Settings, Plus } from 'lucide-react'
 import WbsGrid from '@/components/wbs/WbsGrid'
@@ -25,7 +23,7 @@ import TeamManagementView from '@/components/projects/members/TeamManagementView
 import { TaskSearchFilter } from '@/components/projects/TaskSearchFilter'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { AppLogo } from '@/components/common/AppLogo'
-import { updateTask, createTask, deleteTask } from '@/app/actions/tasks'
+// import { updateTask, createTask, deleteTask } from '@/app/actions/tasks' // useTasks 훅을 통해 처리하므로 제거
 import { updateProject, deleteProject } from '@/app/actions/projects'
 import { createLink, deleteLink } from '@/app/actions/links'
 import { createClient } from '@/lib/supabase/client'
@@ -35,54 +33,16 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { normalizeDate, calculateGanttDuration } from '@/lib/gantt-utils'
 import { useTaskFilters } from '@/hooks/use-task-filters'
 
-import { useTasks, TaskFormData } from '@/hooks/use-tasks'
+import { useTasks } from '@/hooks/use-tasks'
+import { ProjectTask, ProjectLink, Member, Holiday, GanttTask, GanttLink, TaskFormData } from '@/types/project'
 import TaskDialog from './TaskDialog'
 
 // ──── 타입 정의 ────────────────────────────────────────────────────────────────
 
-interface Task {
-    id: string
-    title: string
-    start_date: string | null
-    end_date: string | null
-    progress: number | null
-    priority: string | null
-    status: string | null
-    parent_id: string | null
-    project_id: string
-    assignee_id: string | null
-    description?: string | null
-    color?: string | null
-}
-
-interface Link {
-    id: string
-    source_id: string
-    target_id: string
-    type: string
-}
-
-interface Member {
-    id: string
-    display_name: string | null
-    email: string | null
-    role?: 'owner' | 'manager' | 'member' | null
-}
-
-interface Holiday {
-    id: string
-    name: string
-    start_date: string
-    end_date: string
-    type: 'public_holiday' | 'member_leave' | 'business_trip' | 'workshop' | 'other'
-    member_id: string | null
-    note: string | null
-}
-
 interface ProjectClientViewProps {
     project: { id: string; name: string; description: string | null }
-    initialTasks: Task[]
-    initialLinks: Link[]
+    initialTasks: ProjectTask[]
+    initialLinks: ProjectLink[]
     holidays: Holiday[]
     members: Member[]
     currentUser?: {
@@ -111,9 +71,9 @@ export default function ProjectClientView({
         createTask: handleCreateTask,
         updateTask: handleUpdateTask,
         deleteTask: handleDeleteTask
-    } = useTasks(initialTasks as any)
+    } = useTasks(initialTasks)
 
-    const [links, setLinks] = useState<Link[]>(initialLinks)
+    const [links, setLinks] = useState<ProjectLink[]>(initialLinks)
 
     // 서버 사이드에서 전달받은 데이터가 변경될 때 상태 동기화
     React.useEffect(() => {
@@ -130,7 +90,7 @@ export default function ProjectClientView({
     const [selectedTask, setSelectedTask] = useState<Partial<TaskFormData> & { id?: string } | null>(null)
 
     const { filters, setFilters, resetFilters, filteredTasks } = useTaskFilters(
-        tasks as any,
+        tasks,
         currentUser?.id ? [currentUser.id] : []
     )
 
@@ -155,14 +115,14 @@ export default function ProjectClientView({
                     const { eventType, new: newRecord, old: oldRecord } = payload
 
                     if (eventType === 'INSERT') {
-                        setTasks(prev => {
-                            if (prev.find(t => t.id === newRecord.id)) return prev
-                            return [...prev, newRecord as any]
+                        setTasks((prev: ProjectTask[]) => {
+                            if (prev.find(t => t.id === (newRecord as ProjectTask).id)) return prev
+                            return [...prev, newRecord as ProjectTask]
                         })
                     } else if (eventType === 'UPDATE') {
-                        setTasks(prev => prev.map(t => t.id === newRecord.id ? { ...t, ...newRecord } as any : t))
+                        setTasks((prev: ProjectTask[]) => prev.map(t => t.id === (newRecord as ProjectTask).id ? { ...t, ...newRecord } as ProjectTask : t))
                     } else if (eventType === 'DELETE') {
-                        setTasks(prev => prev.filter(t => t.id !== oldRecord.id))
+                        setTasks((prev: ProjectTask[]) => prev.filter(t => t.id !== oldRecord.id))
                     }
                 }
             )
@@ -181,19 +141,19 @@ export default function ProjectClientView({
                     const { eventType, new: newRecord, old: oldRecord } = payload
 
                     if (eventType === 'INSERT') {
-                        setLinks(prev => {
-                            if (prev.find(l => l.id === newRecord.id)) return prev
-                            return [...prev, newRecord as any]
+                        setLinks((prev: ProjectLink[]) => {
+                            if (prev.find(l => l.id === (newRecord as ProjectLink).id)) return prev
+                            return [...prev, newRecord as ProjectLink]
                         })
                     } else if (eventType === 'UPDATE') {
                         // is_deleted=true 가 된 경우 리스트에서 제거
-                        if (newRecord.is_deleted) {
-                            setLinks(prev => prev.filter(l => l.id !== newRecord.id))
+                        if ((newRecord as ProjectLink).is_deleted) {
+                            setLinks((prev: ProjectLink[]) => prev.filter(l => l.id !== (newRecord as ProjectLink).id))
                         } else {
-                            setLinks(prev => prev.map(l => l.id === newRecord.id ? { ...l, ...newRecord } as any : l))
+                            setLinks((prev: ProjectLink[]) => prev.map(l => l.id === (newRecord as ProjectLink).id ? { ...l, ...newRecord } as ProjectLink : l))
                         }
                     } else if (eventType === 'DELETE') {
-                        setLinks(prev => prev.filter(l => l.id !== oldRecord.id))
+                        setLinks((prev: ProjectLink[]) => prev.filter(l => l.id !== oldRecord.id))
                     }
                 }
             )
@@ -226,12 +186,17 @@ export default function ProjectClientView({
     const [deleteConfirmInput, setDeleteConfirmInput] = useState('')
 
     // ── 업무 다이얼로그 핸들러 ──────────────────────────────────────────────
-    const openTaskDialog = (taskOrId?: any) => {
+    const openTaskDialog = (taskOrId?: string | ProjectTask | (Partial<TaskFormData> & { id?: string })) => {
         if (typeof taskOrId === 'string') {
             const task = tasks.find(t => t.id === taskOrId)
-            setSelectedTask(task ? { ...task, progress: task.progress ?? 0 } as any : null)
+            setSelectedTask(task ? { ...task, progress: task.progress ?? 0 } as TaskFormData & { id: string } : null)
+        } else if (taskOrId && 'id' in taskOrId && typeof taskOrId.id === 'string' && !('project_id' in taskOrId)) {
+            // Task 객체가 전달된 경우 (WbsGrid 등에서)
+            const task = taskOrId as ProjectTask
+            setSelectedTask({ ...task, progress: task.progress ?? 0 } as TaskFormData & { id: string })
         } else {
-            setSelectedTask(taskOrId ? { ...taskOrId, progress: taskOrId.progress ?? 0 } as any : null)
+            const task = taskOrId as Partial<TaskFormData> & { id?: string; progress?: number };
+            setSelectedTask(task ? { ...task, progress: task.progress ?? 0 } : null)
         }
         setIsTaskDialogOpen(true)
     }
@@ -301,7 +266,8 @@ export default function ProjectClientView({
     }
 
     // ── 간트 태스크/링크 콜백 핸들러 ──────────────────────────────────────────────
-    const handleGanttTaskUpdated = async (ganttTask: any) => {
+    const handleGanttTaskUpdated = async (ganttTask: GanttTask) => {
+        // GanttTask 인터페이스와 DBTask 간의 필드명 차이 및 타입 변환 처리
         const adjustedEndDate = ganttTask.end_date
             ? format(new Date(new Date(ganttTask.end_date).getTime() - 1000), 'yyyy-MM-dd')
             : undefined;
@@ -311,8 +277,8 @@ export default function ProjectClientView({
             start_date: format(new Date(ganttTask.start_date), 'yyyy-MM-dd'),
             end_date: adjustedEndDate,
             progress: Math.round(ganttTask.progress * 100),
-            status: ganttTask.status,
-            priority: ganttTask.priority,
+            status: (ganttTask.status || 'todo') as ProjectTask['status'],
+            priority: (ganttTask.priority || 'medium') as ProjectTask['priority'],
             description: ganttTask.description ?? null,
             color: ganttTask.color,
         })
@@ -389,7 +355,7 @@ export default function ProjectClientView({
             low: 0
         };
 
-        const multiLevelSort = (a: Task, b: Task) => {
+        const multiLevelSort = (a: ProjectTask, b: ProjectTask) => {
             // 1. 시작일 ASC
             const dateA = a.start_date || '9999-12-31';
             const dateB = b.start_date || '9999-12-31';
@@ -425,7 +391,7 @@ export default function ProjectClientView({
         const parents = filteredTasks.filter(t => !t.parent_id).sort(multiLevelSort);
         const children = filteredTasks.filter(t => t.parent_id).sort(multiLevelSort);
 
-        const sorted: Task[] = [];
+        const sorted: ProjectTask[] = [];
         parents.forEach(p => {
             sorted.push(p);
             children.filter(c => c.parent_id === p.id).forEach(c => sorted.push(c));
@@ -436,7 +402,7 @@ export default function ProjectClientView({
             const startDate = normalizeDate(task.start_date)
             const duration = calculateGanttDuration(task.start_date, task.end_date)
 
-            return {
+            const gTask: GanttTask = {
                 id: task.id,
                 text: task.title,
                 start_date: startDate,
@@ -444,28 +410,30 @@ export default function ProjectClientView({
                 progress: (task.progress ?? 0) / 100,
                 parent: task.parent_id,
                 open: true,
-                status: task.status ?? 'todo',
-                priority: task.priority ?? 'medium',
+                status: (task.status as string) ?? 'todo',
+                priority: (task.priority as string) ?? 'medium',
                 assignee_id: task.assignee_id,
                 assignee_name: assignee?.display_name ?? assignee?.email ?? '',
-                // 업무별 색상 (WBS에서 지정한 color 값을 간트 바에 반영)
                 color: task.color ?? undefined,
                 description: task.description ?? null,
             }
+            return gTask
         })
     }, [filteredTasks, members])
 
-    const ganttLinks = links.map(link => ({
+    const ganttLinks: GanttLink[] = links.map(link => ({
         id: link.id,
         source: link.source_id,
         target: link.target_id,
         type: link.type
     }))
 
-    // ── 총 진행률 계산 ──────────────────────────────────────────────────────────
-    const totalProgress = tasks.length > 0
-        ? Math.round(tasks.reduce((sum, t) => sum + (t.progress ?? 0), 0) / tasks.length)
-        : 0
+    // ── 상태 요약 계산 (대시보드 공유) ──────────────────────────────────────────
+    const stats = {
+        total: filteredTasks.length,
+        done: filteredTasks.filter(t => t.status === 'done').length,
+    }
+    const totalProgress = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0
 
     return (
         <div className="flex flex-col h-screen">
@@ -546,6 +514,7 @@ export default function ProjectClientView({
                                 <DashboardView
                                     tasks={tasks}
                                     members={members}
+                                    projectName={project.name}
                                     onTaskClick={(taskId) => {
                                         setActiveTab('wbs')
                                         setTimeout(() => {
@@ -586,10 +555,10 @@ export default function ProjectClientView({
                                     </div>
                                     <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
                                         <WbsGrid
-                                            tasks={filteredTasks as any}
+                                            tasks={filteredTasks}
                                             projectId={project.id}
                                             members={members}
-                                            currentMemberRole={currentMemberRole as any}
+                                            currentMemberRole={currentMemberRole}
                                             onTaskClick={openTaskDialog}
                                             onTaskCreate={openCreateTaskDialog}
                                             onTaskDelete={handleDeleteTask}
@@ -720,7 +689,7 @@ export default function ProjectClientView({
             <TaskDialog
                 open={isTaskDialogOpen}
                 onOpenChange={setIsTaskDialogOpen}
-                initialData={selectedTask as any}
+                initialData={selectedTask ?? undefined}
                 members={members}
                 projectId={project.id}
                 onSubmit={handleTaskDialogSubmit}

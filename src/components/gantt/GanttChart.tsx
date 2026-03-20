@@ -1,28 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { toast } from 'sonner'
-
-// dhtmlx-gantt가 반환하는 업무 객체 형태
-interface GanttTask {
-    id: string
-    text: string
-    start_date: Date
-    end_date?: Date
-    duration: number
-    progress: number
-    parent: string | null
-    open?: boolean
-    status: string
-    priority: string
-    assignee_id?: string | null
-    assignee_name?: string
-    /** WBS리스트에서 지정한 HEX 색상 (간트 바 색상) */
-    color?: string
-    description?: string | null
-    /** 드래그 시 원래 기간 보존을 위한 확장 필드 */
-    _original_duration?: number
-}
+import 'dhtmlx-gantt/codebase/dhtmlxgantt.css'
+import gantt from 'dhtmlx-gantt'
+import { GanttTask, GanttLink, Holiday, Member } from '@/types/project'
 
 // ── 상수 정의 (WbsGrid와 통일) ──────────────────────────────────────────────────
 const STATUS_OPTIONS = [
@@ -39,28 +20,12 @@ const PRIORITY_OPTIONS = [
     { key: 'low', label: '낮음' },
 ]
 
-interface Holiday {
-    id: string
-    name: string
-    start_date: string
-    end_date: string
-    type: 'public_holiday' | 'member_leave' | 'business_trip' | 'workshop' | 'other'
-    member_name?: string
-}
-
-interface GanttLink {
-    id: string | number
-    source: string | number
-    target: string | number
-    type: string | number
-}
-
 interface GanttChartProps {
     tasks: GanttTask[]
-    links?: GanttLink[]
+    links: GanttLink[]
     scales: 'day' | 'week' | 'month'
-    holidays?: Holiday[]
-    members: any[] // members 추가
+    holidays: Holiday[]
+    members: Member[]
     onTaskClick?: (id: string) => void
     onTaskCreate?: (parentId: string | null) => void
     onTaskUpdated?: (task: GanttTask) => void
@@ -85,7 +50,7 @@ export default function GanttChart({
     const ganttContainer = useRef<HTMLDivElement>(null)
     const [isGanttLoaded, setIsGanttLoaded] = useState(false)
     const isDragging = useRef(false)
-    const ganttRef = useRef<any>(null)
+    const ganttRef = useRef<typeof gantt | null>(null)
     const scalesRef = useRef(scales)
     const creatingIdsRef = useRef<Set<string>>(new Set());
     const eventIdsRef = useRef<string[]>([]);
@@ -194,19 +159,19 @@ export default function GanttChart({
             document.head.appendChild(style);
         }
 
-        let ganttInstance: any;
+        let ganttInstance: typeof gantt;
 
         let isMounted = true;
         const initGantt = async () => {
             if (typeof window === 'undefined') return
 
             try {
-                const module = await import('dhtmlx-gantt')
+                const ganttModule = await import('dhtmlx-gantt')
                 if (!isMounted) return;
                 await import('dhtmlx-gantt/codebase/dhtmlxgantt.css')
                 if (!isMounted) return;
 
-                ganttInstance = module.gantt
+                ganttInstance = ganttModule.default || (ganttModule as { default?: typeof gantt, gantt?: typeof gantt }).gantt as typeof gantt
                 ganttRef.current = ganttInstance
 
                 const container = ganttContainer.current;
@@ -312,7 +277,7 @@ export default function GanttChart({
 
                 ganttInstance.form_blocks["date_range"] = {
                     render: () => `<div class='gantt_date_range' style='padding:8px 4px;display:flex;align-items:center;gap:8px;'><input type='date' class='start_date' style='width:auto;height:32px;padding:0 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;outline:none;cursor:pointer;'/><span style='color:#64748b;font-size:13px;'>~</span><input type='date' class='end_date' style='width:auto;height:32px;padding:0 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;outline:none;cursor:pointer;'/></div>`,
-                    set_value: (node: HTMLElement, value: any, task: GanttTask) => {
+                    set_value: (node: HTMLElement, _value: unknown, task: GanttTask) => {
                         const startDateInput = node.querySelector(".start_date") as HTMLInputElement;
                         const endDateInput = node.querySelector(".end_date") as HTMLInputElement;
                         if (task.start_date && startDateInput) {
@@ -344,21 +309,22 @@ export default function GanttChart({
                 };
 
                 // 로케일 및 버튼 설정
-                ganttInstance.locale.labels.new_task = "새 업무"
-                ganttInstance.locale.labels.gantt_save_btn = "저장"
-                ganttInstance.locale.labels.gantt_cancel_btn = "취소"
-                ganttInstance.locale.labels.gantt_delete_btn = "삭제"
-                ganttInstance.locale.labels.confirm_deleting = "업무가 영구적으로 삭제됩니다. 계속하시겠습니까?"
-                ganttInstance.locale.labels.confirm_link_deleting = "의존성(링크)을 삭제하시겠습니까?"
-                ganttInstance.locale.labels.message_ok = "확인"
-                ganttInstance.locale.labels.message_cancel = "취소"
-                ganttInstance.locale.labels.section_description = "업무명"
-                ganttInstance.locale.labels.section_details = "업무내용"
-                ganttInstance.locale.labels.section_time = "기간"
-                ganttInstance.locale.labels.section_color = "색상"
-                ganttInstance.locale.labels.section_assignee = "담당자"
-                ganttInstance.locale.labels.section_status = "상태"
-                ganttInstance.locale.labels.section_priority = "우선순위"
+                const labels = ganttInstance.locale.labels as Record<string, string>;
+                labels.new_task = "새 업무"
+                labels.gantt_save_btn = "저장"
+                labels.gantt_cancel_btn = "취소"
+                labels.gantt_delete_btn = "삭제"
+                labels.confirm_deleting = "업무가 영구적으로 삭제됩니다. 계속하시겠습니까?"
+                labels.confirm_link_deleting = "의존성(링크)을 삭제하시겠습니까?"
+                labels.message_ok = "확인"
+                labels.message_cancel = "취소"
+                labels.section_description = "업무명"
+                labels.section_details = "업무내용"
+                labels.section_time = "기간"
+                labels.section_color = "색상"
+                labels.section_assignee = "담당자"
+                labels.section_status = "상태"
+                labels.section_priority = "우선순위"
 
                 // ── 커스텀 입력을 위한 form_blocks 정의 ────────────────────────
 
@@ -378,7 +344,7 @@ export default function GanttChart({
                     }
                 };
 
-                ganttInstance.config.lightbox.sections = [
+                (ganttInstance.config as { lightbox: { sections: unknown[] } }).lightbox.sections = [
                     { name: "description", height: 38, map_to: "text", type: "text", focus: true },
                     { name: "status", height: 22, map_to: "status", type: "select", options: STATUS_OPTIONS },
                     { name: "priority", height: 22, map_to: "priority", type: "select", options: PRIORITY_OPTIONS },
@@ -393,7 +359,7 @@ export default function GanttChart({
                 ganttInstance.config.buttons_right = [];
                 ganttInstance.keys.edit_save = [];
 
-                eventIdsRef.current.push(ganttInstance.attachEvent("onLightbox", (id: string) => {
+                eventIdsRef.current.push(ganttInstance.attachEvent("onLightbox", (id: unknown) => {
                     const lightbox = ganttInstance.getLightbox();
                     if (lightbox) {
                         // 업무내용(description/details) 필드 placeholder 추가
@@ -423,25 +389,26 @@ export default function GanttChart({
                     }, 50);
                 }));
 
-                eventIdsRef.current.push(ganttInstance.attachEvent("onKeyDown", (e: number) => {
-                    if (e === 13) {
+                eventIdsRef.current.push(ganttInstance.attachEvent("onKeyDown", (e: unknown) => {
+                    const _e = e as number;
+                    if (_e === 13) {
                         const lightbox = ganttInstance.getLightbox();
                         if (lightbox && lightbox.style.display !== "none") return false;
                     }
                     return true;
                 }));
 
-                eventIdsRef.current.push(ganttInstance.attachEvent("onTaskDblClick", (id: string) => {
-                    callbacksRef.current.onTaskClick?.(id);
+                eventIdsRef.current.push(ganttInstance.attachEvent("onTaskDblClick", (id: unknown) => {
+                    callbacksRef.current.onTaskClick?.(id as string);
                     return false; // 기본 라이트박스 방지
                 }));
 
-                eventIdsRef.current.push(ganttInstance.attachEvent("onEmptyClick", (e: any) => {
+                eventIdsRef.current.push(ganttInstance.attachEvent("onEmptyClick", () => {
                     // 빈 공간 클릭 시 처리는 필요하면 추가 (현재는 WBS나 버튼을 통해 추가 권장)
                     return true;
                 }));
 
-                ganttInstance.templates.timeline_cell_class = (_task: any, date: Date) => {
+                ganttInstance.templates.timeline_cell_class = (_task: unknown, date: Date) => {
                     const cellStart = new Date(date).setHours(0, 0, 0, 0);
                     const nowStart = new Date().setHours(0, 0, 0, 0);
                     let classes = "";
@@ -455,31 +422,35 @@ export default function GanttChart({
                     return `${format(start)} ~ ${format(new Date(end.getTime() - 1000))} `;
                 }
 
-                ganttInstance.templates.tooltip_text = (start: Date, end: Date, task: any) => {
+                ganttInstance.templates.tooltip_text = (start: Date, end: Date, task: unknown) => {
+                    const _task = task as GanttTask;
                     const formatYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                    const desc = task.description || '내용 없음';
-                    return `<div>- 업무명: ${task.text}</div><div>- 업무설명: ${desc}</div><div>- 기간: ${formatYMD(start)} ~ ${formatYMD(new Date(end.getTime() - 1000))}</div>`;
+                    const desc = _task.description || '내용 없음';
+                    return `<div>- 업무명: ${_task.text}</div><div>- 업무설명: ${desc}</div><div>- 기간: ${formatYMD(start)} ~ ${formatYMD(new Date(end.getTime() - 1000))}</div>`;
                 }
 
-                eventIdsRef.current.push(ganttInstance.attachEvent("onBeforeTaskDrag", (id: string) => {
+                eventIdsRef.current.push(ganttInstance.attachEvent("onBeforeTaskDrag", (id: unknown) => {
+                    const _id = id as string;
                     isDragging.current = true;
-                    const task = ganttInstance.getTask(id);
+                    const task = ganttInstance.getTask(_id) as unknown as GanttTask;
                     if (task) task._original_duration = task.duration;
                     return true;
                 }));
 
-                eventIdsRef.current.push(ganttInstance.attachEvent("onTaskCreated", (item: GanttTask) => {
+                eventIdsRef.current.push(ganttInstance.attachEvent("onTaskCreated", (item: unknown) => {
+                    const _item = item as GanttTask;
                     // 기본 생성 로직 차단하고 공통 다이얼로그 호출
-                    callbacksRef.current.onTaskCreate?.(item.parent || null);
+                    callbacksRef.current.onTaskCreate?.(_item.parent || null);
                     return false;
                 }));
 
-                eventIdsRef.current.push(ganttInstance.attachEvent("onAfterTaskDrag", (id: string) => {
+                eventIdsRef.current.push(ganttInstance.attachEvent("onAfterTaskDrag", (id: unknown) => {
+                    const _id = id as string;
                     isDragging.current = false;
                     // 드래그 종료 시 최종 데이터 저장 보장 (중복 체크 포함)
-                    const task = ganttInstance.getTask(id);
+                    const task = ganttInstance.getTask(_id) as unknown as GanttTask;
                     if (task) {
-                        const updateKey = `${task.id}-${task.start_date.getTime()}-${task.end_date?.getTime()}-${task.progress}`;
+                        const updateKey = `${task.id}-${task.start_date.getTime()}-${(task.end_date as Date)?.getTime()}-${task.progress}`;
                         if (lastUpdateKeyRef.current !== updateKey) {
                             lastUpdateKeyRef.current = updateKey;
                             callbacksRef.current.onTaskUpdated?.(task);
@@ -487,24 +458,29 @@ export default function GanttChart({
                     }
                 }));
 
-                eventIdsRef.current.push(ganttInstance.attachEvent("onTaskDrag", (id: string, mode: string, task: any) => {
-                    if (mode === "progress") {
+                eventIdsRef.current.push(ganttInstance.attachEvent("onTaskDrag", (id: unknown, mode: unknown, task: unknown) => {
+                    const _id = id as string;
+                    const _mode = mode as string;
+                    const _task = task as GanttTask;
+                    if (_mode === "progress") {
                         // 진행률을 0.1(10%) 단위로 반올림하여 스냅 적용
-                        task.progress = Math.round(task.progress * 10) / 10;
-                        ganttInstance.refreshTask(id);
+                        _task.progress = Math.round(_task.progress * 10) / 10;
+                        ganttInstance.refreshTask(_id);
                     }
                     return true;
                 }));
 
-                eventIdsRef.current.push(ganttInstance.attachEvent('onAfterTaskAdd', (id: string | number, item: GanttTask) => {
+                eventIdsRef.current.push(ganttInstance.attachEvent('onAfterTaskAdd', () => {
                     // 공통 다이얼로그를 사용하므로 이 이벤트는 더 이상 내부 저장을 처리하지 않음
                     return true;
                 }));
 
-                eventIdsRef.current.push(ganttInstance.attachEvent('onAfterTaskUpdate', (id: string | number, item: GanttTask) => {
+                eventIdsRef.current.push(ganttInstance.attachEvent('onAfterTaskUpdate', (id: unknown, _item: unknown) => {
+                    const _id = id as string | number;
+                    const item = _item as GanttTask;
                     // 드래그 중이거나 임시 ID인 경우 업데이트 무시 (DB 부하 방지 가드)
-                    const isTempId = typeof id === 'number' || (typeof id === 'string' && !id.includes('-'));
-                    if (isDragging.current || isTempId || creatingIdsRef.current.has(id.toString())) return true;
+                    const isTempId = typeof _id === 'number' || (typeof _id === 'string' && !_id.includes('-'));
+                    if (isDragging.current || isTempId || creatingIdsRef.current.has(_id.toString())) return true;
 
                     // 데이터 실질 변경 여부 체크 (중복 토스트 방지)
                     const updateKey = `${item.id}-${item.start_date.getTime()}-${item.end_date?.getTime()}-${item.progress}`;
@@ -515,27 +491,31 @@ export default function GanttChart({
                     return true;
                 }));
 
-                eventIdsRef.current.push(ganttInstance.attachEvent('onAfterTaskDelete', (id: string) => {
-                    if (typeof id === 'string' && id.includes('-')) callbacksRef.current.onTaskDeleted?.(id);
+                eventIdsRef.current.push(ganttInstance.attachEvent('onAfterTaskDelete', (id: unknown) => {
+                    const _id = id as string;
+                    if (typeof _id === 'string' && _id.includes('-')) callbacksRef.current.onTaskDeleted?.(_id);
                     return true;
                 }));
 
-                const linkAddId = ganttInstance.attachEvent('onAfterLinkAdd', (id: any, link: any) => {
+                const linkAddId = ganttInstance.attachEvent('onAfterLinkAdd', (id: unknown, _link: unknown) => {
+                    const _id = id as string | number;
+                    const link = _link as GanttLink;
                     if (isSilentUpdateRef.current) return true;
                     // dhtmlx-gantt의 임시 ID(숫자형)인 경우에만 신규 생성으로 간주
-                    const isTempId = typeof id === 'number' || (typeof id === 'string' && !id.includes('-'));
+                    const isTempId = typeof _id === 'number' || (typeof _id === 'string' && !_id.includes('-'));
                     if (!isTempId) return true;
 
-                    callbacksRef.current.onLinkAdd?.(id.toString(), link.source.toString(), link.target.toString(), link.type.toString());
+                    callbacksRef.current.onLinkAdd?.(_id.toString(), link.source.toString(), link.target.toString(), link.type.toString());
                     return true;
                 });
-                const linkDeleteId = ganttInstance.attachEvent('onAfterLinkDelete', (id: any) => {
+                const linkDeleteId = ganttInstance.attachEvent('onAfterLinkDelete', (id: unknown) => {
+                    const _id = id as string | number;
                     if (isSilentUpdateRef.current) return true;
                     // 이미 삭제되거나 존재하지 않는 UUID인 경우 패스 (temp ID 삭제는 DB 작업 불필요)
-                    const isUUID = typeof id === 'string' && id.includes('-');
+                    const isUUID = typeof _id === 'string' && _id.includes('-');
                     if (!isUUID) return true;
 
-                    callbacksRef.current.onLinkDelete?.(id.toString());
+                    callbacksRef.current.onLinkDelete?.(_id.toString());
                     return true;
                 });
 
@@ -558,12 +538,13 @@ export default function GanttChart({
         return () => {
             isMounted = false;
             if (ganttRef.current) {
-                eventIdsRef.current.forEach(id => ganttRef.current.detachEvent(id));
+                const g = ganttRef.current
+                eventIdsRef.current.forEach(id => g.detachEvent(id));
                 eventIdsRef.current = [];
-                ganttRef.current.clearAll();
+                g.clearAll();
             }
         }
-    }, [])
+    }, [members])
 
     useEffect(() => {
         if (!isGanttLoaded || !ganttRef.current) return
@@ -622,7 +603,7 @@ export default function GanttChart({
                 const start = new Date(holiday.start_date + "T00:00:00")
                 const end = new Date(holiday.end_date + "T00:00:00")
                 if (isNaN(start.getTime()) || isNaN(end.getTime())) return
-                let cur = new Date(start)
+                const cur = new Date(start)
                 while (cur <= end) {
                     const dateStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
                     if (!holidayMap.has(dateStr)) holidayMap.set(dateStr, []);

@@ -282,6 +282,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      delete_own_account: {
+        Args: Record<string, never>
+        Returns: void
+      }
       is_member_of: { Args: { p_id: string }; Returns: boolean }
       is_project_empty: { Args: { p_project_id: string }; Returns: boolean }
       is_project_manager_or_owner: {

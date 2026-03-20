@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
     Dialog,
     DialogContent,
@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { TaskFormData } from '@/hooks/use-tasks'
+import { Member, TaskFormData } from '@/types/project'
 
 // ──── 상수 정의 ─────────────────────────────────────────────────────────────────
 
@@ -43,19 +43,13 @@ const PROGRESS_OPTIONS = Array.from({ length: 11 }, (_, i) => i * 10)
 
 // ──── 타입 정의 ─────────────────────────────────────────────────────────────────
 
-interface Member {
-    id: string
-    display_name: string | null
-    email: string | null
-}
-
 interface TaskDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     initialData?: Partial<TaskFormData> & { id?: string }
     members: Member[]
     projectId: string
-    onSubmit: (data: TaskFormData) => Promise<any>
+    onSubmit: (data: TaskFormData) => Promise<unknown>
     onDelete?: (id: string) => Promise<boolean>
     isLoading: boolean
 }
@@ -93,7 +87,7 @@ export default function TaskDialog({
             const baseForm = initialData ? { ...EMPTY_FORM, ...initialData, project_id: projectId } : { ...EMPTY_FORM, project_id: projectId }
 
             // 날짜 형식 정규화 (ISO 8601 -> YYYY-MM-DD)
-            const formatDate = (dateValue: any) => {
+            const formatDate = (dateValue: string | Date | null | undefined) => {
                 if (!dateValue) return null
                 if (typeof dateValue === 'string') return dateValue.split('T')[0]
                 return dateValue
@@ -197,7 +191,7 @@ export default function TaskDialog({
                         {/* 상태 */}
                         <div className="space-y-2">
                             <Label htmlFor="task-status" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">상태</Label>
-                            <Select value={form.status} onValueChange={(v) => setField('status', v as any)}>
+                            <Select value={form.status} onValueChange={(v) => setField('status', v as TaskFormData['status'])}>
                                 <SelectTrigger id="task-status">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -214,7 +208,7 @@ export default function TaskDialog({
                         {/* 우선순위 */}
                         <div className="space-y-2">
                             <Label htmlFor="task-priority" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">우선순위</Label>
-                            <Select value={form.priority} onValueChange={(v) => setField('priority', v as any)}>
+                            <Select value={form.priority} onValueChange={(v) => setField('priority', v as TaskFormData['priority'])}>
                                 <SelectTrigger id="task-priority">
                                     <SelectValue />
                                 </SelectTrigger>

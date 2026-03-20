@@ -18,7 +18,6 @@ interface AppLogoProps {
 
 export function AppLogo({ href = '/projects', size = 'sm', showText = true, className }: AppLogoProps) {
     const iconSize = size === 'sm' ? 'w-7 h-7' : 'w-10 h-10'
-    const svgSize = size === 'sm' ? 'w-4 h-4' : 'w-6 h-6'
     const textSize = size === 'sm' ? 'text-base' : 'text-2xl'
 
     return (
