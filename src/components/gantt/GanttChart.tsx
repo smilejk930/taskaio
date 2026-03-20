@@ -429,9 +429,9 @@ export default function GanttChart({
                     const formatYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                     const desc = _task.description || '내용 없음';
 
-                    let tooltipHtml = `<div style="font-size:13px;font-weight:600;margin-bottom:4px;">${_task.text}</div>`;
-                    tooltipHtml += `<div style="font-size:11px;color:#64748b;margin-bottom:8px;">${desc}</div>`;
-                    tooltipHtml += `<div style="font-size:12px;color:#475569;"><span style="font-weight:500;">기간:</span> ${formatYMD(start)} ~ ${formatYMD(new Date(end.getTime() - 1000))}</div>`;
+                    let tooltipHtml = `<div style="font-size:14px;font-weight:600;margin-bottom:6px;color:#1e293b;">${_task.text}</div>`;
+                    tooltipHtml += `<div style="font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.5;">${desc}</div>`;
+                    tooltipHtml += `<div style="font-size:13px;color:#475569;"><span style="font-weight:600;">기 간:</span> ${formatYMD(start)} ~ ${formatYMD(new Date(end.getTime() - 1000))}</div>`;
 
                     // 해당 업무 기간 내 겹치는 휴일 정보 찾기
                     const currentHolidays = holidaysRef.current;
@@ -444,19 +444,19 @@ export default function GanttChart({
                         });
 
                         if (overlappingHolidays.length > 0) {
-                            tooltipHtml += `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e2e8f0;">`;
-                            tooltipHtml += `<div style="color:#ef4444;font-size:12px;font-weight:600;margin-bottom:4px;">[해당 기간 휴일/연차]</div>`;
+                            tooltipHtml += `<div style="margin-top:12px;padding-top:10px;border-top:1px dashed #cbd5e1;">`;
+                            tooltipHtml += `<div style="color:#ef4444;font-size:13px;font-weight:700;margin-bottom:6px;">[해당 기간 휴일/연차]</div>`;
                             overlappingHolidays.forEach(h => {
                                 const hName = ['member_leave', 'business_trip'].includes(h.type) && h.member_name
                                     ? `${h.member_name}(${h.name})`
                                     : h.name;
-                                tooltipHtml += `<div style="font-size:11px;color:#475569;margin-bottom:2px;">• ${hName} (${h.start_date} ~ ${h.end_date})</div>`;
+                                tooltipHtml += `<div style="font-size:12px;color:#334155;margin-bottom:4px;display:flex;align-items:center;"><span style="margin-right:4px;">•</span> ${hName} (${h.start_date} ~ ${h.end_date})</div>`;
                             });
                             tooltipHtml += `</div>`;
                         }
                     }
 
-                    return `<div style="padding:4px;min-width:200px;">${tooltipHtml}</div>`;
+                    return `<div style="padding:10px;min-width:240px;background:#ffffff;">${tooltipHtml}</div>`;
                 }
 
                 eventIdsRef.current.push(ganttInstance.attachEvent("onBeforeTaskDrag", (id: unknown) => {
@@ -669,10 +669,20 @@ export default function GanttChart({
                 .gantt_grid_scale, .gantt_task_scale { background-color: #f8fafc; }
                 .weekend_scale, .weekend_cell { background-color: rgba(239, 68, 68, 0.1) !important; color: #ef4444 !important; }
                 .today_scale, .today_cell { background-color: rgba(37, 99, 235, 0.15) !important; color: #2563eb !important; font-weight: 800 !important; }
-                .gantt_holiday_public.gantt_marker { background-color: rgba(239, 68, 68, 0.08) !important; border-left: 2px solid rgba(239, 68, 68, 0.5) !important; }
-                .gantt_holiday_leave.gantt_marker { background-color: rgba(245, 158, 11, 0.08) !important; border-left: 2px solid rgba(245, 158, 11, 0.5) !important; }
+                .gantt_holiday_public.gantt_marker { background-color: rgba(239, 68, 68, 0.08) !important; border-left: 2px solid rgba(239, 68, 68, 0.3) !important; }
+                .gantt_holiday_leave.gantt_marker { background-color: rgba(245, 158, 11, 0.08) !important; border-left: 2px solid rgba(245, 158, 11, 0.3) !important; }
                 /* 부동 레이블 스타일 제거 - 방안 2 (툴팁으로 통합) */
                 .gantt_marker_content { display: none !important; }
+                
+                /* 툴팁 스타일 커스텀: 기본 검은색 배경 제거 */
+                .gantt_tooltip {
+                    background-color: #ffffff !important;
+                    color: #1e293b !important;
+                    border: 1px solid #e2e8f0 !important;
+                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+                    border-radius: 8px !important;
+                    padding: 0 !important;
+                }
             `}} />
             <div ref={ganttContainer} className="flex-1 w-full h-full bg-background" />
         </div>
