@@ -300,7 +300,6 @@ export default function ProjectClientView({
             }
 
             const newLink = await createLink({
-                id, // Use the generated ID or let DB generate
                 project_id: project.id,
                 source_id: source,
                 target_id: target,
