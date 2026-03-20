@@ -8,12 +8,11 @@ import { ProjectTask, Member } from '@/types/project'
 interface DashboardViewProps {
     tasks: ProjectTask[]
     members: Member[]
-    projectName: string
     /** 업무 클릭 시 WBS 탭으로 이동하기 위한 콜백 */
     onTaskClick?: (taskId: string) => void
 }
 
-export default function DashboardView({ tasks, members, projectName, onTaskClick }: DashboardViewProps) {
+export default function DashboardView({ tasks, members, onTaskClick }: DashboardViewProps) {
     const today = startOfToday()
 
     const progress = tasks.length > 0

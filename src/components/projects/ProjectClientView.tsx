@@ -512,7 +512,6 @@ export default function ProjectClientView({
                                 <DashboardView
                                     tasks={tasks}
                                     members={members}
-                                    projectName={project.name}
                                     onTaskClick={(taskId) => {
                                         setActiveTab('wbs')
                                         setTimeout(() => {
