@@ -84,7 +84,7 @@ export default function ProjectClientView({
     const searchParams = useSearchParams()
     const viewParam = searchParams.get('view')
     const [activeTab, setActiveTab] = useState(viewParam || 'dashboard')
-    const [isPending, startTransition] = React.useTransition()
+    const [, startTransition] = React.useTransition()
 
     const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
     const [selectedTask, setSelectedTask] = useState<Partial<TaskFormData> & { id?: string } | null>(null)
@@ -504,7 +504,7 @@ export default function ProjectClientView({
                         )}
                     </div>
 
-                    <div className={`flex-1 min-h-0 transition-opacity duration-200 ${isPending ? 'opacity-60' : 'opacity-100'}`}>
+                    <div className="flex-1 min-h-0">
                         <TabsContent value="dashboard" className="h-full mt-0 border rounded-lg bg-background overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
                             {(isTaskLoading && tasks.length === 0 && !initialTasks.length) ? (
                                 <DashboardSkeleton />
