@@ -52,15 +52,17 @@ export default function GanttChart({
     const isDragging = useRef(false)
     const ganttRef = useRef<typeof gantt | null>(null)
     const scalesRef = useRef(scales)
+    const holidaysRef = useRef(holidays)
     const creatingIdsRef = useRef<Set<string>>(new Set());
     const eventIdsRef = useRef<string[]>([]);
     const lastUpdateKeyRef = useRef<string>('');
     const isSilentUpdateRef = useRef(false);
 
-    // 스케일 상태를 템플릿 함수 안에서 항상 최신으로 유지하기 위한 Ref
+    // 스케일 및 휴일 상태를 최신으로 유지하기 위한 Ref
     useEffect(() => {
         scalesRef.current = scales
-    }, [scales])
+        holidaysRef.current = holidays
+    }, [scales, holidays])
 
     // 콜백 함수들을 최신 상태로 유지하기 위한 Ref
     const callbacksRef = useRef({ onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete })
@@ -426,7 +428,35 @@ export default function GanttChart({
                     const _task = task as GanttTask;
                     const formatYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                     const desc = _task.description || '내용 없음';
-                    return `<div>- 업무명: ${_task.text}</div><div>- 업무설명: ${desc}</div><div>- 기간: ${formatYMD(start)} ~ ${formatYMD(new Date(end.getTime() - 1000))}</div>`;
+
+                    let tooltipHtml = `<div style="font-size:13px;font-weight:600;margin-bottom:4px;">${_task.text}</div>`;
+                    tooltipHtml += `<div style="font-size:11px;color:#64748b;margin-bottom:8px;">${desc}</div>`;
+                    tooltipHtml += `<div style="font-size:12px;color:#475569;"><span style="font-weight:500;">기간:</span> ${formatYMD(start)} ~ ${formatYMD(new Date(end.getTime() - 1000))}</div>`;
+
+                    // 해당 업무 기간 내 겹치는 휴일 정보 찾기
+                    const currentHolidays = holidaysRef.current;
+                    if (currentHolidays && currentHolidays.length > 0) {
+                        const taskStartStr = formatYMD(start);
+                        const taskEndStr = formatYMD(new Date(end.getTime() - 1000));
+
+                        const overlappingHolidays = currentHolidays.filter(h => {
+                            return h.start_date <= taskEndStr && h.end_date >= taskStartStr;
+                        });
+
+                        if (overlappingHolidays.length > 0) {
+                            tooltipHtml += `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #e2e8f0;">`;
+                            tooltipHtml += `<div style="color:#ef4444;font-size:12px;font-weight:600;margin-bottom:4px;">[해당 기간 휴일/연차]</div>`;
+                            overlappingHolidays.forEach(h => {
+                                const hName = ['member_leave', 'business_trip'].includes(h.type) && h.member_name
+                                    ? `${h.member_name}(${h.name})`
+                                    : h.name;
+                                tooltipHtml += `<div style="font-size:11px;color:#475569;margin-bottom:2px;">• ${hName} (${h.start_date} ~ ${h.end_date})</div>`;
+                            });
+                            tooltipHtml += `</div>`;
+                        }
+                    }
+
+                    return `<div style="padding:4px;min-width:200px;">${tooltipHtml}</div>`;
                 }
 
                 eventIdsRef.current.push(ganttInstance.attachEvent("onBeforeTaskDrag", (id: unknown) => {
@@ -587,7 +617,7 @@ export default function GanttChart({
         if (!isGanttLoaded || !ganttRef.current || isDragging.current) return
         const g = ganttRef.current
         const validTasks = tasks.filter(t => t.start_date instanceof Date && !isNaN(t.start_date.getTime()));
-        
+
         isSilentUpdateRef.current = true;
         try {
             g.clearAll()
@@ -614,23 +644,15 @@ export default function GanttChart({
             holidayMap.forEach((dailyHolidays, dateStr) => {
                 const hasPublic = dailyHolidays.some(h => ['public_holiday', 'workshop'].includes(h.type));
                 const cls = hasPublic ? 'gantt_holiday_public' : 'gantt_holiday_leave';
-                
-                // 해당 날짜가 시작일인 휴일들만 필터링하여 텍스트 생성 (매일 반복 방지)
-                const startingHolidays = dailyHolidays.filter(h => h.start_date === dateStr);
-                const labelText = startingHolidays.map(h => {
-                    return ['member_leave', 'business_trip'].includes(h.type) && h.member_name 
-                        ? `${h.member_name}(${h.name})` 
-                        : h.name;
-                }).join(', ');
 
                 const names = dailyHolidays.map(h => ['member_leave', 'business_trip'].includes(h.type) && h.member_name ? `${h.member_name} (${h.name})` : h.name).join('\n');
-                
-                g.addMarker({ 
-                    start_date: new Date(dateStr + "T00:00:00"), 
-                    css: cls, 
-                    text: labelText || "", // 시작일인 경우에만 텍스트 표시
-                    title: names, 
-                    id: `holiday_group_${dateStr}` 
+
+                g.addMarker({
+                    start_date: new Date(dateStr + "T00:00:00"),
+                    css: cls,
+                    text: "", // 차트 내 레이블 텍스트 제거 (방안 2 적용)
+                    title: names,
+                    id: `holiday_group_${dateStr}`
                 });
             });
         }
@@ -647,24 +669,10 @@ export default function GanttChart({
                 .gantt_grid_scale, .gantt_task_scale { background-color: #f8fafc; }
                 .weekend_scale, .weekend_cell { background-color: rgba(239, 68, 68, 0.1) !important; color: #ef4444 !important; }
                 .today_scale, .today_cell { background-color: rgba(37, 99, 235, 0.15) !important; color: #2563eb !important; font-weight: 800 !important; }
-                .gantt_holiday_public.gantt_marker { background-color: rgba(239, 68, 68, 0.08) !important; border-left: 2px solid #ef4444 !important; }
-                .gantt_holiday_leave.gantt_marker { background-color: rgba(245, 158, 11, 0.08) !important; border-left: 2px solid #f59e0b !important; }
-                .gantt_marker_content { 
-                    color: #475569 !important; 
-                    font-size: 11px !important;
-                    font-weight: 600 !important;
-                    background: rgba(255, 255, 255, 0.9) !important;
-                    padding: 2px 6px !important;
-                    border: 1px solid rgba(0, 0, 0, 0.1) !important;
-                    border-radius: 4px !important;
-                    white-space: nowrap !important;
-                    overflow: hidden !important;
-                    text-overflow: ellipsis !important;
-                    max-width: 150px !important;
-                    top: 4px !important;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
-                    z-index: 10 !important;
-                }
+                .gantt_holiday_public.gantt_marker { background-color: rgba(239, 68, 68, 0.08) !important; border-left: 2px solid rgba(239, 68, 68, 0.5) !important; }
+                .gantt_holiday_leave.gantt_marker { background-color: rgba(245, 158, 11, 0.08) !important; border-left: 2px solid rgba(245, 158, 11, 0.5) !important; }
+                /* 부동 레이블 스타일 제거 - 방안 2 (툴팁으로 통합) */
+                .gantt_marker_content { display: none !important; }
             `}} />
             <div ref={ganttContainer} className="flex-1 w-full h-full bg-background" />
         </div>
