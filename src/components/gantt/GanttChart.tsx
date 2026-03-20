@@ -188,7 +188,7 @@ export default function GanttChart({
                 ganttInstance.config.time_step = 1440
                 ganttInstance.config.duration_unit = "day"
                 ganttInstance.config.xml_date = "%Y-%m-%d %H:%i"
-                ganttInstance.config.grid_width = 900;
+                ganttInstance.config.grid_width = 700;
                 ganttInstance.config.grid_resizer = true;
                 ganttInstance.config.key_navigation = false;
 
@@ -204,7 +204,7 @@ export default function GanttChart({
                             return `<span style="font-size:13px;color:#475569;">${name}</span>`;
                         }
                     },
-                    { name: "text", label: "업무명", tree: true, width: 450, min_width: 300 },
+                    { name: "text", label: "업무명", tree: true, width: 350, min_width: 150 },
                     {
                         name: "status",
                         label: "상태",
