@@ -511,13 +511,14 @@ export default function ProjectClientView({
 
             <main className="flex-1 overflow-hidden p-4 pt-0">
                 <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
-                    <div className="flex justify-between items-center py-2">
+                    <div className="flex justify-between items-center py-2 relative">
                         <TabsList>
                             <TabsTrigger value="dashboard">📈 대시보드</TabsTrigger>
                             <TabsTrigger value="wbs">📋 업무 목록</TabsTrigger>
                             <TabsTrigger value="gantt">📊 일정 현황</TabsTrigger>
                             <TabsTrigger value="members">👥 팀원 관리</TabsTrigger>
                         </TabsList>
+
 
                         {/* 간트 차트 스케일 조절 (Gantt 탭에서만 렌더링) */}
                         {activeTab === 'gantt' && (
@@ -537,117 +538,117 @@ export default function ProjectClientView({
                         )}
                     </div>
 
-                    <TabsContent value="dashboard" className="flex-1 mt-0 overflow-auto border rounded-lg bg-background data-[state=active]:flex data-[state=active]:flex-col">
-                        {(isTaskLoading && tasks.length === 0) ? (
-                            <DashboardSkeleton />
-                        ) : (
-                            <DashboardView
-                                tasks={tasks}
-                                members={members}
-                                onTaskClick={(taskId) => {
-                                    // 대시보드 업무 클릭 시 WBS 탭으로 전환
-                                    setActiveTab('wbs')
-                                    // 해당 업무 행을 하이라이팅하기 위해 URL hash 활용
-                                    setTimeout(() => {
-                                        const el = document.getElementById(`task-row-${taskId}`)
-                                        if (el) {
-                                            el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                                            el.classList.add('bg-primary/10')
-                                            setTimeout(() => el.classList.remove('bg-primary/10'), 2000)
-                                        }
-                                    }, 100)
-                                }}
-                            />
-                        )}
-                    </TabsContent>
+                    <div className={`flex-1 min-h-0 transition-opacity duration-200 ${isPending ? 'opacity-60' : 'opacity-100'}`}>
+                        <TabsContent value="dashboard" className="h-full mt-0 border rounded-lg bg-background overflow-hidden data-[state=active]:flex data-[state=active]:flex-col">
+                            {(isTaskLoading && tasks.length === 0 && !initialTasks.length) ? (
+                                <DashboardSkeleton />
+                            ) : (
+                                <DashboardView
+                                    tasks={tasks}
+                                    members={members}
+                                    onTaskClick={(taskId) => {
+                                        setActiveTab('wbs')
+                                        setTimeout(() => {
+                                            const el = document.getElementById(`task-row-${taskId}`)
+                                            if (el) {
+                                                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                                                el.classList.add('bg-primary/10')
+                                                setTimeout(() => el.classList.remove('bg-primary/10'), 2000)
+                                            }
+                                        }, 100)
+                                    }}
+                                />
+                            )}
+                        </TabsContent>
 
-                    <TabsContent value="wbs" className="flex-1 mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col gap-2">
-                        {(isTaskLoading && tasks.length === 0) ? (
-                            <WbsSkeleton />
-                        ) : (
-                            <>
-                                <div className="flex items-start gap-4">
-                                    <div className="flex-1">
-                                        <TaskSearchFilter
-                                            filters={filters}
-                                            setFilters={setFilters}
+                        <TabsContent value="wbs" className="h-full mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col gap-2">
+                            {(isTaskLoading && tasks.length === 0 && !initialTasks.length) ? (
+                                <WbsSkeleton />
+                            ) : (
+                                <>
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex-1">
+                                            <TaskSearchFilter
+                                                filters={filters}
+                                                setFilters={setFilters}
+                                                members={members}
+                                                onReset={resetFilters}
+                                            />
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            className="gap-2 bg-primary hover:bg-primary/90 shadow-md"
+                                            onClick={() => openCreateTaskDialog(null)}
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                            업무 등록
+                                        </Button>
+                                    </div>
+                                    <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
+                                        <WbsGrid
+                                            tasks={filteredTasks as any}
+                                            projectId={project.id}
                                             members={members}
-                                            onReset={resetFilters}
+                                            currentMemberRole={currentMemberRole as any}
+                                            onTaskClick={openTaskDialog}
+                                            onTaskCreate={openCreateTaskDialog}
+                                            onTaskDelete={handleDeleteTask}
                                         />
                                     </div>
-                                    <Button
-                                        size="sm"
-                                        className="gap-2 bg-primary hover:bg-primary/90 shadow-md"
-                                        onClick={() => openCreateTaskDialog(null)}
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                        업무 등록
-                                    </Button>
-                                </div>
-                                <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
-                                    <WbsGrid
-                                        tasks={filteredTasks as any}
-                                        projectId={project.id}
-                                        members={members}
-                                        currentMemberRole={currentMemberRole as any}
-                                        onTaskClick={openTaskDialog}
-                                        onTaskCreate={openCreateTaskDialog}
-                                        onTaskDelete={handleDeleteTask}
-                                    />
-                                </div>
-                            </>
-                        )}
-                    </TabsContent>
+                                </>
+                            )}
+                        </TabsContent>
 
-                    <TabsContent value="gantt" className="flex-1 mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col gap-2">
-                        {(isTaskLoading && tasks.length === 0) ? (
-                            <GanttSkeleton />
-                        ) : (
-                            <>
-                                <TaskSearchFilter
-                                    filters={filters}
-                                    setFilters={setFilters}
+                        <TabsContent value="gantt" className="h-full mt-0 overflow-hidden data-[state=active]:flex data-[state=active]:flex-col gap-2">
+                            {(isTaskLoading && tasks.length === 0 && !initialTasks.length) ? (
+                                <GanttSkeleton />
+                            ) : (
+                                <>
+                                    <TaskSearchFilter
+                                        filters={filters}
+                                        setFilters={setFilters}
+                                        members={members}
+                                        onReset={resetFilters}
+                                    />
+                                    <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
+                                        <GanttChart
+                                            tasks={ganttTasks}
+                                            links={ganttLinks}
+                                            scales={scale}
+                                            holidays={holidays.map((h) => {
+                                                const member = h.member_id ? members.find((m) => m.id === h.member_id) : null;
+                                                return {
+                                                    ...h,
+                                                    member_name: member ? (member.display_name ?? member.email ?? '이름 없음') : undefined,
+                                                }
+                                            })}
+                                            members={members}
+                                            onTaskClick={openTaskDialog}
+                                            onTaskUpdated={handleGanttTaskUpdated}
+                                            onTaskCreate={openCreateTaskDialog}
+                                            onTaskDeleted={handleDeleteTask}
+                                            onLinkAdd={handleLinkAdd}
+                                            onLinkDelete={handleLinkDelete}
+                                        />
+                                    </div>
+                                </>
+                            )}
+                        </TabsContent>
+
+                        <TabsContent value="members" className="h-full mt-0 overflow-auto">
+                            {(isTaskLoading && members.length === 0 && !initialTasks.length) ? (
+                                <MembersSkeleton />
+                            ) : (
+                                <TeamManagementView
+                                    projectId={project.id}
                                     members={members}
-                                    onReset={resetFilters}
+                                    currentMemberRole={currentMemberRole}
+                                    currentUserId={currentUser?.id}
+                                    isSystemAdmin={currentUser?.is_admin}
                                 />
-                                <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
-                                    <GanttChart
-                                        tasks={ganttTasks}
-                                        links={ganttLinks}
-                                        scales={scale}
-                                        holidays={holidays.map((h) => {
-                                            const member = h.member_id ? members.find((m) => m.id === h.member_id) : null;
-                                            return {
-                                                ...h,
-                                                member_name: member ? (member.display_name ?? member.email ?? '이름 없음') : undefined,
-                                            }
-                                        })}
-                                        members={members}
-                                        onTaskClick={openTaskDialog}
-                                        onTaskUpdated={handleGanttTaskUpdated}
-                                        onTaskCreate={openCreateTaskDialog}
-                                        onTaskDeleted={handleDeleteTask}
-                                        onLinkAdd={handleLinkAdd}
-                                        onLinkDelete={handleLinkDelete}
-                                    />
-                                </div>
-                            </>
-                        )}
-                    </TabsContent>
-
-                    <TabsContent value="members" className="flex-1 mt-0 overflow-auto">
-                        {(isTaskLoading && members.length === 0) ? (
-                            <MembersSkeleton />
-                        ) : (
-                            <TeamManagementView
-                                projectId={project.id}
-                                members={members}
-                                currentMemberRole={currentMemberRole}
-                                currentUserId={currentUser?.id}
-                                isSystemAdmin={currentUser?.is_admin}
-                            />
-                        )}
-                    </TabsContent>
+                            )}
+                        </TabsContent>
+                    </div>
                 </Tabs>
             </main>
 

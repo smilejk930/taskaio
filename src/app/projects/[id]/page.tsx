@@ -13,8 +13,9 @@ interface ProjectDetailPageProps {
 export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
     const supabase = createClient()
     const projectId = params.id
+    const userPromise = getUser()
 
-    // 프로젝트 정보 조회
+    // 1. 프로젝트 기본 정보 조회
     const { data: project, error: projectError } = await supabase
         .from('projects')
         .select('*')
@@ -25,36 +26,47 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         return notFound()
     }
 
-    // 업무 목록 조회 (소프트 딜리트된 업무 제외)
-    const { data: tasks } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: true })
+    // 2. 나머지 데이터들 (업무, 팀원, 의존성)을 병렬로 조회
+    const [tasksRes, membersRes, linksRes] = await Promise.all([
+        supabase
+            .from('tasks')
+            .select('*')
+            .eq('project_id', projectId)
+            .eq('is_deleted', false)
+            .order('created_at', { ascending: true }),
+        supabase
+            .from('project_members')
+            .select('*, profiles(*)')
+            .eq('project_id', projectId),
+        supabase
+            .from('task_dependencies')
+            .select('*')
+            .eq('project_id', projectId)
+            .eq('is_deleted', false)
+    ])
 
-    // 팀원 정보 조회
-    const { data: members } = await supabase
-        .from('project_members')
-        .select('*, profiles(*)')
-        .eq('project_id', projectId)
+    const tasks = tasksRes.data || []
+    const members = membersRes.data || []
+    const links = linksRes.data || []
 
-    const memberIds = members?.map(m => m.user_id) || []
+    const memberIds = members.map(m => m.user_id)
 
-    // 휴일 정보 조회 (팀원 필터링)
-    let holidaysQuery = supabase.from('holidays').select('*')
-    if (memberIds.length > 0) {
-        holidaysQuery = holidaysQuery.or(`type.in.(public_holiday,workshop),member_id.in.(${memberIds.join(',')})`)
-    } else {
-        holidaysQuery = holidaysQuery.in('type', ['public_holiday', 'workshop'])
+    // 3. 휴일 정보 조회 (팀원 필터링 - memberIds가 필요하므로 위 쿼리 이후에 수행하거나, 전체를 Promise.all에 넣기 위해 profile을 미리 가져와야 함)
+    // 여기서는 memberIds가 확정된 후 수행하거나, or 조건을 활용하여 병렬화 가능하지만
+    // 성능상 큰 차이가 없으므로 팀원이 있는 경우에만 추가 쿼리 수행
+    let holidays: any[] = []
+    if (memberIds.length > 0 || true) { // The `|| true` makes this condition always true, ensuring holidays are always fetched.
+        let holidaysQuery = supabase.from('holidays').select('*')
+        if (memberIds.length > 0) {
+            holidaysQuery = holidaysQuery.or(`type.in.(public_holiday,workshop),member_id.in.(${memberIds.join(',')})`)
+        } else {
+            holidaysQuery = holidaysQuery.in('type', ['public_holiday', 'workshop'])
+        }
+        const { data } = await holidaysQuery
+        holidays = data || []
     }
-    const { data: holidays } = await holidaysQuery
 
-    const { data: links } = await supabase
-        .from('task_dependencies')
-        .select('*')
-        .eq('project_id', projectId)
-        .eq('is_deleted', false)
+    const user = await userPromise
 
     interface ProfileData {
         id: string
@@ -71,8 +83,6 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             role: m.role
         }
     }) || []
-
-    const user = await getUser()
 
     return (
         <ProjectClientView
