@@ -429,11 +429,9 @@ export default function ProjectClientView({
     }))
 
     // ── 상태 요약 계산 (대시보드 공유) ──────────────────────────────────────────
-    const stats = {
-        total: filteredTasks.length,
-        done: filteredTasks.filter(t => t.status === 'done').length,
-    }
-    const totalProgress = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0
+    const totalProgress = tasks.length > 0 
+        ? Math.round(tasks.reduce((acc, t) => acc + (t.progress || 0), 0) / tasks.length) 
+        : 0
 
     return (
         <div className="flex flex-col h-screen">
