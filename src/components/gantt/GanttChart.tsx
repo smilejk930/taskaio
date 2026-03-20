@@ -430,7 +430,7 @@ export default function GanttChart({
                     const desc = _task.description || '내용 없음';
 
                     let tooltipHtml = `<div style="font-size:14px;font-weight:600;margin-bottom:6px;color:#1e293b;">${_task.text}</div>`;
-                    tooltipHtml += `<div style="font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.5;">${desc}</div>`;
+                    tooltipHtml += `<div style="font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.5;white-space:pre-wrap;">${desc}</div>`;
                     tooltipHtml += `<div style="font-size:13px;color:#475569;"><span style="font-weight:600;">기 간:</span> ${formatYMD(start)} ~ ${formatYMD(new Date(end.getTime() - 1000))}</div>`;
 
                     // 해당 업무 기간 내 겹치는 휴일 정보 찾기
