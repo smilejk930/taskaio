@@ -130,7 +130,7 @@ export default function HolidayList({
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {isLoading ? (
+                        {isLoading && holidays.length === 0 ? (
                             Array.from({ length: 5 }).map((_, i) => (
                                 <TableRow key={`skeleton-${i}`}>
                                     <TableCell><Skeleton className="h-6 w-20" /></TableCell>

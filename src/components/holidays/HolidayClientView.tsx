@@ -30,7 +30,7 @@ export default function HolidayClientView({
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
                     <div className="rounded-lg border p-4 bg-card">
                         <p className="text-sm text-muted-foreground">전체 휴일</p>
-                        {isLoading ? (
+                        {isLoading && holidays.length === 0 ? (
                             <Skeleton className="h-8 w-12 mt-1" />
                         ) : (
                             <p className="text-2xl font-bold mt-1">{holidays.length}</p>
@@ -38,7 +38,7 @@ export default function HolidayClientView({
                     </div>
                     <div className="rounded-lg border p-4 bg-card">
                         <p className="text-sm text-muted-foreground">공휴일</p>
-                        {isLoading ? (
+                        {isLoading && holidays.length === 0 ? (
                             <Skeleton className="h-8 w-12 mt-1" />
                         ) : (
                             <p className="text-2xl font-bold mt-1 text-blue-600">
@@ -48,7 +48,7 @@ export default function HolidayClientView({
                     </div>
                     <div className="rounded-lg border p-4 bg-card">
                         <p className="text-sm text-muted-foreground">팀원 휴가</p>
-                        {isLoading ? (
+                        {isLoading && holidays.length === 0 ? (
                             <Skeleton className="h-8 w-12 mt-1" />
                         ) : (
                             <p className="text-2xl font-bold mt-1 text-amber-600">

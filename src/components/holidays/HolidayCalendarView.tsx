@@ -294,7 +294,7 @@ export default function HolidayCalendarView({
                                         today && "bg-primary text-primary-foreground font-bold",
                                         !today && (day.getDay() === 0 || hasPublicHoliday) && "text-red-500 font-semibold"
                                     )}>
-                                        {isLoading ? (
+                                        {isLoading && holidays.length === 0 ? (
                                             <Skeleton className="h-4 w-4 rounded-full" />
                                         ) : (
                                             format(day, 'd')
@@ -303,7 +303,7 @@ export default function HolidayCalendarView({
                                 </div>
 
                                 <div className="flex-1 overflow-hidden space-y-1 p-1">
-                                    {isLoading ? (
+                                    {isLoading && holidays.length === 0 ? (
                                         <>
                                             <Skeleton className="h-5 w-[90%] mx-auto" />
                                             <Skeleton className="h-5 w-[70%] mx-auto" />

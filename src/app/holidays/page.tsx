@@ -9,33 +9,36 @@ import { Holiday, HolidayProfile } from '@/hooks/use-holidays'
 export default async function HolidaysPage() {
     const supabase = createClient()
 
-    // 휴일 목록 조회 (profiles join 포함)
+    // 병렬 데이터 페칭
+    const [holidaysRes, profilesRes, currentUser] = await Promise.allSettled([
+        getHolidays(),
+        supabase.from('profiles').select('id, display_name, avatar_url').order('display_name', { ascending: true }),
+        getUser()
+    ])
+
+    // 휴일 데이터 처리
     let holidays: Holiday[] = []
-    try {
-        const data = await getHolidays()
-        // Supabase join 결과의 타입을 우리 Holiday 타입으로 변환
+    if (holidaysRes.status === 'fulfilled') {
+        const data = holidaysRes.value
         holidays = data.map(h => ({
             ...h,
             profiles: Array.isArray(h.profiles) ? h.profiles[0] ?? null : h.profiles,
         })) as Holiday[]
-    } catch {
-        // 에러 발생 시 빈 목록으로 시작 (클라이언트에서 toast 처리)
-        holidays = []
     }
 
-    // 팀원 선택에 사용할 전체 profiles 목록 조회
-    const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, display_name, avatar_url')
-        .order('display_name', { ascending: true })
+    // 프로필 데이터 처리
+    const profiles = (profilesRes.status === 'fulfilled' && 'data' in profilesRes.value) 
+        ? (profilesRes.value.data ?? []) 
+        : []
 
-    const currentUser = await getUser()
+    // 사용자 데이터 처리
+    const user = currentUser.status === 'fulfilled' ? currentUser.value : null
 
     return (
         <HolidayTabs
             initialHolidays={holidays}
             profiles={(profiles ?? []) as HolidayProfile[]}
-            currentUser={currentUser}
+            currentUser={user}
         />
     )
 }
