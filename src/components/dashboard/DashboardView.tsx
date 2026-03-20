@@ -16,8 +16,8 @@ interface DashboardViewProps {
 export default function DashboardView({ tasks, members, projectName, onTaskClick }: DashboardViewProps) {
     const today = startOfToday()
 
-    const progress = tasks.length > 0 
-        ? Math.round(tasks.reduce((acc, t) => acc + (t.progress || 0), 0) / tasks.length) 
+    const progress = tasks.length > 0
+        ? Math.round(tasks.reduce((acc, t) => acc + (t.progress || 0), 0) / tasks.length)
         : 0
 
     // 마감 임박 업무 (3일 이내, 미완료)
@@ -109,7 +109,9 @@ export default function DashboardView({ tasks, members, projectName, onTaskClick
                 {/* 마감 임박 목록 */}
                 <Card className="bg-card shadow-sm border-none ring-1 ring-slate-200 dark:ring-slate-800">
                     <CardHeader>
-                        <CardTitle className="text-lg">마감 임박 업무</CardTitle>
+                        <CardTitle className="text-lg">
+                            마감 임박 업무 <span className="text-blue-600 dark:text-blue-400 text-sm font-normal">(3일 이내)</span>
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
@@ -146,7 +148,7 @@ export default function DashboardView({ tasks, members, projectName, onTaskClick
                 {/* 우선순위 높은 미완료 업무 */}
                 <Card className="bg-card shadow-sm border-none ring-1 ring-slate-200 dark:ring-slate-800">
                     <CardHeader>
-                        <CardTitle className="text-lg">우선 처리가 필요한 업무</CardTitle>
+                        <CardTitle className="text-lg">우선 처리 필요 업무</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
