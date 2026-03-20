@@ -663,12 +663,16 @@ export default function GanttChart({
         <div className="w-full h-full flex flex-col overflow-hidden">
             <style dangerouslySetInnerHTML={{
                 __html: `
-                .gantt_task_line { border-color: rgba(0, 0, 0, 0.1) !important; border-radius: 6px !important; }
+                .gantt_task_line { border-color: rgba(0, 0, 0, 0.1) !important; border-radius: 6px !important; z-index: 10 !important; }
                 .gantt_task_progress { background-color: rgba(0, 0, 0, 0.2) !important; border-radius: 6px !important; }
                 .gantt_task_content { color: #1e293b !important; font-weight: 500; }
                 .gantt_grid_scale, .gantt_task_scale { background-color: #f8fafc; }
                 .weekend_scale, .weekend_cell { background-color: rgba(239, 68, 68, 0.1) !important; color: #ef4444 !important; }
                 .today_scale, .today_cell { background-color: rgba(37, 99, 235, 0.15) !important; color: #2563eb !important; font-weight: 800 !important; }
+                
+                /* 업무 바가 마커(오늘 선, 휴일 등)보다 위에 표시되도록 z-index 조정 */
+                .gantt_marker { z-index: 1 !important; }
+                
                 .gantt_holiday_public.gantt_marker { background-color: rgba(239, 68, 68, 0.08) !important; border-left: 2px solid rgba(239, 68, 68, 0.3) !important; }
                 .gantt_holiday_leave.gantt_marker { background-color: rgba(245, 158, 11, 0.08) !important; border-left: 2px solid rgba(245, 158, 11, 0.3) !important; }
                 /* 부동 레이블 스타일 제거 - 방안 2 (툴팁으로 통합) */
@@ -682,6 +686,7 @@ export default function GanttChart({
                     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
                     border-radius: 8px !important;
                     padding: 0 !important;
+                    z-index: 1000 !important;
                 }
             `}} />
             <div ref={ganttContainer} className="flex-1 w-full h-full bg-background" />
