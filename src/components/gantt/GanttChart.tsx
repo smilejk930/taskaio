@@ -614,8 +614,24 @@ export default function GanttChart({
             holidayMap.forEach((dailyHolidays, dateStr) => {
                 const hasPublic = dailyHolidays.some(h => ['public_holiday', 'workshop'].includes(h.type));
                 const cls = hasPublic ? 'gantt_holiday_public' : 'gantt_holiday_leave';
+                
+                // 해당 날짜가 시작일인 휴일들만 필터링하여 텍스트 생성 (매일 반복 방지)
+                const startingHolidays = dailyHolidays.filter(h => h.start_date === dateStr);
+                const labelText = startingHolidays.map(h => {
+                    return ['member_leave', 'business_trip'].includes(h.type) && h.member_name 
+                        ? `${h.member_name}(${h.name})` 
+                        : h.name;
+                }).join(', ');
+
                 const names = dailyHolidays.map(h => ['member_leave', 'business_trip'].includes(h.type) && h.member_name ? `${h.member_name} (${h.name})` : h.name).join('\n');
-                g.addMarker({ start_date: new Date(dateStr + "T00:00:00"), css: cls, text: dailyHolidays[0].name, title: names, id: `holiday_group_${dateStr}` });
+                
+                g.addMarker({ 
+                    start_date: new Date(dateStr + "T00:00:00"), 
+                    css: cls, 
+                    text: labelText || "", // 시작일인 경우에만 텍스트 표시
+                    title: names, 
+                    id: `holiday_group_${dateStr}` 
+                });
             });
         }
         g.render()
@@ -631,9 +647,24 @@ export default function GanttChart({
                 .gantt_grid_scale, .gantt_task_scale { background-color: #f8fafc; }
                 .weekend_scale, .weekend_cell { background-color: rgba(239, 68, 68, 0.1) !important; color: #ef4444 !important; }
                 .today_scale, .today_cell { background-color: rgba(37, 99, 235, 0.15) !important; color: #2563eb !important; font-weight: 800 !important; }
-                .gantt_holiday_public.gantt_marker { background-color: rgba(239, 68, 68, 0.1) !important; border-left: 2px solid #ef4444 !important; }
-                .gantt_holiday_leave.gantt_marker { background-color: rgba(245, 158, 11, 0.1) !important; border-left: 2px solid #f59e0b !important; }
-                .gantt_marker_content { color: black !important; font-weight: 500 !important; }
+                .gantt_holiday_public.gantt_marker { background-color: rgba(239, 68, 68, 0.08) !important; border-left: 2px solid #ef4444 !important; }
+                .gantt_holiday_leave.gantt_marker { background-color: rgba(245, 158, 11, 0.08) !important; border-left: 2px solid #f59e0b !important; }
+                .gantt_marker_content { 
+                    color: #475569 !important; 
+                    font-size: 11px !important;
+                    font-weight: 600 !important;
+                    background: rgba(255, 255, 255, 0.9) !important;
+                    padding: 2px 6px !important;
+                    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+                    border-radius: 4px !important;
+                    white-space: nowrap !important;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis !important;
+                    max-width: 150px !important;
+                    top: 4px !important;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+                    z-index: 10 !important;
+                }
             `}} />
             <div ref={ganttContainer} className="flex-1 w-full h-full bg-background" />
         </div>
