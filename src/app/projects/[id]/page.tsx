@@ -50,11 +50,11 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
     }
     const { data: holidays } = await holidaysQuery
 
-    // 업무 연관성(링크) 조회
     const { data: links } = await supabase
         .from('task_dependencies')
         .select('*')
         .eq('project_id', projectId)
+        .eq('is_deleted', false)
 
     interface ProfileData {
         id: string

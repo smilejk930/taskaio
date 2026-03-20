@@ -90,6 +90,7 @@ export default function GanttChart({
     const creatingIdsRef = useRef<Set<string>>(new Set());
     const eventIdsRef = useRef<string[]>([]);
     const lastUpdateKeyRef = useRef<string>('');
+    const isSilentUpdateRef = useRef(false);
 
     // 스케일 상태를 템플릿 함수 안에서 항상 최신으로 유지하기 위한 Ref
     useEffect(() => {
@@ -195,12 +196,15 @@ export default function GanttChart({
 
         let ganttInstance: any;
 
+        let isMounted = true;
         const initGantt = async () => {
             if (typeof window === 'undefined') return
 
             try {
                 const module = await import('dhtmlx-gantt')
+                if (!isMounted) return;
                 await import('dhtmlx-gantt/codebase/dhtmlxgantt.css')
+                if (!isMounted) return;
 
                 ganttInstance = module.gantt
                 ganttRef.current = ganttInstance
@@ -345,6 +349,7 @@ export default function GanttChart({
                 ganttInstance.locale.labels.gantt_cancel_btn = "취소"
                 ganttInstance.locale.labels.gantt_delete_btn = "삭제"
                 ganttInstance.locale.labels.confirm_deleting = "업무가 영구적으로 삭제됩니다. 계속하시겠습니까?"
+                ganttInstance.locale.labels.confirm_link_deleting = "의존성(링크)을 삭제하시겠습니까?"
                 ganttInstance.locale.labels.message_ok = "확인"
                 ganttInstance.locale.labels.message_cancel = "취소"
                 ganttInstance.locale.labels.section_description = "업무명"
@@ -515,14 +520,32 @@ export default function GanttChart({
                     return true;
                 }));
 
-                eventIdsRef.current.push(ganttInstance.attachEvent('onAfterLinkAdd', (id: any, link: any) => {
+                const linkAddId = ganttInstance.attachEvent('onAfterLinkAdd', (id: any, link: any) => {
+                    if (isSilentUpdateRef.current) return true;
+                    // dhtmlx-gantt의 임시 ID(숫자형)인 경우에만 신규 생성으로 간주
+                    const isTempId = typeof id === 'number' || (typeof id === 'string' && !id.includes('-'));
+                    if (!isTempId) return true;
+
                     callbacksRef.current.onLinkAdd?.(id.toString(), link.source.toString(), link.target.toString(), link.type.toString());
                     return true;
-                }));
-                eventIdsRef.current.push(ganttInstance.attachEvent('onAfterLinkDelete', (id: any) => {
+                });
+                const linkDeleteId = ganttInstance.attachEvent('onAfterLinkDelete', (id: any) => {
+                    if (isSilentUpdateRef.current) return true;
+                    // 이미 삭제되거나 존재하지 않는 UUID인 경우 패스 (temp ID 삭제는 DB 작업 불필요)
+                    const isUUID = typeof id === 'string' && id.includes('-');
+                    if (!isUUID) return true;
+
                     callbacksRef.current.onLinkDelete?.(id.toString());
                     return true;
-                }));
+                });
+
+                if (isMounted) {
+                    eventIdsRef.current.push(linkAddId);
+                    eventIdsRef.current.push(linkDeleteId);
+                } else {
+                    ganttInstance.detachEvent(linkAddId);
+                    ganttInstance.detachEvent(linkDeleteId);
+                }
 
                 ganttInstance.init(container)
                 setIsGanttLoaded(true)
@@ -533,6 +556,7 @@ export default function GanttChart({
 
         initGantt()
         return () => {
+            isMounted = false;
             if (ganttRef.current) {
                 eventIdsRef.current.forEach(id => ganttRef.current.detachEvent(id));
                 eventIdsRef.current = [];
@@ -582,9 +606,15 @@ export default function GanttChart({
         if (!isGanttLoaded || !ganttRef.current || isDragging.current) return
         const g = ganttRef.current
         const validTasks = tasks.filter(t => t.start_date instanceof Date && !isNaN(t.start_date.getTime()));
-        g.clearAll()
-        document.querySelectorAll('.gantt_marker').forEach(m => m.remove());
-        g.parse({ data: validTasks, links })
+        
+        isSilentUpdateRef.current = true;
+        try {
+            g.clearAll()
+            document.querySelectorAll('.gantt_marker').forEach(m => m.remove());
+            g.parse({ data: validTasks, links })
+        } finally {
+            isSilentUpdateRef.current = false;
+        }
 
         if (holidays?.length && scales === 'day') {
             const holidayMap = new Map<string, Holiday[]>();

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { Badge } from '@/components/ui/badge'
 
@@ -134,6 +134,8 @@ export default function ProjectClientView({
         currentUser?.id ? [currentUser.id] : []
     )
 
+    const processingRef = useRef<Set<string>>(new Set());
+
     const router = useRouter()
     const currentMemberRole = members.find(m => m.id === currentUser?.id)?.role
 
@@ -166,10 +168,42 @@ export default function ProjectClientView({
             )
             .subscribe()
 
+        const linksChannel = supabase.channel(`public:links:${project.id}`)
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'task_dependencies',
+                    filter: `project_id=eq.${project.id}`,
+                },
+                (payload) => {
+                    const { eventType, new: newRecord, old: oldRecord } = payload
+
+                    if (eventType === 'INSERT') {
+                        setLinks(prev => {
+                            if (prev.find(l => l.id === newRecord.id)) return prev
+                            return [...prev, newRecord as any]
+                        })
+                    } else if (eventType === 'UPDATE') {
+                        // is_deleted=true 가 된 경우 리스트에서 제거
+                        if (newRecord.is_deleted) {
+                            setLinks(prev => prev.filter(l => l.id !== newRecord.id))
+                        } else {
+                            setLinks(prev => prev.map(l => l.id === newRecord.id ? { ...l, ...newRecord } as any : l))
+                        }
+                    } else if (eventType === 'DELETE') {
+                        setLinks(prev => prev.filter(l => l.id !== oldRecord.id))
+                    }
+                }
+            )
+            .subscribe()
+
         return () => {
             supabase.removeChannel(channel)
+            supabase.removeChannel(linksChannel)
         }
-    }, [project.id, setTasks])
+    }, [project.id, setTasks, setLinks])
 
     // 탭 변경 핸들러: URL 업데이트 및 데이터 갱신
     const handleTabChange = (value: string) => {
@@ -290,12 +324,13 @@ export default function ProjectClientView({
 
     const handleLinkAdd = async (id: string, source: string, target: string, type: string) => {
         // dhtmlx-gantt에서 자동생성된 id를 그대로 사용하거나, DB에서 생성된 id를 반환받아 사용
+        if (processingRef.current.has(id)) return false;
+        processingRef.current.add(id);
+
         try {
             // Check permissions
             if (currentMemberRole === 'member') {
                 toast.error('권한이 부족합니다.')
-                // Needs robust rollback here if we want to reverse optimistic UI, 
-                // but gantt component will reload from our state changes anyway if we force it.
                 return false
             }
 
@@ -305,17 +340,27 @@ export default function ProjectClientView({
                 target_id: target,
                 type: type.toString()
             })
-            setLinks(prev => [...prev, newLink])
+            // Realtime 구독에서 이미 추가하겠지만, 사용자 경험을 위해 즉시 반영 (ID 중복 체크는 Realtime 핸들러에서 수행됨)
+            setLinks(prev => {
+                if (prev.find(l => l.id === newLink.id)) return prev;
+                return [...prev, newLink];
+            })
             toast.success('의존성이 추가되었습니다.')
             return true
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : '알 수 없는 오류'
             toast.error('의존성 연동 실패', { description: message })
             return false
+        } finally {
+            // 짧은 지연 후 처리 완료 표시 (연속 클릭 방지)
+            setTimeout(() => processingRef.current.delete(id), 500);
         }
     }
 
     const handleLinkDelete = async (id: string) => {
+        if (processingRef.current.has(id)) return false;
+        processingRef.current.add(id);
+
         try {
             if (currentMemberRole === 'member') {
                 toast.error('권한이 부족합니다.')
@@ -330,6 +375,8 @@ export default function ProjectClientView({
             const message = error instanceof Error ? error.message : '알 수 없는 오류'
             toast.error('의존성 삭제 실패', { description: message })
             return false
+        } finally {
+            setTimeout(() => processingRef.current.delete(id), 500);
         }
     }
 
