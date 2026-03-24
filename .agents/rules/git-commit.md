@@ -2,7 +2,16 @@
 trigger: always_on
 ---
 
-# Git 커밋 메시지 규칙
+# Git 커밋 규칙
+
+## 자동 커밋 트리거
+
+하나의 기능(Feature)이 완료되거나 큰 단위의 작업(Task)이 끝날 때마다 아래를 수행한다.
+
+1. 변경 사항 확인: `git status ; git diff`
+2. 변경 내용을 요약하여 사용자에게 커밋 진행 여부를 묻는다.
+3. 아래 Conventional Commits 형식에 맞춰 `git commit`을 수행한다.
+4. git 명령어 구분자는 `&&` 대신 `;`를 사용한다.
 
 ## Conventional Commits 형식
 
@@ -28,7 +37,7 @@ trigger: always_on
 
 ## Scope 예시 (taskaio 기준)
 
-`tasks`, `members`, `projects`, `gantt`, `auth`, `dashboard`, `db`
+`tasks`, `members`, `projects`, `gantt`, `auth`, `dashboard`, `db`, `adapter`
 
 ## 예시
 
@@ -42,6 +51,7 @@ feat(gantt): dhtmlx-gantt 드래그 일정 조정 구현
 fix(auth): 로그아웃 후 세션이 남아있는 버그 수정
 db(members): 팀원 테이블에 avatar_url 컬럼 추가
 ui(dashboard): 진행률 카드 다크모드 색상 수정
+refactor(db): supabase.from() 호출을 리포지토리 레이어로 교체
 ```
 
 ## 규칙
