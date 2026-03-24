@@ -57,15 +57,35 @@ src/
 ## 🛠 시작하기
 
 ### 1. 환경 설정
-`.env.local` 파일을 생성하고 Supabase 자격 증명을 입력합니다.
+최상단에 `.env.local` 파일을 생성하고, 구동하려는 환경에 맞추어 `DB_TYPE`과 `DATABASE_URL`, 그리고 필요한 API 키들을 입력합니다.
+
+**지원되는 DB 타입별 DATABASE_URL 예시:**
+- **Supabase (기본)**: `DB_TYPE=supabase`, `DATABASE_URL="postgresql://postgres.[REF]:[PASS]...:6543/postgres?pgbouncer=true"`
+- **PostgreSQL**: `DB_TYPE=postgres`, `DATABASE_URL="postgresql://user:pass@localhost:5432/dbname"`
+- **SQLite**: `DB_TYPE=sqlite`, `DATABASE_URL="sqlite.db"`
+
 ```bash
 cp .env.example .env.local
+# 파일 생성 후 직접 열어 환경 변수를 알맞게 세팅해 주세요.
 ```
 
-### 2. 의존성 설치 및 실행
+### 2. 의존성 설치
 패키지 매니저는 반드시 `pnpm`을 사용합니다.
 ```bash
 pnpm install
+```
+
+### 3. DB 스키마 동기화 (최초 1회 필수)
+🚨 **주의사항**: 본 프로젝트는 안전성을 위해 빌드나 앱 실행(`build` / `dev`) 시 데이터베이스 테이블을 자동으로 생성하거나 건드리지 않습니다. 
+환경 설정을 마친 후 서버를 켜기 전에, 반드시 아래 명령어로 로컬 스키마 파일을 실제 DB에 밀어넣어(push) 주어야 합니다.
+
+```bash
+npx drizzle-kit push
+```
+*(참고: 추후 개발 중 DB 구조를 변경할 때마다 위 명령어를 다시 실행하거나 에이전트에게 `/db-migrate`를 지시해야 합니다.)*
+
+### 4. 개발 서버 실행
+```bash
 pnpm dev
 ```
 
