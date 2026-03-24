@@ -62,15 +62,25 @@ export function useHolidays(initialHolidays: Holiday[], profiles: HolidayProfile
         try {
             const created = await createHoliday({
                 name: formData.name,
-                start_date: formData.start_date,
-                end_date: formData.end_date,
-                type: formData.type,
-                member_id: formData.member_id,
+                startDate: formData.start_date,
+                endDate: formData.end_date,
+                type: formData.type as unknown as Holiday['type'],
+                memberId: formData.member_id,
                 note: formData.note || null,
             })
             // 서버 응답으로 임시 항목 교체
+            const mappedCreated: Holiday = {
+                ...created,
+                start_date: created.startDate,
+                end_date: created.endDate,
+                member_id: created.memberId,
+                created_at: created.createdAt,
+                type: created.type as Holiday['type'],
+                profiles: profile
+            } as unknown as Holiday;
+            
             setHolidays(prev => 
-                prev.map(h => h.id === tempId ? { ...created, type: created.type as Holiday['type'], profiles: profile } : h)
+                prev.map(h => h.id === tempId ? mappedCreated : h)
             )
             toast.success('휴일이 등록되었습니다.')
             return true
@@ -96,16 +106,25 @@ export function useHolidays(initialHolidays: Holiday[], profiles: HolidayProfile
         try {
             const updated = await updateHoliday(id, {
                 name: formData.name,
-                start_date: formData.start_date,
-                end_date: formData.end_date,
-                type: formData.type,
-                member_id: formData.member_id,
+                startDate: formData.start_date,
+                endDate: formData.end_date,
+                type: formData.type as unknown as Holiday['type'],
+                memberId: formData.member_id,
                 note: formData.note || null,
             })
             // 서버 응답으로 최종 업데이트 (필요 시)
-            const profileResult = updated.member_id ? profiles.find(p => p.id === updated.member_id) ?? null : null
+            const profileResult = updated.memberId ? profiles.find(p => p.id === updated.memberId) ?? null : null
             setHolidays(prev =>
-                prev.map(h => h.id === id ? { ...h, ...updated, type: updated.type as Holiday['type'], profiles: profileResult } : h)
+                prev.map(h => h.id === id ? { 
+                    ...h, 
+                    ...updated, 
+                    start_date: updated.startDate, 
+                    end_date: updated.endDate, 
+                    member_id: updated.memberId, 
+                    created_at: updated.createdAt, 
+                    type: updated.type as Holiday['type'], 
+                    profiles: profileResult 
+                } as unknown as Holiday : h)
             )
             toast.success('휴일이 수정되었습니다.')
             return true

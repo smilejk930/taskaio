@@ -26,7 +26,7 @@ interface TeamManagementViewProps {
 
 export default function TeamManagementView({ projectId, members, currentMemberRole, currentUserId, isSystemAdmin }: TeamManagementViewProps) {
     const [searchQuery, setSearchQuery] = useState('')
-    const [searchResults, setSearchResults] = useState<{ id: string, display_name: string, email: string }[]>([])
+    const [searchResults, setSearchResults] = useState<{ id: string, display_name: string | null, email: string | null }[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
 

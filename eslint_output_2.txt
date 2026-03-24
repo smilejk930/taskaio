@@ -1,0 +1,21 @@
+﻿
+D:\develop\workspace\taskaio\src\app\holidays\page.tsx
+  29:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\develop\workspace\taskaio\src\hooks\use-holidays.ts
+   67:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   80:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  127:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\develop\workspace\taskaio\src\hooks\use-tasks.ts
+   44:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   57:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   86:28  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:18  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\develop\workspace\taskaio\tailwind.config.ts
+  61:13  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+??10 problems (10 errors, 0 warnings)
+

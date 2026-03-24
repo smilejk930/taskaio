@@ -26,7 +26,6 @@ import { AppLogo } from '@/components/common/AppLogo'
 // import { updateTask, createTask, deleteTask } from '@/app/actions/tasks' // useTasks 훅을 통해 처리하므로 제거
 import { updateProject, deleteProject } from '@/app/actions/projects'
 import { createLink, deleteLink } from '@/app/actions/links'
-import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { format, addDays } from 'date-fns'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -66,7 +65,6 @@ export default function ProjectClientView({
 }: ProjectClientViewProps) {
     const {
         tasks,
-        setTasks,
         isLoading: isTaskLoading,
         createTask: handleCreateTask,
         updateTask: handleUpdateTask,
@@ -99,71 +97,16 @@ export default function ProjectClientView({
     const router = useRouter()
     const currentMemberRole = members.find(m => m.id === currentUser?.id)?.role
 
-    // ── 실시간 데이터 동기화 (Supabase Realtime) ─────────────────────────────────
+    // ── 실시간 데이터 폴링 (30초 주기) ─────────────────────────────────
     React.useEffect(() => {
-        const supabase = createClient()
-        const channel = supabase.channel(`public:tasks:${project.id}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'tasks',
-                    filter: `project_id=eq.${project.id}`,
-                },
-                (payload) => {
-                    const { eventType, new: newRecord, old: oldRecord } = payload
+        const intervalId = setInterval(() => {
+            startTransition(() => {
+                router.refresh()
+            })
+        }, 30000)
 
-                    if (eventType === 'INSERT') {
-                        setTasks((prev: ProjectTask[]) => {
-                            if (prev.find(t => t.id === (newRecord as ProjectTask).id)) return prev
-                            return [...prev, newRecord as ProjectTask]
-                        })
-                    } else if (eventType === 'UPDATE') {
-                        setTasks((prev: ProjectTask[]) => prev.map(t => t.id === (newRecord as ProjectTask).id ? { ...t, ...newRecord } as ProjectTask : t))
-                    } else if (eventType === 'DELETE') {
-                        setTasks((prev: ProjectTask[]) => prev.filter(t => t.id !== oldRecord.id))
-                    }
-                }
-            )
-            .subscribe()
-
-        const linksChannel = supabase.channel(`public:links:${project.id}`)
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'task_dependencies',
-                    filter: `project_id=eq.${project.id}`,
-                },
-                (payload) => {
-                    const { eventType, new: newRecord, old: oldRecord } = payload
-
-                    if (eventType === 'INSERT') {
-                        setLinks((prev: ProjectLink[]) => {
-                            if (prev.find(l => l.id === (newRecord as ProjectLink).id)) return prev
-                            return [...prev, newRecord as ProjectLink]
-                        })
-                    } else if (eventType === 'UPDATE') {
-                        // is_deleted=true 가 된 경우 리스트에서 제거
-                        if ((newRecord as ProjectLink).is_deleted) {
-                            setLinks((prev: ProjectLink[]) => prev.filter(l => l.id !== (newRecord as ProjectLink).id))
-                        } else {
-                            setLinks((prev: ProjectLink[]) => prev.map(l => l.id === (newRecord as ProjectLink).id ? { ...l, ...newRecord } as ProjectLink : l))
-                        }
-                    } else if (eventType === 'DELETE') {
-                        setLinks((prev: ProjectLink[]) => prev.filter(l => l.id !== oldRecord.id))
-                    }
-                }
-            )
-            .subscribe()
-
-        return () => {
-            supabase.removeChannel(channel)
-            supabase.removeChannel(linksChannel)
-        }
-    }, [project.id, setTasks, setLinks])
+        return () => clearInterval(intervalId)
+    }, [router])
 
     // 탭 변경 핸들러: URL 업데이트 및 데이터 갱신
     const handleTabChange = (value: string) => {
@@ -301,15 +244,25 @@ export default function ProjectClientView({
             }
 
             const newLink = await createLink({
-                project_id: project.id,
-                source_id: source,
-                target_id: target,
+                projectId: project.id,
+                sourceId: source,
+                targetId: target,
                 type: type.toString()
             })
-            // Realtime 구독에서 이미 추가하겠지만, 사용자 경험을 위해 즉시 반영 (ID 중복 체크는 Realtime 핸들러에서 수행됨)
+            // Map the returned newly created link (which uses camelCase from drizzle schema) to ProjectLink
+            const projectLink: ProjectLink = {
+                id: newLink.id!,
+                project_id: newLink.projectId,
+                source_id: newLink.sourceId,
+                target_id: newLink.targetId,
+                type: newLink.type,
+                is_deleted: newLink.isDeleted ?? false,
+                created_at: newLink.createdAt ?? new Date().toISOString()
+            }
+
             setLinks(prev => {
-                if (prev.find(l => l.id === newLink.id)) return prev;
-                return [...prev, newLink];
+                if (prev.find(l => l.id === projectLink.id)) return prev;
+                return [...prev, projectLink];
             })
             toast.success('의존성이 추가되었습니다.')
             return true

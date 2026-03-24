@@ -1,102 +1,88 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { signIn as nextAuthSignIn, signOut as nextAuthSignOut, auth } from '@/auth'
+import { db, schema } from '@/lib/db'
+import bcrypt from 'bcryptjs'
+import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 
 export async function login(formData: FormData) {
-    const supabase = createClient()
-
     const email = formData.get('email') as string
     const password = formData.get('password') as string
 
-    const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-    })
-
-    if (error) {
-        return { error: error.message }
+    try {
+        await nextAuthSignIn('credentials', { email, password, redirect: false })
+        revalidatePath('/', 'layout')
+        return { success: true }
+    } catch (error: unknown) {
+        if (typeof error === 'object' && error !== null && 'type' in error && (error as { type?: string }).type === 'CredentialsSignin') {
+            return { error: '이메일 또는 비밀번호가 올바르지 않습니다.' }
+        }
+        return { error: '로그인 중 오류가 발생했습니다.' }
     }
-
-    revalidatePath('/', 'layout')
-    return { success: true }
 }
 
 export async function signup(formData: FormData) {
-    const supabase = createClient()
-
     const email = formData.get('email') as string
     const password = formData.get('password') as string
     const displayName = formData.get('displayName') as string
-
-    const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-            data: {
-                display_name: displayName,
-            },
-        },
-    })
-
-    if (error) {
-        return { error: error.message }
+    
+    // Check existing
+    const [existing] = await db.select().from(schema.users).where(eq(schema.users.email, email))
+    if (existing) {
+        return { error: '이미 사용 중인 이메일입니다.' }
     }
 
-    // Auth 트리거를 통해 profiles 테이블에 자동 삽입되도록 하거나, 여기서 직접 생성할 수 있습니다.
-    // 현재는 Auth 트리거가 설정되어 있다고 가정하거나 직접 삽입을 시도합니다.
-    if (data.user) {
-        const { error: profileError } = await supabase
-            .from('profiles')
-            .insert({
-                id: data.user.id,
-                display_name: displayName,
-            })
+    const hashedPassword = await bcrypt.hash(password, 10)
+    
+    try {
+        const [newUser] = await db.insert(schema.users).values({
+            email,
+            name: displayName,
+            password: hashedPassword,
+        }).returning()
 
-        // 프로필 생성 실패 시 유저 삭제 등의 복구 로직이 필요할 수 있으나, 
-        // 일반적으로는 트리거로 처리하는 것이 권장됩니다.
-        if (profileError && profileError.code !== '23505') { // 중복 키 에러 무시
-            console.error('Profile creation error:', profileError)
-        }
-    }
+        await db.insert(schema.profiles).values({
+            id: newUser.id,
+            displayName,
+        })
 
-    revalidatePath('/', 'layout')
-
-    if (data.session) {
+        await nextAuthSignIn('credentials', { email, password, redirect: false })
+        revalidatePath('/', 'layout')
         return { success: true }
-    } else {
-        return { success: true, emailVerificationRequired: true }
+    } catch (e: unknown) {
+        return { error: (e instanceof Error ? e.message : '회원가입 중 오류가 발생했습니다.') }
     }
 }
 
 export async function signOut() {
-    const supabase = createClient()
-    const { error } = await supabase.auth.signOut()
-
-    if (error) {
-        return { error: error.message }
-    }
-
+    await nextAuthSignOut({ redirect: false })
     revalidatePath('/', 'layout')
     return { success: true }
 }
 
-export async function getUser() {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+export interface AppUser {
+    id: string;
+    email?: string;
+    name?: string | null;
+    display_name?: string | null;
+    avatar_url?: string | null;
+    is_admin?: boolean | null;
+}
 
-    if (!user) return null
-
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
+export async function getUser(): Promise<AppUser | null> {
+    const session = await auth()
+    if (!session?.user?.id) return null
+    
+    const [profile] = await db.select().from(schema.profiles).where(eq(schema.profiles.id, session.user.id))
+    
+    if (!profile) return { ...session.user, id: session.user.id } as AppUser
+    
     return {
-        ...user,
-        display_name: profile?.display_name,
-        avatar_url: profile?.avatar_url,
-        is_admin: profile?.is_admin || false,
-    }
+        ...session.user,
+        id: session.user.id,
+        display_name: profile.displayName,
+        avatar_url: profile.avatarUrl,
+        is_admin: profile.isAdmin
+    } as AppUser
 }

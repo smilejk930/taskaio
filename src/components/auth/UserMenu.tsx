@@ -19,7 +19,7 @@ import { toast } from 'sonner'
 interface UserMenuProps {
     user: {
         id: string
-        email?: string
+        email?: string | null
         display_name?: string | null
         avatar_url?: string | null
     }
@@ -29,11 +29,7 @@ export function UserMenu({ user }: UserMenuProps) {
     const router = useRouter()
 
     const handleSignOut = async () => {
-        const { error } = await signOut()
-        if (error) {
-            toast.error('로그아웃 중 오류가 발생했습니다.')
-            return
-        }
+        await signOut()
         toast.success('로그아웃되었습니다.')
         router.refresh()
         router.push('/login')

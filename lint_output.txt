@@ -1,0 +1,5 @@
+﻿
+> taskaio@0.1.0 lint D:\develop\workspace\taskaio
+> next lint
+
+?덭LIFECYCLE??Command failed with exit code 1.

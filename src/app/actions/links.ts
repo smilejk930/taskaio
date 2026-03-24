@@ -1,47 +1,25 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { Database } from '@/types/supabase'
+import * as linksRepo from '@/lib/db/repositories/links'
+import { authCheckManager, authCheck } from '@/lib/auth-checks'
+import { schema } from '@/lib/db'
 
-type LinkInsertPayload = Database['public']['Tables']['task_dependencies']['Insert']
+type LinkInsertPayload = typeof schema.taskDependencies.$inferInsert
 
 export async function createLink(link: LinkInsertPayload) {
-    const supabase = createClient()
-    const { data, error } = await supabase
-        .from('task_dependencies')
-        .insert(link)
-        .select()
-        .single()
-
-    if (error) {
-        throw new Error(error.message)
-    }
-
-    revalidatePath(`/projects/${link.project_id}`)
+    await authCheck(link.projectId)
+    const data = await linksRepo.createLink(link)
+    revalidatePath(`/projects/${link.projectId}`)
     return data
 }
 
 export async function deleteLink(id: string) {
-    const supabase = createClient()
-
-    // Get project_id for revalidation before updating
-    const { data: link } = await supabase
-        .from('task_dependencies')
-        .select('project_id')
-        .eq('id', id)
-        .single()
-
-    const { error } = await supabase
-        .from('task_dependencies')
-        .update({ is_deleted: true })
-        .eq('id', id)
-
-    if (error) {
-        throw new Error(error.message)
-    }
-
-    if (link?.project_id) {
-        revalidatePath(`/projects/${link.project_id}`)
-    }
+    const link = await linksRepo.getLinkById(id)
+    if (!link) throw new Error("Link not found")
+    
+    await authCheckManager(link.projectId)
+    await linksRepo.softDeleteLink(id)
+    
+    revalidatePath(`/projects/${link.projectId}`)
 }

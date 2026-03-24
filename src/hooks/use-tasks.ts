@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { createTask, updateTask, deleteTask } from '@/app/actions/tasks'
+import { createTask, updateTask, deleteTask, TaskInsertPayload, TaskUpdatePayload } from '@/app/actions/tasks'
 import { toast } from 'sonner'
 import { ProjectTask, TaskFormData, TaskInsert, TaskUpdate } from '@/types/project'
 
@@ -29,10 +29,36 @@ export function useTasks(initialTasks: ProjectTask[]) {
                 data.status = 'in_progress'
             }
 
-            const newTask = await createTask(data)
-            setTasks(prev => [...prev, newTask as ProjectTask])
+            const payloadBase: TaskInsert = { ...formData, status: data.status, progress: data.progress }
+            const payload = {
+                projectId: payloadBase.project_id,
+                title: payloadBase.title,
+                description: payloadBase.description,
+                status: payloadBase.status,
+                startDate: payloadBase.start_date,
+                endDate: payloadBase.end_date,
+                color: payloadBase.color,
+                parentId: payloadBase.parent_id,
+                assigneeId: payloadBase.assignee_id,
+                progress: payloadBase.progress,
+            } as unknown as TaskInsertPayload; // Cast to bypass dynamic inferred type differences
+
+            const newTask = await createTask(payload)
+            const mappedTask: ProjectTask = {
+                 ...newTask,
+                 project_id: newTask.projectId,
+                 start_date: newTask.startDate,
+                 end_date: newTask.endDate,
+                 parent_id: newTask.parentId,
+                 assignee_id: newTask.assigneeId,
+                 created_at: newTask.createdAt,
+                 updated_at: newTask.updatedAt,
+                 is_deleted: newTask.isDeleted,
+            } as unknown as ProjectTask;
+
+            setTasks(prev => [...prev, mappedTask])
             toast.success('업무가 등록되었습니다.')
-            return newTask
+            return mappedTask
         } catch (error: unknown) {
             toast.error('업무 등록 실패', { description: error instanceof Error ? error.message : '알 수 없는 오류' })
             return null
@@ -56,10 +82,35 @@ export function useTasks(initialTasks: ProjectTask[]) {
                 updates.status = 'in_progress'
             }
 
-            const updatedTask = await updateTask(id, updates)
-            setTasks(prev => prev.map(t => t.id === id ? { ...t, ...updatedTask } as ProjectTask : t))
+            const payloadBase: TaskUpdate = { ...updates }
+            const payload: TaskUpdatePayload = {}
+            if (payloadBase.project_id !== undefined) payload.projectId = payloadBase.project_id
+            if (payloadBase.title !== undefined) payload.title = payloadBase.title
+            if (payloadBase.description !== undefined) payload.description = payloadBase.description
+            if (payloadBase.status !== undefined) payload.status = payloadBase.status
+            if (payloadBase.start_date !== undefined) payload.startDate = payloadBase.start_date
+            if (payloadBase.end_date !== undefined) payload.endDate = payloadBase.end_date
+            if (payloadBase.color !== undefined) payload.color = payloadBase.color
+            if (payloadBase.parent_id !== undefined) payload.parentId = payloadBase.parent_id
+            if (payloadBase.assignee_id !== undefined) payload.assigneeId = payloadBase.assignee_id
+            if (payloadBase.progress !== undefined) payload.progress = payloadBase.progress
+
+            const updatedTask = await updateTask(id, payload)
+            const mappedUpdated: ProjectTask = {
+                 ...updatedTask,
+                 project_id: updatedTask.projectId,
+                 start_date: updatedTask.startDate,
+                 end_date: updatedTask.endDate,
+                 parent_id: updatedTask.parentId,
+                 assignee_id: updatedTask.assigneeId,
+                 created_at: updatedTask.createdAt,
+                 updated_at: updatedTask.updatedAt,
+                 is_deleted: updatedTask.isDeleted,
+            } as unknown as ProjectTask;
+
+            setTasks(prev => prev.map(t => t.id === id ? { ...t, ...mappedUpdated } : t))
             toast.success('업무가 수정되었습니다.')
-            return updatedTask
+            return mappedUpdated
         } catch (error: unknown) {
             toast.error('업무 수정 실패', { description: error instanceof Error ? error.message : '알 수 없는 오류' })
             return null

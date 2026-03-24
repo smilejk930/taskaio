@@ -22,6 +22,11 @@ export default async function HolidaysPage() {
         const data = holidaysRes.value
         holidays = data.map(h => ({
             ...h,
+            start_date: h.startDate,
+            end_date: h.endDate,
+            member_id: h.memberId,
+            created_at: h.createdAt,
+            type: h.type as unknown as Holiday['type'],
             profiles: Array.isArray(h.profiles) ? h.profiles[0] ?? null : h.profiles,
         })) as Holiday[]
     }
