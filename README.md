@@ -77,6 +77,10 @@ src/
 패키지 매니저는 반드시 `pnpm`을 사용합니다.
 ```bash
 pnpm install
+
+#또는
+
+pnpm install --frozen-lockfile
 ```
 
 ### 3. DB 스키마 동기화 (최초 1회 필수)
