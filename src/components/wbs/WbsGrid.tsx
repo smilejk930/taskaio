@@ -107,10 +107,10 @@ export default function WbsGrid({
     }, [tasks, members])
 
     const columns = useMemo(() => [
-        // ── 업무명 + description (계층 인덴트) ───────────────
+        // ── 업무명 (계층 인덴트) ───────────────
         columnHelper.display({
             id: 'indent',
-            header: '업무명',
+            header: () => <div className="min-w-[150px]">업무명</div>,
             cell: ({ row }) => {
                 const task = row.original
                 const isChild = !!task.parent_id
@@ -118,32 +118,35 @@ export default function WbsGrid({
                     <div className={`${isChild ? 'pl-6' : ''} cursor-pointer`} onClick={() => onTaskClick(task)}>
                         <div className="flex items-center gap-1">
                             {isChild && <span className="text-muted-foreground text-xs">└</span>}
-                            {/* 좌측의 색상 인디케이터 */}
                             <div
                                 className="w-2 h-5 rounded-sm flex-shrink-0"
                                 style={{ backgroundColor: task.color ?? '#94a3b8' }}
                             />
                             <span className="text-sm font-medium">{task.title || '(제목 없음)'}</span>
                         </div>
-                        {/* 업무 설명 (description) */}
-                        {task.description && (
-                            <div className="pl-4 pt-0.5 pb-1">
-                                <p className="text-xs text-muted-foreground truncate max-w-[300px]">{task.description}</p>
-                            </div>
-                        )}
                     </div>
                 )
             },
         }),
+        // ── 업무 설명 ───────────────────────────────────────────
+        columnHelper.accessor('description', {
+            id: 'description',
+            header: () => <div className="min-w-[250px]">업무 설명</div>,
+            cell: (info) => (
+                <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap">
+                    {info.getValue() || '-'}
+                </div>
+            ),
+        }),
         // ── 시작일 ───────────────────────────────────────────
         columnHelper.accessor('start_date', {
             header: () => <div className="text-center">시작일</div>,
-            cell: (info) => <div className="text-center text-xs text-muted-foreground">{info.getValue()?.split('T')[0] ?? '-'}</div>,
+            cell: (info) => <div className="text-center text-xs text-muted-foreground whitespace-nowrap">{info.getValue()?.split('T')[0] ?? '-'}</div>,
         }),
         // ── 종료일 ───────────────────────────────────────────
         columnHelper.accessor('end_date', {
             header: () => <div className="text-center">종료일</div>,
-            cell: (info) => <div className="text-center text-xs text-muted-foreground">{info.getValue()?.split('T')[0] ?? '-'}</div>,
+            cell: (info) => <div className="text-center text-xs text-muted-foreground whitespace-nowrap">{info.getValue()?.split('T')[0] ?? '-'}</div>,
         }),
         // ── 진척률 ──────────────────────────
         columnHelper.accessor('progress', {
@@ -241,8 +244,11 @@ export default function WbsGrid({
                     <thead className="bg-muted/50 sticky top-0 z-10 border-b shadow-sm">
                         {table.getHeaderGroups().map((headerGroup) => (
                             <tr key={headerGroup.id}>
-                                {headerGroup.headers.map((header) => (
-                                    <th key={header.id} className="h-10 px-3 text-left font-medium text-muted-foreground text-xs whitespace-nowrap bg-muted/50">
+                                {headerGroup.headers.map((header, index) => (
+                                    <th
+                                        key={header.id}
+                                        className={`h-10 px-3 font-medium text-muted-foreground text-xs whitespace-nowrap bg-muted/50 ${index <= 1 ? 'text-left' : 'text-center'}`}
+                                    >
                                         {flexRender(header.column.columnDef.header, header.getContext())}
                                     </th>
                                 ))}
