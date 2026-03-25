@@ -43,3 +43,20 @@ export async function authCheckManager(projectId: string) {
   
   return { userId, role }
 }
+
+/**
+ * Require system administrator role
+ */
+export async function requireAdmin() {
+  const userId = await requireAuth()
+  
+  const [profile] = await db.select()
+    .from(schema.profiles)
+    .where(eq(schema.profiles.id, userId))
+    
+  if (!profile || !profile.isAdmin) {
+    throw new Error("Access denied: Requires system administrator role.")
+  }
+  
+  return { userId, profile }
+}

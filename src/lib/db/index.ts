@@ -13,12 +13,16 @@ const globalForDb = globalThis as unknown as {
   __dbInstance?: ReturnType<typeof drizzlePg<typeof schema>> | ReturnType<typeof drizzleSqlite<typeof schema>> | null;
 };
 
+function isUrlValid(url: string | undefined): url is string {
+  return !!url && url !== 'undefined' && url.trim() !== ''
+}
+
 function createDbInstance() {
   let dbUrl = process.env.DATABASE_URL;
   let dbType = process.env.DB_TYPE || 'postgres';
 
-  // 0. 환경변수가 없으면 config.json 직접 확인 (Next.js 모듈 로드 순서 대응)
-  if (!dbUrl) {
+  // 0. 환경변수가 없거나 유효하지 않으면 config.json 직접 확인 (Next.js 모듈 로드 순서 대응)
+  if (!isUrlValid(dbUrl)) {
     try {
       const configPath = path.join(process.cwd(), 'data', 'config.json');
       if (fs.existsSync(configPath)) {
@@ -31,7 +35,7 @@ function createDbInstance() {
     } catch { /* ignore */ }
   }
   
-  if (!dbUrl) {
+  if (!isUrlValid(dbUrl)) {
     if (process.env.NODE_ENV === 'development') {
         process.stdout.write('⚠️ DATABASE_URL이 설정되지 않았습니다. 설치(Setup)가 필요합니다.\n');
     }
@@ -39,7 +43,7 @@ function createDbInstance() {
   }
 
   if (dbType === 'sqlite') {
-    const sqlite = new Database(dbUrl || 'sqlite.db')
+    const sqlite = new Database(dbUrl)
     return drizzleSqlite(sqlite, { schema }) as unknown as ReturnType<typeof drizzlePg<typeof schema>>;
   }
 
@@ -47,6 +51,7 @@ function createDbInstance() {
     max: 10,
     idle_timeout: 20,
     connect_timeout: 10,
+    ssl: dbUrl.includes('supabase.com') ? 'require' : undefined
   })
   return drizzlePg(client, { schema }) as unknown as ReturnType<typeof drizzlePg<typeof schema>>;
 }
@@ -58,6 +63,13 @@ function getDbInstance() {
     globalForDb.__dbInstance = instance;
   }
   return instance;
+}
+
+/**
+ * DB 인스턴스 캐시를 강제로 비운다. (설치 완료 후 호출 필수)
+ */
+export function refreshDbInstance() {
+  globalForDb.__dbInstance = undefined;
 }
 
 export const db = new Proxy({} as any, {

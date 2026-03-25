@@ -22,6 +22,7 @@ interface UserMenuProps {
         email?: string | null
         display_name?: string | null
         avatar_url?: string | null
+        is_admin?: boolean | null
     }
 }
 
@@ -75,6 +76,18 @@ export function UserMenu({ user }: UserMenuProps) {
                     <Settings className="mr-2 h-4 w-4" />
                     <span>설정</span>
                 </DropdownMenuItem>
+                {user.is_admin && (
+                    <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider py-2">
+                            시스템 관리
+                        </DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => router.push('/admin/users')}>
+                            <User className="mr-2 h-4 w-4" />
+                            <span>사용자 관리</span>
+                        </DropdownMenuItem>
+                    </>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
