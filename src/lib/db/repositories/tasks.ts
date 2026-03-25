@@ -6,19 +6,40 @@ export async function getTasksByProjectId(projectId: string) {
 }
 
 export async function syncParentTask(parentId: string) {
+  // 현재 부모 업무의 날짜를 먼저 조회 (축소 방지를 위해 비교 기준으로 사용)
+  const [parent] = await db.select({
+    startDate: schema.tasks.startDate,
+    endDate: schema.tasks.endDate,
+  }).from(schema.tasks).where(eq(schema.tasks.id, parentId))
+
   const children = await db.select({
     startDate: schema.tasks.startDate,
     endDate: schema.tasks.endDate,
     progress: schema.tasks.progress,
-  }).from(schema.tasks).where(eq(schema.tasks.parentId, parentId))
+  }).from(schema.tasks).where(and(eq(schema.tasks.parentId, parentId), eq(schema.tasks.isDeleted, false)))
 
   if (children.length === 0) return
 
   const starts = children.map(c => c.startDate).filter(Boolean).sort()
   const ends = children.map(c => c.endDate).filter(Boolean).sort()
-  
-  const minStartStr = starts.length > 0 ? starts[0] : null
-  const maxEndStr = ends.length > 0 ? ends[ends.length - 1] : null
+
+  const childMinStart = starts.length > 0 ? starts[0] : null
+  const childMaxEnd = ends.length > 0 ? ends[ends.length - 1] : null
+
+  // 핵심 로직: 부모 날짜는 "확장"만 허용 (축소 불가)
+  // - 자식이 부모보다 이르면 → 부모 시작일을 자식 시작일로 확장
+  // - 자식이 부모보다 늦으면 → 부모 종료일을 자식 종료일로 확장
+  // - 자식이 부모 범위 안에 있으면 → 부모 날짜 변동 없음
+  const currentParentStart = parent?.startDate ?? null
+  const currentParentEnd = parent?.endDate ?? null
+
+  const newStart = !currentParentStart
+    ? childMinStart
+    : (!childMinStart ? currentParentStart : (childMinStart < currentParentStart ? childMinStart : currentParentStart))
+
+  const newEnd = !currentParentEnd
+    ? childMaxEnd
+    : (!childMaxEnd ? currentParentEnd : (childMaxEnd > currentParentEnd ? childMaxEnd : currentParentEnd))
 
   let totalProgress = 0
   children.forEach(child => {
@@ -28,8 +49,8 @@ export async function syncParentTask(parentId: string) {
   const avgProgress = children.length > 0 ? Math.round(totalProgress / children.length) : 0
 
   await db.update(schema.tasks).set({
-    startDate: minStartStr,
-    endDate: maxEndStr,
+    startDate: newStart,
+    endDate: newEnd,
     progress: avgProgress
   }).where(eq(schema.tasks.id, parentId))
 }
