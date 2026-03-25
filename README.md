@@ -73,11 +73,6 @@ src/
 - **PostgreSQL**: `DB_TYPE=postgres`, `DATABASE_URL="postgresql://user:pass@localhost:5432/dbname"`
 - **SQLite**: `DB_TYPE=sqlite`, `DATABASE_URL="sqlite.db"`
 
-```bash
-cp .env.example .env.local
-# 파일 생성 후 직접 열어 환경 변수를 알맞게 세팅해 주세요.
-```
-
 ### 2. 의존성 설치
 패키지 매니저는 반드시 `pnpm`을 사용합니다.
 ```bash
