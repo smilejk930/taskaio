@@ -6,6 +6,7 @@ import { isConfigured } from "@/lib/db/setup-check"
 const { auth } = NextAuth({
     providers: [],
     secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? 'setup-placeholder-secret',
+    trustHost: true,
 })
 
 export default auth((req) => {

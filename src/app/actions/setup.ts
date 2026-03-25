@@ -104,6 +104,8 @@ export async function setupConfig(input: SetupInput) {
         DB_TYPE: dbType,
         DATABASE_URL: databaseUrl,
         NEXTAUTH_URL: appUrl,
+        AUTH_URL: appUrl,
+        AUTH_TRUST_HOST: 'true',
         NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || crypto.randomBytes(32).toString('base64'),
         SETUP_COMPLETED_AT: new Date().toISOString(),
       }
