@@ -48,8 +48,11 @@ export function useTaskFilters(tasks: ProjectTask[], initialAssigneeIds: string[
             tasks.filter(task => {
                 if (isFilterEmpty) return true
 
-                // Title (LIKE search)
-                if (filters.title && !task.title.toLowerCase().includes(filters.title.toLowerCase())) return false
+                // Title or Description (LIKE search)
+                const searchLower = filters.title.toLowerCase()
+                const titleMatch = task.title.toLowerCase().includes(searchLower)
+                const descMatch = task.description?.toLowerCase().includes(searchLower) ?? false
+                if (filters.title && !titleMatch && !descMatch) return false
 
                 // Assignees (Multi-select)
                 if (filters.assigneeIds.length > 0) {

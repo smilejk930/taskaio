@@ -77,7 +77,7 @@ export function TaskSearchFilter({ filters, setFilters, members, onReset }: Task
                 <div className="relative w-full sm:w-64">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                        placeholder="업무명으로 검색..."
+                        placeholder="업무명, 내용으로 검색..."
                         value={filters.title}
                         onChange={handleTitleChange}
                         className="pl-9 h-9 bg-background"
