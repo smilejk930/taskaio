@@ -15,7 +15,7 @@ if (!(Get-Command docker -ErrorAction SilentlyContinue)) {
 
 # 2. Next.js 빌드 (standalone 아카이브 생성)
 Write-Host "📦 1단계: Next.js 애플리케이션 빌드 중..." -ForegroundColor Yellow
-pnpm install
+pnpm install --frozen-lockfile
 pnpm build
 
 if ($LASTEXITCODE -ne 0) {
