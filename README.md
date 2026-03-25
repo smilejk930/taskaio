@@ -100,9 +100,8 @@ pnpm dev
 
 ### 🚀 서버 배포 단계
 1.  **이미지 로드**: 
-    ```bash
-    docker load < taskaio-latest.tar
-    ```
+    - **터미널(CLI)**: `docker load -i taskaio-latest.tar`
+    - **Docker Desktop**: `Images` 탭 → 우측 상단 `Import` 버튼 클릭 → `taskaio-latest.tar` 선택
 2.  **서비스 실행**: `docker-compose.yml`이 있는 디렉토리에서 실행합니다.
     ```bash
     docker compose up -d

@@ -10,6 +10,8 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# 필수 디렉토리가 없을 경우 빌드 실패를 방지하기 위해 생성
+RUN mkdir -p public drizzle
 # standalone 모드를 Docker 빌드에서만 활성화 (Windows 로컬에서는 심볼릭 링크 권한 문제 회피)
 ENV NEXT_BUILD_STANDALONE=true
 RUN npm install -g pnpm && pnpm build
