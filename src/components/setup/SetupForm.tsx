@@ -97,6 +97,15 @@ export function SetupForm() {
         return
       }
 
+      // 신규 설치 모드인데 이미 테이블이 존재하는 경우 경고
+      if (mode === 'new' && connResult.isInstalled) {
+        toast.error('이미 설치가 되어 있습니다.', { 
+          description: '기존 DB로 연결하거나 다른 데이터베이스를 사용하세요.',
+          duration: 5000 
+        })
+        return
+      }
+
       if (mode === 'existing') {
         // 기존 DB 연결 모드: 관리자 정보 불필요, 바로 onSubmit(공통 로직) 호출
         // step이 1이라서 onSubmit 내부에서 다시 handleNextOrSubmit를 호출할 수 있으므로 

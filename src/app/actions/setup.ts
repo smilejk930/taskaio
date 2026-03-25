@@ -15,6 +15,8 @@ import { cookies } from 'next/headers'
 export async function testDbConnection(input: { dbType: string, databaseUrl: string }) {
   const { dbType, databaseUrl } = input
   try {
+    let isInstalled = false
+
     if (dbType === 'postgres' || dbType === 'supabase') {
       const sql = postgres(databaseUrl, { 
         max: 1, 
@@ -23,13 +25,39 @@ export async function testDbConnection(input: { dbType: string, databaseUrl: str
       })
       try {
         await sql`SELECT 1`
-        return { success: true }
+        
+        // 데이터베이스가 이미 초기화되었는지 확인 (users 테이블 존재 여부)
+        const tables = await sql`
+          SELECT count(*) as count 
+          FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'users'
+        `
+        isInstalled = parseInt(tables[0].count) > 0
+
+        return { success: true, isInstalled }
       } finally {
         await sql.end()
       }
     }
-    // SQLite 등 다른 타입은 파일 존재 여부 등으로 체크 가능 (생략 또는 기본 성공)
-    return { success: true }
+
+    if (dbType === 'sqlite') {
+      const Database = require('better-sqlite3')
+      try {
+        const db = new Database(databaseUrl)
+        const table = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get()
+        isInstalled = !!table
+        db.close()
+        return { success: true, isInstalled }
+      } catch (err) {
+        return { 
+          success: false, 
+          message: err instanceof Error ? err.message : 'SQLite 연결에 실패했습니다.' 
+        }
+      }
+    }
+
+    return { success: true, isInstalled }
   } catch (error) {
     console.error('DB Connection Test Error:', error)
     return { 
