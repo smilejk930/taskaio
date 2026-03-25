@@ -1,4 +1,3 @@
-import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Plus, Layout, CalendarDays } from 'lucide-react'
@@ -7,32 +6,13 @@ import { getUser } from '@/app/actions/auth'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { CreateProjectDialog } from '@/components/projects/CreateProjectDialog'
 import { AppLogo } from '@/components/common/AppLogo'
-
-// Supabase 조인 결과 타입
-interface ProjectMember {
-    role: string
-}
+import * as projectRepo from '@/lib/db/repositories/projects'
 
 export default async function ProjectsPage() {
-    const supabase = createClient()
-
     const user = await getUser()
 
-    // 현재 사용자의 프로젝트 목록 조회 (소프트 딜리트 제외)
-    const { data: projects, error } = await supabase
-        .from('projects')
-        .select(`
-      *,
-      project_members!inner(role, user_id)
-    `)
-        .eq('is_deleted', false)
-        .eq('project_members.user_id', user?.id || '')
-        .order('created_at', { ascending: false })
-
-    if (error) {
-        // 서버 컴포넌트에서는 에러 경계로 처리
-        throw new Error(`프로젝트 목록 조회 실패: ${error.message}`)
-    }
+    // 현재 사용자의 프로젝트 목록 조회 (Repository 레이어 사용)
+    const projects = await projectRepo.getProjectsByUserId(user?.id || '')
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -79,7 +59,7 @@ export default async function ProjectsPage() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {projects.map((project) => {
-                            const rawRole = (project.project_members as unknown as ProjectMember[])[0]?.role ?? 'member'
+                            const rawRole = project.role ?? 'member'
                             const displayRole = rawRole === 'owner' ? '소유자' : rawRole === 'manager' ? '관리자' : '멤버'
                             return (
                                 <Link key={project.id} href={`/projects/${project.id}`}>
@@ -96,7 +76,7 @@ export default async function ProjectsPage() {
                                                     {displayRole}
                                                 </span>
                                                 <span>•</span>
-                                                <span>생성일: {project.created_at ? new Date(project.created_at).toLocaleDateString() : '-'}</span>
+                                                <span>생성일: {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : '-'}</span>
                                             </div>
                                         </CardContent>
                                     </Card>

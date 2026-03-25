@@ -1,7 +1,12 @@
-import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import ProjectClientView from '@/components/projects/ProjectClientView'
 import { ProjectTask, ProjectLink, Member, Holiday } from '@/types/project'
+import { getUser } from '@/app/actions/auth'
+import * as projectRepo from '@/lib/db/repositories/projects'
+import * as taskRepo from '@/lib/db/repositories/tasks'
+import * as memberRepo from '@/lib/db/repositories/members'
+import * as linkRepo from '@/lib/db/repositories/links'
+import * as holidayRepo from '@/lib/db/repositories/holidays'
 
 interface ProjectDetailPageProps {
     params: {
@@ -10,81 +15,77 @@ interface ProjectDetailPageProps {
 }
 
 export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
-    const supabase = createClient()
     const projectId = params.id
 
     // 1. 초기 데이터들을 병렬로 조회 (사용자, 프로젝트, 업무, 팀원, 의존성)
     const [
-        { data: { user } },
-        projectRes,
-        tasksRes,
-        membersRes,
-        linksRes
+        user,
+        project,
+        tasks,
+        members,
+        links
     ] = await Promise.all([
-        supabase.auth.getUser(),
-        supabase.from('projects').select('*').eq('id', projectId).single(),
-        supabase.from('tasks').select('*').eq('project_id', projectId).eq('is_deleted', false).order('created_at', { ascending: true }),
-        supabase.from('project_members').select('*, profiles(*)').eq('project_id', projectId),
-        supabase.from('task_dependencies').select('*').eq('project_id', projectId).eq('is_deleted', false)
+        getUser(),
+        projectRepo.getProjectById(projectId),
+        taskRepo.getTasksByProjectId(projectId),
+        memberRepo.getMembersByProjectId(projectId),
+        linkRepo.getLinksByProjectId(projectId)
     ])
 
-    if (projectRes.error || !projectRes.data) {
+    if (!project) {
         return notFound()
     }
-    const project = projectRes.data
-    const tasks = tasksRes.data || []
-    const members = membersRes.data || []
-    const links = linksRes.data || []
-    const memberIds = members.map(m => m.user_id)
 
-    // 2. 사용자 ID와 멤버 ID가 확보된 후 나머지 데이터를 병렬로 조회
-    const [profileRes, holidaysRes] = await Promise.all([
-        user ? supabase.from('profiles').select('*').eq('id', user.id).single() : Promise.resolve({ data: null }),
-        (memberIds.length > 0 || true) ? (async () => {
-            let holidaysQuery = supabase.from('holidays').select('*')
-            if (memberIds.length > 0) {
-                holidaysQuery = holidaysQuery.or(`type.in.(public_holiday,workshop),member_id.in.(${memberIds.join(',')})`)
-            } else {
-                holidaysQuery = holidaysQuery.in('type', ['public_holiday', 'workshop'])
-            }
-            const { data } = await holidaysQuery
-            return data || []
-        })() : Promise.resolve([])
-    ])
+    const memberIds = members.map(m => m.userId)
 
-    const profile = profileRes.data
-    const holidays: Holiday[] = (holidaysRes || []).map(h => ({
-        ...h,
+    // 2. 휴일/휴가 데이터 조회
+    const holidaysRaw = await holidayRepo.getHolidaysByMemberIds(memberIds)
+    
+    const holidays: Holiday[] = holidaysRaw.map(h => ({
+        id: h.id,
+        name: h.name,
+        start_date: h.startDate,
+        end_date: h.endDate,
         type: h.type as Holiday['type'],
-        profiles: null
+        member_id: h.memberId,
+        note: h.note,
+        createdAt: h.createdAt
     }))
 
-    const currentUser = user ? {
-        ...user,
-        display_name: profile?.display_name,
-        avatar_url: profile?.avatar_url,
-        is_admin: profile?.is_admin || false,
-    } : null
+    const formattedTasks: ProjectTask[] = tasks.map(t => ({
+        id: t.id,
+        project_id: t.projectId,
+        title: t.title,
+        description: t.description || null,
+        status: t.status as ProjectTask['status'],
+        priority: t.priority as ProjectTask['priority'],
+        assignee_id: t.assigneeId || null,
+        parent_id: t.parentId || null,
+        start_date: t.startDate || null,
+        end_date: t.endDate || null,
+        progress: t.progress || 0,
+        color: t.color || null,
+        is_deleted: t.isDeleted || false,
+        created_at: t.createdAt || null,
+        updated_at: t.updatedAt || null
+    })) as ProjectTask[]
 
-    interface MemberWithProfile {
-        user_id: string
-        role: string | null
-        profiles: {
-            id: string
-            display_name: string | null
-            email: string | null
-        } | null
-    }
+    const formattedLinks: ProjectLink[] = links.map(l => ({
+        id: l.id,
+        project_id: l.projectId,
+        source_id: l.sourceId,
+        target_id: l.targetId,
+        type: l.type,
+        is_deleted: l.isDeleted,
+        created_at: l.createdAt
+    }))
 
-    const formattedMembers: Member[] = (members as unknown as MemberWithProfile[])?.map(m => {
-        const profile = m.profiles
-        return {
-            id: profile?.id ?? m.user_id,
-            display_name: profile?.display_name ?? null,
-            email: profile?.email ?? null,
-            role: m.role as 'owner' | 'manager' | 'member' | null
-        }
-    }) || []
+    const formattedMembers: Member[] = members.map(m => ({
+        id: m.userId,
+        display_name: m.displayName,
+        email: m.email,
+        role: m.role as 'owner' | 'manager' | 'member' | null
+    }))
 
     return (
         <ProjectClientView
@@ -93,11 +94,11 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                 name: project.name,
                 description: project.description
             }}
-            initialTasks={tasks as ProjectTask[]}
-            initialLinks={links as ProjectLink[]}
-            holidays={holidays as Holiday[]}
+            initialTasks={formattedTasks}
+            initialLinks={formattedLinks}
+            holidays={holidays}
             members={formattedMembers}
-            currentUser={currentUser}
+            currentUser={user}
         />
     )
 }

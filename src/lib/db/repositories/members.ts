@@ -45,3 +45,17 @@ export async function getMemberRole(projectId: string, userId: string) {
         .where(and(eq(schema.projectMembers.projectId, projectId), eq(schema.projectMembers.userId, userId)))
     return member?.role
 }
+
+export async function getMembersByProjectId(projectId: string) {
+    return await db.select({
+        userId: schema.projectMembers.userId,
+        role: schema.projectMembers.role,
+        displayName: schema.profiles.displayName,
+        email: schema.users.email,
+        avatarUrl: schema.profiles.avatarUrl,
+    })
+    .from(schema.projectMembers)
+    .innerJoin(schema.profiles, eq(schema.projectMembers.userId, schema.profiles.id))
+    .innerJoin(schema.users, eq(schema.profiles.id, schema.users.id))
+    .where(eq(schema.projectMembers.projectId, projectId))
+}
