@@ -57,6 +57,15 @@ src/
 ## 🛠 시작하기
 
 ### 1. 환경 설정
+
+1. 저장소 클론
+2. `.env.example`을 복사해서 `.env.local`, `.env.production` 생성
+```bash
+   cp .env.example .env.local
+   cp .env.example .env.production
+```
+3. `.env.local`에 실제 API 키 입력
+4. 실행
 최상단에 `.env.local` 파일을 생성하고, 구동하려는 환경에 맞추어 `DB_TYPE`과 `DATABASE_URL`, 그리고 필요한 API 키들을 입력합니다.
 
 **지원되는 DB 타입별 DATABASE_URL 예시:**
