@@ -1,9 +1,11 @@
 import NextAuth from "next-auth"
 import { isConfigured } from "@/lib/db/setup-check"
 
-// Use a lightweight NextAuth instance in the Edge Runtime to avoid loading DB drivers
+// Edge Runtime용 경량 NextAuth 인스턴스 — DB 드라이버 로드 없이 세션만 확인
+// secret을 명시적으로 전달하여 MissingSecret 경고를 방지한다
 const { auth } = NextAuth({
     providers: [],
+    secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? 'setup-placeholder-secret',
 })
 
 export default auth((req) => {
