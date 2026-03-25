@@ -1,5 +1,5 @@
 import { db, schema } from "../index"
-import { asc, eq } from "drizzle-orm"
+import { and, asc, eq, count } from "drizzle-orm"
 
 /**
  * 모든 프로필 목록을 조회합니다. (이름순)
@@ -36,4 +36,20 @@ export async function updateProfile(id: string, data: { displayName?: string, av
             updatedAt: new Date().toISOString()
         })
         .where(eq(schema.profiles.id, id));
+}
+/**
+ * 활성화된(삭제되지 않은) 시스템 관리자 수를 조회합니다.
+ */
+export async function countActiveAdmins() {
+    const [result] = await db.select({
+        value: count()
+    })
+    .from(schema.profiles)
+    .innerJoin(schema.users, eq(schema.profiles.id, schema.users.id))
+    .where(and(
+        eq(schema.profiles.isAdmin, true),
+        eq(schema.users.isDeleted, false)
+    ));
+    
+    return Number(result.value);
 }

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { ProfileForm } from '@/components/profile/ProfileForm'
 import { PasswordChangeForm } from '@/components/profile/PasswordChangeForm'
+import { DeleteAccountForm } from '@/components/profile/DeleteAccountForm'
 import { AppLogo } from '@/components/common/AppLogo'
 
 export const metadata = {
@@ -35,6 +36,7 @@ export default async function ProfilePage() {
         <div className="grid gap-6">
           <ProfileForm user={user} />
           <PasswordChangeForm />
+          <DeleteAccountForm />
         </div>
       </main>
     </div>

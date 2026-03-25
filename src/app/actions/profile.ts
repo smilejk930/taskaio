@@ -55,9 +55,20 @@ export async function changePassword(password: string) {
 export async function deleteAccount() {
     try {
         const userId = await requireAuth()
+        const profile = await profilesRepo.getProfileById(userId)
 
-        // TODO: 프로젝트 소유 여부 등 체크 (필요한 경우 리포지토리 레이어에서 수행 권장)
-        // 여기서는 계정 삭제(is_deleted 플래그만 변경)를 수행
+        if (!profile) {
+            return { error: '프로필 정보를 찾을 수 없습니다.' }
+        }
+
+        // 시스템 관리자 체크: 마지막 관리자는 탈퇴 불가능
+        if (profile.isAdmin) {
+            const adminCount = await profilesRepo.countActiveAdmins()
+            if (adminCount <= 1) {
+                return { error: '최소 한 명의 시스템 관리자가 필요합니다. 다른 관리자를 지정한 후 다시 시도하세요.' }
+            }
+        }
+
         await usersRepo.deleteUser(userId)
 
         revalidatePath('/', 'layout')
