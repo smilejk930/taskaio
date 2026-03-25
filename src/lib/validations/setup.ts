@@ -8,12 +8,25 @@ export const setupSchema = z.object({
   adminName: z.string().optional(),
   adminEmail: z.string().optional(),
   adminPassword: z.string().optional(),
-  appUrl: z.string().url('올바른 URL 형식이 아닙니다.').or(z.literal('')),
-  supabaseUrl: z.string().url('올바른 URL 형식이 아닙니다.').optional().or(z.literal('')),
+  appUrl: z.string().min(1, '접속 URL은 필수입니다.').url('올바른 URL 형식이 아닙니다.'),
+  supabaseUrl: z.string().optional().or(z.literal('')),
   supabaseAnonKey: z.string().optional().or(z.literal('')),
   supabaseServiceRoleKey: z.string().optional().or(z.literal('')),
 }).superRefine((data, ctx) => {
-  // 신규 설치 모드에서만 관리자 정보 필수 검증
+  // 1. 데이터베이스 타입이 Supabase이면 추가 설정 필수
+  if (data.dbType === 'supabase') {
+    if (!data.supabaseUrl || !z.string().url().safeParse(data.supabaseUrl).success) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: '올바른 Supabase URL을 입력해주세요.', path: ['supabaseUrl'] })
+    }
+    if (!data.supabaseAnonKey || data.supabaseAnonKey.trim() === '') {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Anon Key를 입력해주세요.', path: ['supabaseAnonKey'] })
+    }
+    if (!data.supabaseServiceRoleKey || data.supabaseServiceRoleKey.trim() === '') {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Service Role Key를 입력해주세요.', path: ['supabaseServiceRoleKey'] })
+    }
+  }
+
+  // 2. 신규 설치 모드에서만 관리자 정보 필수 검증
   if (data.mode === 'new') {
     if (!data.adminName || data.adminName.trim() === '') {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: '이름은 필수입니다.', path: ['adminName'] })
