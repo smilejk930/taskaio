@@ -38,6 +38,7 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
       adminName: '',
       adminEmail: '',
       adminPassword: '',
+      adminPasswordConfirm: '',
       supabaseUrl: '',
       supabaseAnonKey: '',
       supabaseServiceRoleKey: '',
@@ -150,7 +151,7 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
     if (!error) return false
     
     // Step 2 필드들은 Step 2 제출 시도(step2Submitted)나 건드림(isDirty) 여부 확인
-    if (['adminName', 'adminEmail', 'adminPassword'].includes(name)) {
+    if (['adminName', 'adminEmail', 'adminPassword', 'adminPasswordConfirm'].includes(name)) {
       return step === 2 && (step2Submitted || form.formState.dirtyFields[name])
     }
     
@@ -459,6 +460,22 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
                   />
                   {shouldShowError('adminPassword') && (
                     <p className="text-xs text-destructive">{form.formState.errors.adminPassword?.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    비밀번호 확인 <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    {...form.register('adminPasswordConfirm')}
+                    type="password"
+                    className="h-11 bg-slate-50/50"
+                    placeholder="••••••••"
+                    autoComplete="new-password"
+                  />
+                  {shouldShowError('adminPasswordConfirm') && (
+                    <p className="text-xs text-destructive">{form.formState.errors.adminPasswordConfirm?.message}</p>
                   )}
                 </div>
               </div>

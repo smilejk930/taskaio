@@ -9,6 +9,7 @@ export const setupSchema = z.object({
   adminName: z.string().optional(),
   adminEmail: z.string().optional(),
   adminPassword: z.string().optional(),
+  adminPasswordConfirm: z.string().optional(),
   appUrl: z.string().url('올바른 URL 형식이 아닙니다.').optional().or(z.literal('')),
   supabaseUrl: z.string().optional().or(z.literal('')),
   supabaseAnonKey: z.string().optional().or(z.literal('')),
@@ -44,6 +45,15 @@ export const setupSchema = z.object({
       if (!passwordResult.success) {
         passwordResult.error.issues.forEach(issue => {
           ctx.addIssue({ ...issue, path: ['adminPassword'] })
+        })
+      }
+      
+      // 비밀번호 일치 확인 
+      if (data.adminPassword !== data.adminPasswordConfirm) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '비밀번호가 일치하지 않습니다.',
+          path: ['adminPasswordConfirm']
         })
       }
     }
