@@ -26,7 +26,7 @@ if ($LASTEXITCODE -ne 0) {
 # 3. Docker 이미지 빌드
 $IMAGE_NAME = "taskaio"
 $TAG = "latest"
-$FULL_IMAGE = "${IMAGE_NAME}:$TAG"
+$FULL_IMAGE = "$($IMAGE_NAME):$TAG"
 
 Write-Host "🐳 2단계: Docker 이미지 생성 중 ($FULL_IMAGE)..." -ForegroundColor Yellow
 docker build -t $FULL_IMAGE .
