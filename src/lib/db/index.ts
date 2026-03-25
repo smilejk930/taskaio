@@ -3,8 +3,6 @@ import { drizzle as drizzleSqlite } from 'drizzle-orm/better-sqlite3'
 import postgres from 'postgres'
 import Database from 'better-sqlite3'
 import * as schema from './schema/pg'
-import fs from 'fs'
-import path from 'path'
 
 /**
  * globalThis에 DB 인스턴스를 캐싱하여 Next.js HMR 시 커넥션 풀 누수를 방지한다.
@@ -18,23 +16,10 @@ function isUrlValid(url: string | undefined): url is string {
 }
 
 function createDbInstance() {
-  let dbUrl = process.env.DATABASE_URL;
-  let dbType = process.env.DB_TYPE || 'postgres';
+  const dbUrl = process.env.DATABASE_URL;
+  const dbType = process.env.DB_TYPE || 'postgres';
 
-  // 0. 환경변수가 없거나 유효하지 않으면 config.json 직접 확인 (Next.js 모듈 로드 순서 대응)
-  if (!isUrlValid(dbUrl)) {
-    try {
-      const configPath = path.join(process.cwd(), 'data', 'config.json');
-      if (fs.existsSync(configPath)) {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        dbUrl = config.DATABASE_URL;
-        dbType = config.DB_TYPE || 'postgres';
-        process.env.DATABASE_URL = dbUrl;
-        process.env.DB_TYPE = dbType;
-      }
-    } catch { /* ignore */ }
-  }
-  
+  // 0. 환경변수 유효성 확인
   if (!isUrlValid(dbUrl)) {
     if (process.env.NODE_ENV === 'development') {
         process.stdout.write('⚠️ DATABASE_URL이 설정되지 않았습니다. 설치(Setup)가 필요합니다.\n');

@@ -40,8 +40,5 @@ next-env.d.ts
 .env.local
 .env.production
 
-# data
-data/config.json
-
 # docker
 taskaio-latest.tar

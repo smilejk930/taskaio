@@ -1,10 +1,9 @@
 import { SetupForm } from '@/components/setup/SetupForm'
-import fs from 'fs'
-import path from 'path'
+import { isConfigured } from '@/lib/db/setup-check'
 
 export default function SetupPage() {
-  const configPath = path.join(process.cwd(), 'data', 'config.json')
-  const isConfigExists = fs.existsSync(configPath)
+  // 환경변수가 설정되어 있는지 확인 (isConfigured는 서버 사이드에서 process.env 체크)
+  const isConfigExists = isConfigured()
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 relative overflow-hidden bg-slate-50">

@@ -10,7 +10,7 @@ import * as schema from '@/lib/db/schema/pg'
 import { isConfigured } from '@/lib/db/setup-check'
 
 import { setupSchema, SetupInput } from '@/lib/validations/setup'
-import { headers } from 'next/headers'
+import { headers, cookies } from 'next/headers'
 import Database from 'better-sqlite3'
 
 export async function testDbConnection(input: { dbType: string, databaseUrl: string }) {
@@ -82,16 +82,7 @@ export async function setupConfig(input: SetupInput) {
       throw new Error(connTest.message)
     }
 
-    // 3. 환경변수 및 설정 저장 (Docker 볼륨 대응을 위해 data/config.json 사용)
-    const dataDirPath = path.join(process.cwd(), 'data')
-    const configPath = path.join(dataDirPath, 'config.json')
-
     try {
-      // data 디렉토리가 없으면 생성
-      if (!fs.existsSync(dataDirPath)) {
-        fs.mkdirSync(dataDirPath, { recursive: true })
-      }
-
       // App URL 자동 감지 (입력이 없으면 현재 요청 기반)
       let appUrl = input.appUrl
       if (!appUrl) {
@@ -100,13 +91,15 @@ export async function setupConfig(input: SetupInput) {
         appUrl = `${proto}://${host}`
       }
 
+      // 3. 기존 시크릿이 있으면 유지하여 불필요한 로그아웃 방지
+      const existingSecret = process.env.AUTH_SECRET;
+
       const config: Record<string, string> = {
         DB_TYPE: dbType,
         DATABASE_URL: databaseUrl,
-        NEXTAUTH_URL: appUrl,
         AUTH_URL: appUrl,
         AUTH_TRUST_HOST: 'true',
-        NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || crypto.randomBytes(32).toString('base64'),
+        AUTH_SECRET: existingSecret || crypto.randomBytes(32).toString('base64'),
         SETUP_COMPLETED_AT: new Date().toISOString(),
       }
 
@@ -115,7 +108,33 @@ export async function setupConfig(input: SetupInput) {
       if (input.supabaseAnonKey) config.NEXT_PUBLIC_SUPABASE_ANON_KEY = input.supabaseAnonKey
       if (input.supabaseServiceRoleKey) config.SUPABASE_SERVICE_ROLE_KEY = input.supabaseServiceRoleKey
 
-      fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8')
+      // .env 파일 생성/관리 (재시작 시 Edge Runtime에서도 환경변수를 로드할 수 있도록 함)
+      const envPath = path.join(process.cwd(), '.env')
+      const envContent = Object.entries(config)
+        .map(([k, v]) => `${k}="${v}"`)
+        .join('\n')
+      fs.writeFileSync(envPath, envContent, 'utf8')
+
+      // 설정 완료 쿠키 설정 (Edge Runtime에서 즉시 감지 가능하도록 함)
+      cookies().set('taskaio_configured', 'true', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 365, // 1년
+        path: '/'
+      })
+
+      // 기존 인증 쿠키 선제적 삭제 (Stale Cookie로 인한 JWTSessionError 방지)
+      const authCookies = [
+        'authjs.session-token',
+        '__Secure-authjs.session-token',
+        'authjs.callback-url',
+        'authjs.csrf-token',
+        'next-auth.session-token',
+        '__Secure-next-auth.session-token',
+        'next-auth.callback-url',
+        'next-auth.csrf-token'
+      ];
+      authCookies.forEach(name => cookies().delete(name));
 
       // 런타임 환경변수 즉시 주입 (현재 프로세스 및 마이그레이션용)
       Object.entries(config).forEach(([key, value]) => {
@@ -173,10 +192,7 @@ export async function setupConfig(input: SetupInput) {
 
       return { success: true }
     } catch (error) {
-      // 오류 발생 시 생성된 설정 파일 삭제 (재시도 가능하게 함)
-      if (fs.existsSync(configPath)) {
-        fs.unlinkSync(configPath)
-      }
+      // 오류 발생 시 생성된 설정 파일 삭제 시도 (환경 정리를 위해 .env 삭제는 신중해야 함)
       throw error
     }
   } catch (error) {
@@ -193,12 +209,13 @@ export async function setupConfig(input: SetupInput) {
  * Docker/PM2 환경에서는 자동으로 다시 시작됩니다.
  */
 export async function restartServer() {
-  console.log('🔄 시스템 재시작 요청 수신. 1초 후 프로세스를 종료합니다...')
+  console.log('🔄 시스템 재시작 요청 수신. 프로세스 종료를 시도합니다...')
   
-  // 클라이언트에 응답이 전달될 시간을 벌기 위해 지연 후 종료
+  // 클라이언트에 응답이 전달될 시간을 조금 더 확보한 뒤 종료
   setTimeout(() => {
+    console.log('🛑 프로세스 종료 (Exit 0)')
     process.exit(0)
-  }, 1000)
+  }, 500)
 
   return { success: true }
 }

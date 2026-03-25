@@ -362,7 +362,7 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
                     <p className="text-xs text-destructive">{form.formState.errors.databaseUrl?.message}</p>
                   )}
                   <p className="text-[11px] text-slate-400 ml-1 italic">
-                    * 설정을 완료하면 선택한 환경에 맞춰 config.json 파일이 자동 생성됩니다.
+                    * 설정을 완료하면 선택한 환경에 맞춰 .env 파일이 자동 생성됩니다.
                   </p>
                 </div>
 
