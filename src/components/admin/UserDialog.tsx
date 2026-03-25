@@ -26,7 +26,13 @@ import { Loader2 } from 'lucide-react'
 interface UserDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
-    user?: any // 수정 시 사용
+    user?: {
+        id: string
+        email: string | null
+        name: string | null
+        displayName: string | null
+        isAdmin: boolean | null
+    }
     onSuccess: () => void
 }
 

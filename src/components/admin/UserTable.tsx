@@ -24,13 +24,21 @@ import { UserDialog } from './UserDialog'
 import { deleteAdminUserAction } from '@/app/actions/admin-users'
 import { toast } from 'sonner'
 
+type AdminUser = {
+    id: string
+    email: string | null
+    name: string | null
+    displayName: string | null
+    isAdmin: boolean | null
+}
+
 interface UserTableProps {
-    users: any[]
+    users: AdminUser[]
     currentUserId: string
 }
 
 export function UserTable({ users, currentUserId }: UserTableProps) {
-    const [selectedUser, setSelectedUser] = useState<any>(null)
+    const [selectedUser, setSelectedUser] = useState<AdminUser | undefined>(undefined)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
 
     const handleDelete = async (id: string) => {
@@ -44,7 +52,7 @@ export function UserTable({ users, currentUserId }: UserTableProps) {
         }
     }
 
-    const handleEdit = (user: any) => {
+    const handleEdit = (user: AdminUser) => {
         setSelectedUser(user)
         setIsDialogOpen(true)
     }
@@ -129,7 +137,7 @@ export function UserTable({ users, currentUserId }: UserTableProps) {
                 user={selectedUser}
                 onSuccess={() => {
                     setIsDialogOpen(false)
-                    setSelectedUser(null)
+                    setSelectedUser(undefined)
                 }}
             />
         </div>

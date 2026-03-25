@@ -10,7 +10,8 @@ import * as schema from '@/lib/db/schema/pg'
 import { isConfigured } from '@/lib/db/setup-check'
 
 import { setupSchema, SetupInput } from '@/lib/validations/setup'
-import { cookies, headers } from 'next/headers'
+import { headers } from 'next/headers'
+import Database from 'better-sqlite3'
 
 export async function testDbConnection(input: { dbType: string, databaseUrl: string }) {
   const { dbType, databaseUrl } = input
@@ -42,7 +43,6 @@ export async function testDbConnection(input: { dbType: string, databaseUrl: str
     }
 
     if (dbType === 'sqlite') {
-      const Database = require('better-sqlite3')
       try {
         const db = new Database(databaseUrl)
         const table = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get()

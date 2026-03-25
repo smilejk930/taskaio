@@ -22,6 +22,8 @@ interface AuthFormProps {
 type SignupInput = z.infer<typeof signupSchema>
 type LoginInput = z.infer<typeof loginSchema>
 
+type SafeFieldErrors<T> = Partial<Record<keyof T, { message?: string }>>
+
 export function AuthForm({ mode }: AuthFormProps) {
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
@@ -115,7 +117,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                             : 'taskAIO에 오신 것을 환영합니다'}
                     </CardDescription>
                 </CardHeader>
-                <form onSubmit={handleSubmit(onSubmit as any)}>
+                <form onSubmit={handleSubmit(onSubmit as (data: SignupInput | LoginInput) => void)}>
                     <CardContent className="grid gap-4">
                         {mode === 'signup' && (
                             <div className="grid gap-2">
@@ -125,10 +127,10 @@ export function AuthForm({ mode }: AuthFormProps) {
                                     placeholder=" 홍길동"
                                     type="text"
                                     disabled={isLoading}
-                                    {...register('displayName' as any)}
+                                    {...register('displayName' as keyof (SignupInput & LoginInput))}
                                 />
-                                {errors.displayName && (
-                                    <p className="text-xs text-red-500 font-medium">{(errors.displayName as any).message}</p>
+                                {mode === 'signup' && (errors as unknown as SafeFieldErrors<SignupInput>).displayName && (
+                                    <p className="text-xs text-red-500 font-medium">{(errors as unknown as SafeFieldErrors<SignupInput>).displayName?.message}</p>
                                 )}
                             </div>
                         )}
@@ -187,10 +189,10 @@ export function AuthForm({ mode }: AuthFormProps) {
                                     id="confirmPassword"
                                     type="password"
                                     disabled={isLoading}
-                                    {...register('confirmPassword' as any)}
+                                    {...register('confirmPassword' as keyof (SignupInput & LoginInput))}
                                 />
-                                {errors.confirmPassword && (
-                                    <p className="text-xs text-red-500 font-medium">{(errors.confirmPassword as any).message}</p>
+                                {mode === 'signup' && (errors as unknown as SafeFieldErrors<SignupInput>).confirmPassword && (
+                                    <p className="text-xs text-red-500 font-medium">{(errors as unknown as SafeFieldErrors<SignupInput>).confirmPassword?.message}</p>
                                 )}
                             </div>
                         )}

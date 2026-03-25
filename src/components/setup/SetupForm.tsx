@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner'
 import { Database, User, ShieldCheck, Loader2, ArrowRight, CheckCircle2, RefreshCw, Plus } from 'lucide-react'
 import { setupConfig, testDbConnection, restartServer } from '@/app/actions/setup'
-import { useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
 
 import { setupSchema } from '@/lib/validations/setup'
 import type { SetupInput } from '@/lib/validations/setup'
@@ -126,7 +126,7 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
         setStep(2)
         toast.success('데이터베이스 연결 확인 완료')
       }
-    } catch (err) {
+    } catch {
       toast.error('연결 확인 오류', { description: '서버와 통신 중 오류가 발생했습니다.' })
     } finally {
       setIsSubmitting(false)
@@ -160,7 +160,7 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
     try {
       // 서버에 재시작 요청 (1초 뒤 종료됨)
       await restartServer()
-    } catch (err) {
+    } catch {
       // 서버가 이미 종료되었을 수 있으므로 에러 무시
       console.log('Restart request sent, server might have already closed.')
     }
@@ -184,7 +184,7 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
           }, 1000)
           return true
         }
-      } catch (err) {
+      } catch {
         // 서버가 아직 다운 상태인 경우
         return false
       }

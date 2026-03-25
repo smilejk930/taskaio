@@ -40,8 +40,9 @@ export function DeleteAccountForm() {
         // 탈퇴 성공 시 로그아웃 처리 및 메인으로 이동
         await signOut({ callbackUrl: '/' })
       }
-    } catch (error: any) {
-      toast.error('오류가 발생했습니다: ' + error.message)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      toast.error('오류가 발생했습니다: ' + message)
       setIsLoading(false)
     }
   }

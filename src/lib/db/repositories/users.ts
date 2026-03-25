@@ -1,5 +1,5 @@
 import { db, schema } from "../index"
-import { eq, asc, and, ne } from "drizzle-orm"
+import { eq, asc } from "drizzle-orm"
 
 /**
  * 전제 사용자 목록을 프로필 정보와 함께 조회합니다.
@@ -75,7 +75,7 @@ export async function updateAdminUser(id: string, data: {
 }) {
     return await db.transaction(async (tx) => {
         // Update user table
-        const userUpdate: any = {};
+        const userUpdate: { name?: string; password?: string } = {};
         if (data.name) userUpdate.name = data.name;
         if (data.passwordHash) userUpdate.password = data.passwordHash;
         
@@ -86,7 +86,7 @@ export async function updateAdminUser(id: string, data: {
         }
 
         // Update profile table
-        const profileUpdate: any = {};
+        const profileUpdate: { displayName?: string; isAdmin?: boolean; updatedAt?: string } = {};
         if (data.displayName) profileUpdate.displayName = data.displayName;
         if (data.isAdmin !== undefined) profileUpdate.isAdmin = data.isAdmin;
         profileUpdate.updatedAt = new Date().toISOString();

@@ -15,8 +15,9 @@ export async function getAdminUsersAction() {
     try {
         await requireAdmin()
         return await userRepo.getAllUsersWithProfiles()
-    } catch (error: any) {
-        return { error: error.message || "사용자 목록을 가져오는데 실패했습니다." }
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "사용자 목록을 가져오는데 실패했습니다."
+        return { error: message }
     }
 }
 
@@ -61,8 +62,9 @@ export async function createAdminUserAction(formData: FormData) {
 
         revalidatePath("/admin/users")
         return { success: true }
-    } catch (error: any) {
-        return { error: error.message || "사용자 생성에 실패했습니다." }
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "사용자 생성에 실패했습니다."
+        return { error: message }
     }
 }
 
@@ -83,7 +85,7 @@ export async function updateAdminUserAction(id: string, formData: FormData) {
              return { error: "본인의 관리자 권한은 해제할 수 없습니다." }
         }
 
-        const data: any = {}
+        const data: { name?: string; displayName?: string; passwordHash?: string; isAdmin?: boolean } = {}
         if (name) {
             data.name = name
             data.displayName = name
@@ -103,8 +105,9 @@ export async function updateAdminUserAction(id: string, formData: FormData) {
 
         revalidatePath("/admin/users")
         return { success: true }
-    } catch (error: any) {
-        return { error: error.message || "사용자 수정에 실패했습니다." }
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "사용자 수정에 실패했습니다."
+        return { error: message }
     }
 }
 
@@ -124,7 +127,8 @@ export async function deleteAdminUserAction(id: string) {
 
         revalidatePath("/admin/users")
         return { success: true }
-    } catch (error: any) {
-        return { error: error.message || "사용자 삭제에 실패했습니다." }
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "사용자 삭제에 실패했습니다."
+        return { error: message }
     }
 }

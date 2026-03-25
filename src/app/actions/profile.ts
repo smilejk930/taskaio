@@ -21,8 +21,9 @@ export async function updateProfile(data: { display_name?: string, avatar_url?: 
 
         revalidatePath('/', 'layout')
         return { success: true }
-    } catch (error: any) {
-        return { error: '프로필 업데이트에 실패했습니다.', details: error.message }
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "프로필 업데이트에 실패했습니다."
+        return { error: '프로필 업데이트에 실패했습니다.', details: message }
     }
 }
 
@@ -44,8 +45,9 @@ export async function changePassword(password: string) {
         })
 
         return { success: true }
-    } catch (error: any) {
-        return { error: '비밀번호 변경에 실패했습니다.', details: error.message }
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "비밀번호 변경에 실패했습니다."
+        return { error: '비밀번호 변경에 실패했습니다.', details: message }
     }
 }
 
@@ -73,7 +75,8 @@ export async function deleteAccount() {
 
         revalidatePath('/', 'layout')
         return { success: true }
-    } catch (error: any) {
-        return { error: '회원 탈퇴 처리에 실패했습니다.', details: error.message }
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "회원 탈퇴 처리에 실패했습니다."
+        return { error: '회원 탈퇴 처리에 실패했습니다.', details: message }
     }
 }

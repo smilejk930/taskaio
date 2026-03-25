@@ -66,7 +66,7 @@ function getDbInstance() {
 }
 
 
-export const db = new Proxy({} as any, {
+export const db = new Proxy({} as unknown as ReturnType<typeof drizzlePg<typeof schema>>, {
   get(target, prop) {
     // Auth.js DrizzleAdapter 감지용 특수 프로퍼티 대응
     if (prop === '__isProxy') return true;
@@ -80,7 +80,7 @@ export const db = new Proxy({} as any, {
       throw new Error('Database not initialized. Please complete setup.');
     }
     
-    const value = (instance as any)[prop];
+    const value = (instance as unknown as Record<string | symbol, unknown>)[prop];
     // 함수인 경우 this 바인딩 처리
     return typeof value === 'function' ? value.bind(instance) : value;
   },
