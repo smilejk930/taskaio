@@ -101,4 +101,5 @@ pnpm dev
 ---
 
 ## 📝 라이선스
-이 프로젝트는 개인 학습 및 포트폴리오 목적으로 제작되었습니다.
+이 프로젝트는 [Apache License 2.0](LICENSE)에 따라 라이선스가 부여됩니다.
+Copyright 2026 SMILEJK930
