@@ -466,8 +466,8 @@ export default function GanttChart({
                     const formatYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                     const desc = _task.description || '내용 없음';
 
-                    let tooltipHtml = `<div style="font-size:14px;font-weight:600;margin-bottom:6px;color:#1e293b;">${_task.text}</div>`;
-                    tooltipHtml += `<div style="font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.5;white-space:pre-wrap;">${desc}</div>`;
+                    let tooltipHtml = `<div style="font-size:14px;font-weight:600;margin-bottom:6px;color:#1e293b;word-break:break-word;overflow-wrap:break-word;white-space:normal;">${_task.text}</div>`;
+                    tooltipHtml += `<div style="font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.5;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;">${desc}</div>`;
                     tooltipHtml += `<div style="font-size:13px;color:#475569;"><span style="font-weight:600;">기 간:</span> ${formatYMD(start)} ~ ${formatYMD(new Date(end.getTime() - 1000))}</div>`;
 
                     // 해당 업무 기간 내 겹치는 휴일 정보 찾기
@@ -493,7 +493,7 @@ export default function GanttChart({
                         }
                     }
 
-                    return `<div style="padding:10px;min-width:240px;background:#ffffff;">${tooltipHtml}</div>`;
+                    return `<div style="padding:14px;min-width:280px;max-width:500px;max-height:500px;overflow-y:auto;background:#ffffff;scrollbar-width:thin;box-sizing:border-box;">${tooltipHtml}</div>`;
                 }
 
                 eventIdsRef.current.push(ganttInstance.attachEvent("onBeforeTaskDrag", (id: unknown) => {
@@ -772,6 +772,10 @@ export default function GanttChart({
                     border-radius: 8px !important;
                     padding: 0 !important;
                     z-index: 1000 !important;
+                    max-width: 520px !important;
+                    max-height: 520px !important;
+                    white-space: normal !important;
+                    overflow: visible !important;
                 }
             `}} />
             <div ref={ganttContainer} className="flex-1 w-full h-full bg-background" />
