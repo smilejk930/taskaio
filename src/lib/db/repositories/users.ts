@@ -15,6 +15,7 @@ export async function getAllUsersWithProfiles() {
     })
     .from(schema.users)
     .leftJoin(schema.profiles, eq(schema.users.id, schema.profiles.id))
+    .where(eq(schema.users.isDeleted, false))
     .orderBy(asc(schema.users.email));
 }
 
@@ -28,6 +29,7 @@ export async function getAdminUserById(id: string) {
         name: schema.users.name,
         displayName: schema.profiles.displayName,
         isAdmin: schema.profiles.isAdmin,
+        isDeleted: schema.users.isDeleted,
     })
     .from(schema.users)
     .leftJoin(schema.profiles, eq(schema.users.id, schema.profiles.id))
@@ -101,7 +103,10 @@ export async function updateAdminUser(id: string, data: {
  * 사용자와 프로필을 삭제합니다.
  */
 export async function deleteAdminUser(id: string) {
-    // Foreign key cascade should handle profile deletion if defined, 
-    // but we can be explicit if needed. Our schema has onDelete: "cascade" for profile to users.
-    return await db.delete(schema.users).where(eq(schema.users.id, id));
+    return await db.update(schema.users)
+        .set({ 
+            isDeleted: true,
+            deletedAt: new Date().toISOString()
+        })
+        .where(eq(schema.users.id, id));
 }

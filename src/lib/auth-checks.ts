@@ -50,13 +50,22 @@ export async function authCheckManager(projectId: string) {
 export async function requireAdmin() {
   const userId = await requireAuth()
   
-  const [profile] = await db.select()
-    .from(schema.profiles)
-    .where(eq(schema.profiles.id, userId))
+  const [result] = await db.select({
+      id: schema.users.id,
+      isAdmin: schema.profiles.isAdmin,
+      isDeleted: schema.users.isDeleted
+    })
+    .from(schema.users)
+    .leftJoin(schema.profiles, eq(schema.users.id, schema.profiles.id))
+    .where(eq(schema.users.id, userId))
     
-  if (!profile || !profile.isAdmin) {
+  if (!result || result.isDeleted) {
+    throw new Error("Account is deactivated or deleted.")
+  }
+
+  if (!result.isAdmin) {
     throw new Error("Access denied: Requires system administrator role.")
   }
   
-  return { userId, profile }
+  return { userId, profile: result }
 }

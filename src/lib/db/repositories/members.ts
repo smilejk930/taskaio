@@ -12,9 +12,12 @@ export async function searchUsers(query: string) {
     .from(schema.users)
     .leftJoin(schema.profiles, eq(schema.users.id, schema.profiles.id))
     .where(
-        or(
-            like(schema.users.email, `%${query}%`),
-            like(schema.profiles.displayName, `%${query}%`)
+        and(
+            eq(schema.users.isDeleted, false),
+            or(
+                like(schema.users.email, `%${query}%`),
+                like(schema.profiles.displayName, `%${query}%`)
+            )
         )
     )
     return users
@@ -53,6 +56,7 @@ export async function getMembersByProjectId(projectId: string) {
         displayName: schema.profiles.displayName,
         email: schema.users.email,
         avatarUrl: schema.profiles.avatarUrl,
+        isDeleted: schema.users.isDeleted,
     })
     .from(schema.projectMembers)
     .innerJoin(schema.profiles, eq(schema.projectMembers.userId, schema.profiles.id))

@@ -2,7 +2,7 @@ import NextAuth from "next-auth"
 import Credentials from "next-auth/providers/credentials"
 import { DrizzleAdapter } from "@auth/drizzle-adapter"
 import { db, schema } from "@/lib/db"
-import { eq } from "drizzle-orm"
+import { eq, and } from "drizzle-orm"
 import bcrypt from "bcryptjs"
 
 import type { Adapter } from 'next-auth/adapters'
@@ -25,7 +25,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials: Partial<Record<string, unknown>>) {
         if (!credentials?.email || !credentials?.password) return null
         
-        const [user] = await db.select().from(schema.users).where(eq(schema.users.email, credentials.email as string));
+        const [user] = await db.select().from(schema.users).where(
+          and(
+            eq(schema.users.email, credentials.email as string),
+            eq(schema.users.isDeleted, false)
+          )
+        );
         
         if (!user || !user.password) return null;
         

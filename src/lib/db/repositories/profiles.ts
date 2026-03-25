@@ -11,6 +11,8 @@ export async function getAllProfiles() {
         avatarUrl: schema.profiles.avatarUrl,
     })
     .from(schema.profiles)
+    .innerJoin(schema.users, eq(schema.profiles.id, schema.users.id))
+    .where(eq(schema.users.isDeleted, false))
     .orderBy(asc(schema.profiles.displayName));
 }
 

@@ -5,6 +5,7 @@ import { db, schema } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
+import { signupSchema } from '@/lib/validations/auth'
 
 export async function login(formData: FormData) {
     const email = formData.get('email') as string
@@ -22,7 +23,7 @@ export async function login(formData: FormData) {
     }
 }
 
-import { signupSchema } from '@/lib/validations/auth'
+
 
 export async function signup(formData: FormData) {
     const rawData = Object.fromEntries(formData.entries())
