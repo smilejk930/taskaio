@@ -62,11 +62,37 @@ function getDbInstance() {
 
 export const db = new Proxy({} as any, {
   get(target, prop) {
+    // Auth.js DrizzleAdapter 감지용 특수 프로퍼티 대응
+    if (prop === '__isProxy') return true;
+    
     const instance = getDbInstance();
     if (!instance) {
+      // 초기화 전 어댑터가 속성을 읽으려 할 때 에러 방지 (NextAuth 초기화 시점 대응)
+      if (typeof prop === 'string' && ['dialect', 'session', 'query', '_driver'].includes(prop)) {
+        return undefined;
+      }
       throw new Error('Database not initialized. Please complete setup.');
     }
-    return (instance as any)[prop];
+    
+    const value = (instance as any)[prop];
+    // 함수인 경우 this 바인딩 처리
+    return typeof value === 'function' ? value.bind(instance) : value;
+  },
+  getPrototypeOf() {
+    // 실제 인스턴스의 프로토타입을 반환하여 instanceof 체크 등을 통과하게 함
+    const instance = getDbInstance();
+    return instance ? Object.getPrototypeOf(instance) : Object.prototype;
+  },
+  getOwnPropertyDescriptor(target, prop) {
+    const instance = getDbInstance();
+    if (instance) {
+      return Object.getOwnPropertyDescriptor(instance, prop);
+    }
+    return Object.getOwnPropertyDescriptor(target, prop);
+  },
+  has(target, prop) {
+    const instance = getDbInstance();
+    return instance ? Reflect.has(instance, prop) : Reflect.has(target, prop);
   }
 }) as unknown as ReturnType<typeof drizzlePg<typeof schema>>;
 
