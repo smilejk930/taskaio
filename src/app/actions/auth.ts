@@ -22,10 +22,17 @@ export async function login(formData: FormData) {
     }
 }
 
+import { signupSchema } from '@/lib/validations/auth'
+
 export async function signup(formData: FormData) {
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const displayName = formData.get('displayName') as string
+    const rawData = Object.fromEntries(formData.entries())
+    const validation = signupSchema.safeParse(rawData)
+    
+    if (!validation.success) {
+        return { error: validation.error.issues[0].message }
+    }
+
+    const { email, password, displayName } = validation.data
     
     // Check existing
     const [existing] = await db.select().from(schema.users).where(eq(schema.users.email, email))

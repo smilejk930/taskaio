@@ -18,6 +18,8 @@ export const users = pgTable("users", {
   emailVerified: timestamp("emailVerified", { mode: "date" }),
   password: text("password"),
   image: text("image"),
+  isDeleted: boolean("is_deleted").default(false),
+  deletedAt: timestamp("deleted_at", { mode: "string" }),
 })
 
 export const accounts = pgTable(

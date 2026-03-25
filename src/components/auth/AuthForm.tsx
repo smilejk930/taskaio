@@ -3,50 +3,63 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { login, signup } from '@/app/actions/auth'
+import { signupSchema, loginSchema } from '@/lib/validations/auth'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Check, X } from 'lucide-react'
+import { z } from 'zod'
 
 interface AuthFormProps {
     mode: 'login' | 'signup'
 }
 
+type SignupInput = z.infer<typeof signupSchema>
+type LoginInput = z.infer<typeof loginSchema>
+
 export function AuthForm({ mode }: AuthFormProps) {
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
 
-    async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-        event.preventDefault()
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+        watch,
+    } = useForm<SignupInput | LoginInput>({
+        resolver: zodResolver(mode === 'signup' ? signupSchema : loginSchema),
+        defaultValues: {
+            email: '',
+            password: '',
+            ...(mode === 'signup' ? { displayName: '', confirmPassword: '' } : {}),
+        },
+    })
+
+    const password = watch('password') || ''
+
+    const onSubmit = async (data: SignupInput | LoginInput) => {
         setIsLoading(true)
-
-        const formData = new FormData(event.currentTarget)
-        const password = formData.get('password') as string
-        const confirmPassword = formData.get('confirmPassword') as string
-
-        if (mode === 'signup' && password !== confirmPassword) {
-            toast.error('비밀번호가 일치하지 않습니다.')
-            setIsLoading(false)
-            return
-        }
-
         try {
-            const result = mode === 'login' ? await login(formData) : await signup(formData)
+            const formData = new FormData()
+            Object.entries(data).forEach(([key, value]) => {
+                formData.append(key, value)
+            })
+
+            const result = mode === 'login' 
+                ? await login(formData) 
+                : await signup(formData)
 
             if (result?.error) {
                 toast.error(result.error)
             } else {
-                if (mode === 'signup' && (result as { emailVerificationRequired?: boolean })?.emailVerificationRequired) {
-                    toast.success('회원가입이 완료되었습니다. 이메일 인증을 확인해주세요.')
-                    router.push('/login')
-                } else {
-                    toast.success(mode === 'login' ? '로그인되었습니다.' : '회원가입이 완료되었습니다.')
-                    router.push('/projects')
-                    router.refresh()
-                }
+                toast.success(mode === 'login' ? '로그인되었습니다.' : '회원가입이 완료되었습니다.')
+                router.push('/projects')
+                router.refresh()
             }
         } catch {
             toast.error('오류가 발생했습니다. 다시 시도해주세요.')
@@ -55,9 +68,24 @@ export function AuthForm({ mode }: AuthFormProps) {
         }
     }
 
+    // 비밀번호 규칙 체크 (UI 표시용)
+    const passwordChecks = [
+        { label: '8자 이상', checked: password.length >= 8 },
+        { 
+            label: '3종 조합 (대문자, 소문자, 숫자, 특수문자)', 
+            checked: (() => {
+                let count = 0
+                if (/[a-z]/.test(password)) count++
+                if (/[A-Z]/.test(password)) count++
+                if (/[0-9]/.test(password)) count++
+                if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) count++
+                return count >= 3
+            })()
+        }
+    ]
+
     return (
         <div className="flex flex-col items-center gap-6">
-            {/* 브랜드 로고 + 타이틀 */}
             <div className="flex flex-col items-center gap-2">
                 <div
                     className="w-16 h-16 rounded-xl flex items-center justify-center shadow-lg overflow-hidden"
@@ -87,55 +115,83 @@ export function AuthForm({ mode }: AuthFormProps) {
                             : 'taskAIO에 오신 것을 환영합니다'}
                     </CardDescription>
                 </CardHeader>
-                <form onSubmit={handleSubmit}>
+                <form onSubmit={handleSubmit(onSubmit as any)}>
                     <CardContent className="grid gap-4">
                         {mode === 'signup' && (
                             <div className="grid gap-2">
                                 <Label htmlFor="displayName">이름</Label>
                                 <Input
                                     id="displayName"
-                                    name="displayName"
                                     placeholder=" 홍길동"
                                     type="text"
-                                    required
                                     disabled={isLoading}
+                                    {...register('displayName' as any)}
                                 />
+                                {errors.displayName && (
+                                    <p className="text-xs text-red-500 font-medium">{(errors.displayName as any).message}</p>
+                                )}
                             </div>
                         )}
                         <div className="grid gap-2">
                             <Label htmlFor="email">이메일</Label>
                             <Input
                                 id="email"
-                                name="email"
                                 placeholder="name@example.com"
                                 type="email"
                                 autoCapitalize="none"
                                 autoComplete="email"
                                 autoCorrect="off"
-                                required
                                 disabled={isLoading}
+                                {...register('email')}
                             />
+                            {errors.email && (
+                                <p className="text-xs text-red-500 font-medium">{errors.email.message}</p>
+                            )}
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="password">비밀번호</Label>
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="password">비밀번호</Label>
+                            </div>
                             <Input
                                 id="password"
-                                name="password"
                                 type="password"
-                                required
                                 disabled={isLoading}
+                                {...register('password')}
                             />
+                            {errors.password && (
+                                <p className="text-xs text-red-500 font-medium">{errors.password.message}</p>
+                            )}
+                            
+                            {/* 비밀번호 규칙 가이드 (회원가입 모드에서만 표시) */}
+                            {mode === 'signup' && password.length > 0 && (
+                                <div className="mt-1 space-y-1">
+                                    {passwordChecks.map((check, i) => (
+                                        <div key={i} className="flex items-center gap-1.5 text-[11px]">
+                                            {check.checked ? (
+                                                <Check className="w-3 h-3 text-green-500" />
+                                            ) : (
+                                                <X className="w-3 h-3 text-slate-300" />
+                                            )}
+                                            <span className={check.checked ? "text-green-600 font-medium" : "text-slate-500"}>
+                                                {check.label}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         {mode === 'signup' && (
                             <div className="grid gap-2">
                                 <Label htmlFor="confirmPassword">비밀번호 확인</Label>
                                 <Input
                                     id="confirmPassword"
-                                    name="confirmPassword"
                                     type="password"
-                                    required
                                     disabled={isLoading}
+                                    {...register('confirmPassword' as any)}
                                 />
+                                {errors.confirmPassword && (
+                                    <p className="text-xs text-red-500 font-medium">{(errors.confirmPassword as any).message}</p>
+                                )}
                             </div>
                         )}
                     </CardContent>

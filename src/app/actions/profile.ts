@@ -28,7 +28,14 @@ export async function updateProfile(data: { display_name?: string, avatar_url?: 
     return { success: true }
 }
 
+import { passwordSchema } from '@/lib/validations/auth'
+
 export async function changePassword(password: string) {
+    const validation = passwordSchema.safeParse(password)
+    if (!validation.success) {
+        return { error: validation.error.issues[0].message }
+    }
+
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { passwordSchema } from './auth'
 
 export const setupSchema = z.object({
   // 설치 모드: new = 신규 설치(마이그레이션 + 관리자 생성), existing = 기존 DB 연결(설정만 저장)
@@ -34,8 +35,17 @@ export const setupSchema = z.object({
     if (!data.adminEmail || !z.string().email().safeParse(data.adminEmail).success) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: '올바른 이메일 형식이 아닙니다.', path: ['adminEmail'] })
     }
-    if (!data.adminPassword || data.adminPassword.length < 8) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: '비밀번호는 최소 8자 이상이어야 합니다.', path: ['adminPassword'] })
+    
+    // 이 부분에서 공통 비밀번호 규칙 적용
+    if (!data.adminPassword) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: '비밀번호는 필수입니다.', path: ['adminPassword'] })
+    } else {
+      const passwordResult = passwordSchema.safeParse(data.adminPassword)
+      if (!passwordResult.success) {
+        passwordResult.error.issues.forEach(issue => {
+          ctx.addIssue({ ...issue, path: ['adminPassword'] })
+        })
+      }
     }
   }
 })

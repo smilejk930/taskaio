@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import bcrypt from "bcryptjs"
 import { requireAdmin } from "@/lib/auth-checks"
 import * as userRepo from "@/lib/db/repositories/users"
+import { passwordSchema } from "@/lib/validations/auth"
 
 /**
  * 모든 사용자 목록을 가져옵니다.
@@ -31,6 +32,11 @@ export async function createAdminUserAction(formData: FormData) {
 
         if (!email || !name || !password) {
             return { error: "필수 정보를 모두 입력해주세요." }
+        }
+
+        const passwordValidation = passwordSchema.safeParse(password)
+        if (!passwordValidation.success) {
+            return { error: passwordValidation.error.issues[0].message }
         }
 
         const hashedPassword = await bcrypt.hash(password, 10)
@@ -72,6 +78,10 @@ export async function updateAdminUserAction(id: string, formData: FormData) {
             data.displayName = name
         }
         if (password) {
+            const passwordValidation = passwordSchema.safeParse(password)
+            if (!passwordValidation.success) {
+                return { error: passwordValidation.error.issues[0].message }
+            }
             data.passwordHash = await bcrypt.hash(password, 10)
         }
         if (isAdmin !== undefined) {
