@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -11,17 +11,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner'
 import { Database, User, ShieldCheck, Loader2, ArrowRight, CheckCircle2, RefreshCw, Plus } from 'lucide-react'
 import { setupConfig, testDbConnection, restartServer } from '@/app/actions/setup'
-import { useCallback } from 'react'
 
 import { setupSchema } from '@/lib/validations/setup'
 import type { SetupInput } from '@/lib/validations/setup'
 
 export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?: boolean }) {
+  const [mounted, setMounted] = useState(false)
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCompleted, setIsCompleted] = useState(initialIsCompleted)
   const [isRestarting, setIsRestarting] = useState(false)
   const [restartMessage, setRestartMessage] = useState('')
+
+  // 하이드레이션 오류 및 초기 지연 방지를 위해 마운트 체크
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const form = useForm<SetupInput>({
     resolver: zodResolver(setupSchema),
@@ -204,6 +209,14 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
     }, 30000)
   }, [])
 
+  if (!mounted) {
+    return (
+      <Card className="max-w-lg w-full h-[600px] border-none shadow-2xl bg-white/50 backdrop-blur-xl flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </Card>
+    )
+  }
+
   if (isCompleted) {
     return (
       <Card className="max-w-md w-full border-none shadow-2xl bg-white/80 backdrop-blur-xl animate-in fade-in zoom-in duration-500">
@@ -327,7 +340,7 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
                   </Label>
                   <Select
                     onValueChange={(v) => form.setValue('dbType', v as 'postgres' | 'supabase' | 'sqlite')}
-                    defaultValue={form.getValues('dbType')}
+                    value={form.watch('dbType')}
                   >
                     <SelectTrigger className="h-11 bg-slate-50/50">
                       <SelectValue placeholder="타입 선택" />
