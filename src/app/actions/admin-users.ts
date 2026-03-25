@@ -109,7 +109,7 @@ export async function deleteAdminUserAction(id: string) {
             return { error: "본인 계정은 삭제할 수 없습니다." }
         }
 
-        await userRepo.deleteAdminUser(id)
+        await userRepo.deleteUser(id)
 
         revalidatePath("/admin/users")
         return { success: true }

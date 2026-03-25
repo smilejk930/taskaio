@@ -25,3 +25,15 @@ export async function getProfileById(id: string) {
         .where(eq(schema.profiles.id, id));
     return profile;
 }
+
+/**
+ * 프로필 정보를 업데이트합니다.
+ */
+export async function updateProfile(id: string, data: { displayName?: string, avatarUrl?: string }) {
+    return await db.update(schema.profiles)
+        .set({
+            ...data,
+            updatedAt: new Date().toISOString()
+        })
+        .where(eq(schema.profiles.id, id));
+}

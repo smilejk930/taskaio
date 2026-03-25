@@ -3,11 +3,18 @@ import { cookies } from 'next/headers'
 import { Database } from '@/types/supabase'
 
 export function createClient() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!url || !key || url === 'undefined') {
+        return null
+    }
+
     const cookieStore = cookies()
 
     return createServerClient<Database>(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        url,
+        key,
         {
             cookies: {
                 getAll() {

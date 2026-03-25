@@ -65,7 +65,7 @@ export async function createAdminUser(data: {
 }
 
 /**
- * 사용자 정보를 업데이트합니다.
+ * 사용자 정보를 업데이트합니다. (일반 사용자 프로필 수정 및 관리자 기능 공용)
  */
 export async function updateAdminUser(id: string, data: {
     name?: string;
@@ -100,9 +100,9 @@ export async function updateAdminUser(id: string, data: {
 }
 
 /**
- * 사용자와 프로필을 삭제합니다.
+ * 사용자와 프로필을 삭제(Soft Delete)합니다.
  */
-export async function deleteAdminUser(id: string) {
+export async function deleteUser(id: string) {
     return await db.update(schema.users)
         .set({ 
             isDeleted: true,

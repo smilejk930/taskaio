@@ -19,6 +19,11 @@ export function AvatarUpload({ userId, url, onUpload }: AvatarUploadProps) {
 
   const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
+      if (!supabase) {
+        toast.error('Supabase 설정이 되어 있지 않아 이미지를 업로드할 수 없습니다. .env 설정을 확인해주세요.')
+        return
+      }
+      
       setUploading(true)
 
       if (!event.target.files || event.target.files.length === 0) {
@@ -62,19 +67,19 @@ export function AvatarUpload({ userId, url, onUpload }: AvatarUploadProps) {
       </Avatar>
       <div>
         <div className="relative">
-          <Button variant="outline" disabled={uploading} type="button">
+          <Button variant="outline" disabled={uploading || !supabase} type="button">
             {uploading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : null}
-            {uploading ? '업로드 중...' : '이미지 변경'}
+            {!supabase ? '스토리지 미설정' : (uploading ? '업로드 중...' : '이미지 변경')}
           </Button>
           <input
             type="file"
             id="single"
             accept="image/jpeg, image/png, image/webp"
             onChange={uploadAvatar}
-            disabled={uploading}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            disabled={uploading || !supabase}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
           />
         </div>
         <p className="text-xs text-muted-foreground mt-2">
