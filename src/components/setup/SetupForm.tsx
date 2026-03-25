@@ -114,6 +114,15 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
         return
       }
 
+      // 기존 DB 연결 모드인데 테이블이 존재하지 않는 경우 알림
+      if (mode === 'existing' && !connResult.isInstalled) {
+        toast.error('스키마가 존재하지 않습니다.', { 
+          description: '연결은 성공했지만 필수 테이블이 없습니다. \'신규 설치\' 모드를 사용하세요.',
+          duration: 5000 
+        })
+        return
+      }
+
       if (mode === 'existing') {
         // 기존 DB 연결 모드: 관리자 정보 불필요, 바로 onSubmit(공통 로직) 호출
         // step이 1이라서 onSubmit 내부에서 다시 handleNextOrSubmit를 호출할 수 있으므로 
