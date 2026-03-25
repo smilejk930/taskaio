@@ -115,6 +115,17 @@ export async function setupConfig(input: SetupInput) {
         .join('\n')
       fs.writeFileSync(envPath, envContent, 'utf8')
 
+      // Docker 환경 대응: /app/data 디렉토리가 있으면 영구 보관용 .env 추가 생성
+      const dataDir = path.join(process.cwd(), 'data')
+      if (fs.existsSync(dataDir)) {
+        try {
+          fs.writeFileSync(path.join(dataDir, '.env'), envContent, 'utf8')
+          console.log('✅ Docker 볼륨(/app/data/.env)에 설정이 영구 저장되었습니다.')
+        } catch (e) {
+          console.error('⚠️ Docker 볼륨에 설정을 저장하지 못했습니다:', e)
+        }
+      }
+
       // 설정 완료 쿠키 설정 (Edge Runtime에서 즉시 감지 가능하도록 함)
       cookies().set('taskaio_configured', 'true', {
         httpOnly: true,

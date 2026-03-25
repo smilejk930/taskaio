@@ -31,8 +31,10 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# 마이그레이션 파일 포함
+# 마이그레이션 및 시작 스크립트 포함
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/start.sh ./start.sh
+RUN chmod +x ./start.sh
 
 # 데이터 저장용 디렉토리 생성 및 권한 설정
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
@@ -44,5 +46,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# standalone 모드에서는 server.js를 실행한다.
-CMD ["node", "server.js"]
+# standalone 모드에서는 server.js를 실행하는 대신 start.sh를 통해 환경변수를 로드한다.
+CMD ["./start.sh"]
