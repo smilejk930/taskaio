@@ -11,17 +11,24 @@ const dbType = process.env.DB_TYPE || 'postgres'
  * 개발 환경에서 모듈이 재실행되어도 동일한 커넥션 풀을 재사용한다.
  */
 const globalForDb = globalThis as unknown as {
-  __dbInstance?: ReturnType<typeof drizzlePg<typeof schema>> | ReturnType<typeof drizzleSqlite<typeof schema>>;
+  __dbInstance?: ReturnType<typeof drizzlePg<typeof schema>> | ReturnType<typeof drizzleSqlite<typeof schema>> | null;
 };
 
 function createDbInstance() {
+  const dbUrl = process.env.DATABASE_URL;
+  
+  if (!dbUrl) {
+    console.warn('⚠️ DATABASE_URL이 설정되지 않았습니다. 설치(Setup)가 필요합니다.');
+    return null;
+  }
+
   if (dbType === 'sqlite') {
-    const sqlite = new Database(process.env.DATABASE_URL || 'sqlite.db')
+    const sqlite = new Database(dbUrl || 'sqlite.db')
     return drizzleSqlite(sqlite, { schema }) as unknown as ReturnType<typeof drizzlePg<typeof schema>>;
   }
 
   // Supabase 또는 Postgres — 최대 커넥션 수를 제한하여 풀 고갈 방지
-  const client = postgres(process.env.DATABASE_URL!, {
+  const client = postgres(dbUrl, {
     max: 10, // 동시 커넥션 최대 10개
     idle_timeout: 20, // 유휴 커넥션 20초 후 해제
     connect_timeout: 10, // 연결 타임아웃 10초

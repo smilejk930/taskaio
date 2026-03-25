@@ -8,7 +8,8 @@ import bcrypt from "bcryptjs"
 import type { Adapter } from 'next-auth/adapters'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: DrizzleAdapter(db) as Adapter,
+  // db가 null(DATABASE_URL 미설정)이면 어댑터 없이 동작 — Setup 완료 전 빌드/기동 허용
+  adapter: db ? (DrizzleAdapter(db) as Adapter) : undefined,
   session: { strategy: "jwt" },
   providers: [
     Credentials({
