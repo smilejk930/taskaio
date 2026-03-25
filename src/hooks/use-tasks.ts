@@ -24,17 +24,17 @@ export function useTasks(initialTasks: ProjectTask[]) {
             } else if (data.progress === 100) {
                 const currentStatus = data.status as string
                 if (!currentStatus || ['todo', 'review', 'in_progress'].includes(currentStatus)) {
-                    data.status = 'done' as any
+                    data.status = 'done'
                 }
             } else if (data.progress === 0) {
                 const currentStatus = data.status as string
                 if (!currentStatus || ['in_progress', 'review', 'done'].includes(currentStatus)) {
-                    data.status = 'todo' as any
+                    data.status = 'todo'
                 }
             } else if (data.progress !== undefined && data.progress !== null && data.progress > 0 && data.progress < 100) {
                 const currentStatus = data.status as string
                 if (!currentStatus || ['todo', 'done'].includes(currentStatus)) {
-                    data.status = 'in_progress' as any
+                    data.status = 'in_progress'
                 }
             }
 
@@ -136,7 +136,7 @@ export function useTasks(initialTasks: ProjectTask[]) {
         } finally {
             setIsLoading(false)
         }
-    }, [])
+    }, [tasks])
 
     const handleDelete = useCallback(async (id: string) => {
         setIsLoading(true)
