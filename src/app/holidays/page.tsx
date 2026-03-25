@@ -1,8 +1,10 @@
+import { Suspense } from 'react'
 import { getUser } from '@/app/actions/auth'
 import { getHolidays } from '@/app/actions/holidays'
 import HolidayTabs from '@/components/holidays/HolidayTabs'
 import { Holiday, HolidayProfile } from '@/hooks/use-holidays'
 import { getAllProfiles } from '@/lib/db/repositories/profiles'
+import { Skeleton } from '@/components/ui/skeleton'
 
 // ──── 페이지 컴포넌트 (Server Component) ─────────────────────────────────────
 
@@ -42,10 +44,12 @@ export default async function HolidaysPage() {
     const user = currentUser.status === 'fulfilled' ? currentUser.value : null
 
     return (
-        <HolidayTabs
-            initialHolidays={holidays}
-            profiles={(profiles ?? []) as HolidayProfile[]}
-            currentUser={user}
-        />
+        <Suspense fallback={<div className="p-8"><Skeleton className="w-full h-[600px]" /></div>}>
+            <HolidayTabs
+                initialHolidays={holidays}
+                profiles={(profiles ?? []) as HolidayProfile[]}
+                currentUser={user}
+            />
+        </Suspense>
     )
 }

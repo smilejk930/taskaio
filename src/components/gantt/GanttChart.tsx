@@ -274,8 +274,8 @@ export default function GanttChart({
                         label: "",
                         width: 40,
                         template: (task: GanttTask) => {
-                            // @ts-expect-error - dhtmlx-gantt 내부 메서드 접근
-                            if (ganttInstance.calculateTaskLevel(task) >= 1) return "";
+                            const gExtended = ganttInstance as unknown as { calculateTaskLevel: (t: GanttTask) => number };
+                            if (gExtended.calculateTaskLevel(task) >= 1) return "";
                             return "<div class='gantt_add'></div>";
                         }
                     }
@@ -443,10 +443,9 @@ export default function GanttChart({
                 }));
 
                 // 2뎁스 이상 하위 업무에 특정 클래스 추가
-                // @ts-expect-error - templates.grid_row_class는 dhtmlx-gantt의 내부 확장 포인트임
                 ganttInstance.templates.grid_row_class = (start: Date, end: Date, task: GanttTask) => {
-                    // @ts-expect-error - calculateTaskLevel은 dhtmlx-gantt 내부 메서드
-                    if (ganttInstance.calculateTaskLevel(task) >= 1) return "child-task-row";
+                    const gExtended = ganttInstance as unknown as { calculateTaskLevel: (t: GanttTask) => number };
+                    if (gExtended.calculateTaskLevel(task) >= 1) return "child-task-row";
                     return "";
                 };
 
