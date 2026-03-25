@@ -157,6 +157,9 @@ export default function GanttChart({
                 
                 /* 기본 DHTMLX 버튼 컨테이너 해제 (Flex 개입 방해 방지) */
                 .gantt_buttons_left, .gantt_buttons_right { display: contents !important; }
+
+                /* 2뎁스 이상(하위 업무)에서는 등록 버튼(+) 숨김 */
+                .child-task-row .gantt_add { display: none !important; }
             `;
             document.head.appendChild(style);
         }
@@ -246,7 +249,15 @@ export default function GanttChart({
                         width: 60,
                         template: (task: GanttTask) => `<span style="color:#64748b;font-size:12px;">${Math.round(task.progress * 100)}%</span>`
                     },
-                    { name: "add", label: "", width: 40 }
+                    {
+                        name: "add",
+                        label: "",
+                        width: 40,
+                        template: (task: GanttTask) => {
+                            if ((ganttInstance as any).calculateTaskLevel(task) >= 1) return "";
+                            return "<div class='gantt_add'></div>";
+                        }
+                    }
                 ]
 
                 ganttInstance.plugins({
@@ -409,6 +420,12 @@ export default function GanttChart({
                     // 빈 공간 클릭 시 처리는 필요하면 추가 (현재는 WBS나 버튼을 통해 추가 권장)
                     return true;
                 }));
+                
+                // 2뎁스 이상 하위 업무에 특정 클래스 추가
+                (ganttInstance.templates as any).grid_row_class = (start: Date, end: Date, task: any) => {
+                    if ((ganttInstance as any).calculateTaskLevel(task) >= 1) return "child-task-row";
+                    return "";
+                };
 
                 ganttInstance.templates.timeline_cell_class = (_task: unknown, date: Date) => {
                     const cellStart = new Date(date).setHours(0, 0, 0, 0);
