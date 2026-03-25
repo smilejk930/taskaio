@@ -11,6 +11,7 @@ import * as schema from '@/lib/db/schema/pg'
 import { isConfigured } from '@/lib/db/setup-check'
 
 import { setupSchema, SetupInput } from '@/lib/validations/setup'
+import { cookies } from 'next/headers'
 
 export async function setupConfig(input: SetupInput) {
   // 1. 보안 체크: 이미 설정된 경우 거부
@@ -89,6 +90,15 @@ export async function setupConfig(input: SetupInput) {
         await migrationSql.end()
       }
     }
+
+    // 6. 설정 완료 쿠키 설정 (미들웨어 즉시 반영용)
+    // 서버 재시작 전에도 미들웨어가 설정을 인지할 수 있도록 쿠키를 사용한다.
+    cookies().set('taskaio_setup_done', 'true', { 
+      maxAge: 60 * 60 * 24, // 24시간
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+    })
 
     return { success: true }
   } catch (error) {

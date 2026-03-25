@@ -10,7 +10,8 @@ const { auth } = NextAuth({
 
 export default auth((req) => {
     const { pathname } = req.nextUrl;
-    const configured = isConfigured();
+    // process.env 또는 완료 쿠키 확인 (재시작 전 즉시 반영 대응)
+    const configured = isConfigured() || req.cookies.has('taskaio_setup_done');
 
     // 1. 설치(Setup) 체크
     if (!configured && pathname !== '/setup' && !pathname.startsWith('/api')) {
