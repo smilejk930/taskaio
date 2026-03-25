@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { Database, User, ShieldCheck, Loader2, ArrowRight, CheckCircle2, RefreshCw, Plus } from 'lucide-react'
-import { setupConfig, testDbConnection } from '@/app/actions/setup'
+import { setupConfig, testDbConnection, restartServer } from '@/app/actions/setup'
+import { useEffect, useCallback } from 'react'
 
 import { setupSchema } from '@/lib/validations/setup'
 import type { SetupInput } from '@/lib/validations/setup'
@@ -19,6 +20,8 @@ export function SetupForm() {
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCompleted, setIsCompleted] = useState(false)
+  const [isRestarting, setIsRestarting] = useState(false)
+  const [restartMessage, setRestartMessage] = useState('')
 
   const form = useForm<SetupInput>({
     resolver: zodResolver(setupSchema),
@@ -151,6 +154,57 @@ export function SetupForm() {
     return step === 1 && (form.formState.isSubmitting || form.formState.dirtyFields[name])
   }
 
+  const handleRestart = async () => {
+    setIsRestarting(true)
+    setRestartMessage('시스템을 재시작하고 있습니다...')
+    
+    try {
+      // 서버에 재시작 요청 (1초 뒤 종료됨)
+      await restartServer()
+    } catch (err) {
+      // 서버가 이미 종료되었을 수 있으므로 에러 무시
+      console.log('Restart request sent, server might have already closed.')
+    }
+
+    // 서버가 다시 올라올 때까지 폴링 (3초 뒤 시작)
+    setTimeout(() => {
+      pollServer()
+    }, 3000)
+  }
+
+  const pollServer = useCallback(async () => {
+    setRestartMessage('서비스가 다시 시작되기를 기다리는 중...')
+    
+    const checkServer = async () => {
+      try {
+        const res = await fetch('/login', { method: 'HEAD', cache: 'no-store' })
+        if (res.ok) {
+          setRestartMessage('재시작 완료! 로그인 페이지로 이동합니다.')
+          setTimeout(() => {
+            window.location.href = '/login'
+          }, 1000)
+          return true
+        }
+      } catch (err) {
+        // 서버가 아직 다운 상태인 경우
+        return false
+      }
+      return false
+    }
+
+    const interval = setInterval(async () => {
+      const isUp = await checkServer()
+      if (isUp) clearInterval(interval)
+    }, 2000)
+
+    // 최대 30초 동안 시도
+    setTimeout(() => {
+      clearInterval(interval)
+      setIsRestarting(false)
+      toast.error('재시작 시간이 너무 오래 걸립니다. 수동으로 새로고침해 주세요.')
+    }, 30000)
+  }, [])
+
   if (isCompleted) {
     return (
       <Card className="max-w-md w-full border-none shadow-2xl bg-white/80 backdrop-blur-xl animate-in fade-in zoom-in duration-500">
@@ -169,18 +223,40 @@ export function SetupForm() {
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
           <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-sm text-slate-600 leading-relaxed">
-            <p className="font-medium text-slate-900 mb-1">💡 중요 안내</p>
-            서버 환경에 따라 변경된 환경변수를 적용하기 위해 서비스 재시작이 필요할 수 있습니다.
-            잠시 후 로그인 페이지로 이동합니다.
+            <p className="font-medium text-slate-900 mb-2">🚀 마지막 단계: 재시작</p>
+            시스템 설정을 안전하게 반영하기 위해 서비스 재시작이 필요합니다. 
+            아래 버튼을 눌러 시스템을 재시작해 주세요.
+            
+            <p className="mt-3 text-[11px] text-slate-400">
+              * 로컬 개발 환경의 경우 수동으로 다시 실행해야 할 수도 있습니다.
+            </p>
           </div>
+
+          {isRestarting && (
+            <div className="flex flex-col items-center justify-center py-4 space-y-3 animate-in fade-in">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+              <p className="text-sm font-medium text-primary">{restartMessage}</p>
+            </div>
+          )}
         </CardContent>
         <CardFooter>
-          <Button
-            className="w-full h-12 text-lg font-semibold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all"
-            onClick={() => window.location.href = '/login'}
-          >
-            시작하기
-          </Button>
+          {!isRestarting ? (
+            <Button
+              className="w-full h-12 text-lg font-semibold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2"
+              onClick={handleRestart}
+            >
+              <RefreshCw className="w-5 h-5" />
+              시스템 재시작 및 시작하기
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full h-12 font-medium"
+              disabled
+            >
+              재시작 진행 중...
+            </Button>
+          )}
         </CardFooter>
       </Card>
     )

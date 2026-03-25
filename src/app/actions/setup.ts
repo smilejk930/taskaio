@@ -198,3 +198,18 @@ export async function setupConfig(input: SetupInput) {
     }
   }
 }
+
+/**
+ * 서버 프로세스를 종료하여 재시작을 유도합니다.
+ * Docker/PM2 환경에서는 자동으로 다시 시작됩니다.
+ */
+export async function restartServer() {
+  console.log('🔄 시스템 재시작 요청 수신. 1초 후 프로세스를 종료합니다...')
+  
+  // 클라이언트에 응답이 전달될 시간을 벌기 위해 지연 후 종료
+  setTimeout(() => {
+    process.exit(0)
+  }, 1000)
+
+  return { success: true }
+}
