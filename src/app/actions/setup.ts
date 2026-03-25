@@ -95,7 +95,7 @@ export async function setupConfig(input: SetupInput) {
       const config: Record<string, string> = {
         DB_TYPE: dbType,
         DATABASE_URL: databaseUrl,
-        NEXTAUTH_URL: input.appUrl || 'http://localhost:3000',
+        NEXTAUTH_URL: input.appUrl,
         NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || crypto.randomBytes(32).toString('base64'),
         SETUP_COMPLETED_AT: new Date().toISOString(),
       }
@@ -113,9 +113,7 @@ export async function setupConfig(input: SetupInput) {
       })
 
       // 4. 신규 설치 모드에서만 마이그레이션 + 관리자 계정 생성 실행
-      // 기존 DB 연결 모드(existing)는 스키마가 이미 존재하므로 건너뜀
       if (mode === 'new') {
-        // 관리자 정보 필수 체크 (zod에서 거르지만 한 번 더 방어)
         if (!adminName || !adminEmail || !adminPassword) {
             throw new Error('관리자 정보가 누락되었습니다.')
         }
@@ -136,7 +134,6 @@ export async function setupConfig(input: SetupInput) {
             const sqlFile = path.join(migrationsPath, `${entry.tag}.sql`)
             const sqlContent = fs.readFileSync(sqlFile, 'utf8')
 
-            // Drizzle SQL 파일엔 statement-breakpoint 가 있을 수 있음
             const statements = sqlContent.split('--> statement-breakpoint')
             for (const statement of statements) {
               if (statement.trim()) {
@@ -154,32 +151,14 @@ export async function setupConfig(input: SetupInput) {
             password: hashedPassword,
           }).returning()
 
-
           await migratorDb.insert(schema.profiles).values({
             id: user.id,
             displayName: adminName!,
             isAdmin: true,
           })
-        } catch (migrationError) {
-          console.error('Migration or Admin creation failed:', migrationError)
-          throw migrationError
         } finally {
           await migrationSql.end()
         }
-      }
-
-      // 6. 설정 완료 쿠키 설정 (미들웨어 즉시 반영용)
-      const instanceId = process.env.SERVER_INSTANCE_ID
-      const cookieOptions = {
-        maxAge: 60 * 60 * 24, // 24시간
-        path: '/',
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-      }
-
-      cookies().set('taskaio_setup_done', 'true', cookieOptions)
-      if (instanceId) {
-        cookies().set('taskaio_setup_instance_id', instanceId, cookieOptions)
       }
 
       return { success: true }

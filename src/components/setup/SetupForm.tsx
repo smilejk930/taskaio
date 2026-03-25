@@ -375,7 +375,7 @@ export function SetupForm() {
                   <Input
                     {...form.register('appUrl')}
                     className="h-11 bg-slate-50/50"
-                    placeholder="http://localhost:3000"
+                    placeholder="https://taskaio.example.com"
                     autoComplete="off"
                   />
                   {shouldShowError('appUrl') && (

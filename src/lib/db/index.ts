@@ -65,12 +65,6 @@ function getDbInstance() {
   return instance;
 }
 
-/**
- * DB 인스턴스 캐시를 강제로 비운다. (설치 완료 후 호출 필수)
- */
-export function refreshDbInstance() {
-  globalForDb.__dbInstance = undefined;
-}
 
 export const db = new Proxy({} as any, {
   get(target, prop) {
