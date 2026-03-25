@@ -107,6 +107,16 @@ export default function WbsGrid({
     }, [tasks, members])
 
     const columns = useMemo(() => [
+        // ── 담당자 ───────────────────────────────────────────
+        columnHelper.accessor('assignee_id', {
+            header: () => <div className="text-center">담당자</div>,
+            cell: (info) => {
+                const val = info.getValue() ?? ''
+                const displayMember = members.find(m => m.id === val)
+                const displayName = displayMember?.display_name ?? displayMember?.email ?? '미지정'
+                return <div className="text-center text-[13px] text-[#475569]">{displayName}</div>
+            },
+        }),
         // ── 업무명 (계층 인덴트) ───────────────
         columnHelper.display({
             id: 'indent',
@@ -118,10 +128,6 @@ export default function WbsGrid({
                     <div className={`${isChild ? 'pl-6' : ''} cursor-pointer`} onClick={() => onTaskClick(task)}>
                         <div className="flex items-center gap-1">
                             {isChild && <span className="text-muted-foreground text-xs">└</span>}
-                            <div
-                                className="w-2 h-5 rounded-sm flex-shrink-0"
-                                style={{ backgroundColor: task.color ?? '#94a3b8' }}
-                            />
                             <span className="text-sm font-medium">{task.title || '(제목 없음)'}</span>
                         </div>
                     </div>
@@ -161,7 +167,7 @@ export default function WbsGrid({
                 const found = PRIORITY_OPTIONS.find(p => p.value === val) ?? PRIORITY_OPTIONS[2]
                 return (
                     <div className="text-center">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium leading-[1.4] ${found.style}`}>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium leading-[1.4] whitespace-nowrap ${found.style}`}>
                             {found.label}
                         </span>
                     </div>
@@ -176,19 +182,9 @@ export default function WbsGrid({
                 const found = STATUS_OPTIONS.find(s => s.value === val) ?? STATUS_OPTIONS[0]
                 return (
                     <div className="text-center">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium leading-[1.4] ${found.style}`}>{found.label}</span>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium leading-[1.4] whitespace-nowrap ${found.style}`}>{found.label}</span>
                     </div>
                 )
-            },
-        }),
-        // ── 담당자 ───────────────────────────────────────────
-        columnHelper.accessor('assignee_id', {
-            header: () => <div className="text-center">담당자</div>,
-            cell: (info) => {
-                const val = info.getValue() ?? ''
-                const displayMember = members.find(m => m.id === val)
-                const displayName = displayMember?.display_name ?? displayMember?.email ?? '미지정'
-                return <div className="text-center text-[13px] text-[#475569]">{displayName}</div>
             },
         }),
         // ── 색상 ─────────────────────────────────────────────
@@ -218,8 +214,8 @@ export default function WbsGrid({
                                 className="h-7 w-7 text-muted-foreground hover:text-foreground"
                                 title="하위 업무 등록"
                                 onClick={(e) => {
-                                    e.stopPropagation()
-                                    onTaskCreate(task.id)
+                                     e.stopPropagation()
+                                     onTaskCreate(task.id)
                                 }}
                             >
                                 <Plus className="h-3.5 w-3.5" />
@@ -247,7 +243,7 @@ export default function WbsGrid({
                                 {headerGroup.headers.map((header, index) => (
                                     <th
                                         key={header.id}
-                                        className={`h-10 px-3 font-medium text-muted-foreground text-xs whitespace-nowrap bg-muted/50 ${index <= 1 ? 'text-left' : 'text-center'}`}
+                                        className={`h-10 px-3 font-medium text-muted-foreground text-xs whitespace-nowrap bg-muted/50 ${(index === 1 || index === 2) ? 'text-left' : 'text-center'}`}
                                     >
                                         {flexRender(header.column.columnDef.header, header.getContext())}
                                     </th>
