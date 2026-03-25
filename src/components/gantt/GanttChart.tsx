@@ -191,7 +191,7 @@ export default function GanttChart({
                 ganttInstance.config.time_step = 1440
                 ganttInstance.config.duration_unit = "day"
                 ganttInstance.config.xml_date = "%Y-%m-%d %H:%i"
-                ganttInstance.config.grid_width = 900;
+                ganttInstance.config.grid_width = 1000;
                 ganttInstance.config.grid_resizer = true;
                 ganttInstance.config.key_navigation = false;
                 ganttInstance.config.row_height = 40;
@@ -209,11 +209,11 @@ export default function GanttChart({
                             return `<span style="font-size:13px;color:#475569;">${name}</span>`;
                         }
                     },
-                    { 
-                        name: "text", 
-                        label: "업무명", 
-                        tree: true, 
-                        width: 250, 
+                    {
+                        name: "text",
+                        label: "업무명",
+                        tree: true,
+                        width: 250,
                         min_width: 150,
                         template: (task: GanttTask) => {
                             return `<div style="display:flex;align-items:center;height:100%;white-space:pre-wrap;line-height:1.4;word-break:break-all;padding:4px 0;">${task.text}</div>`;
@@ -222,8 +222,8 @@ export default function GanttChart({
                     {
                         name: "description",
                         label: "업무 설명",
-                        width: 250,
-                        min_width: 100,
+                        width: 300,
+                        min_width: 150,
                         template: (task: GanttTask) => {
                             return `<div style="font-size:12px;color:#64748b;white-space:pre-wrap;line-height:1.4;word-break:break-all;display:flex;align-items:center;height:100%;padding:4px 0;">${task.description || '-'}</div>`;
                         }
@@ -440,7 +440,7 @@ export default function GanttChart({
                     // 빈 공간 클릭 시 처리는 필요하면 추가 (현재는 WBS나 버튼을 통해 추가 권장)
                     return true;
                 }));
-                
+
                 // 2뎁스 이상 하위 업무에 특정 클래스 추가
                 (ganttInstance.templates as any).grid_row_class = (start: Date, end: Date, task: any) => {
                     if ((ganttInstance as any).calculateTaskLevel(task) >= 1) return "child-task-row";
@@ -659,12 +659,12 @@ export default function GanttChart({
         try {
             g.clearAll()
             document.querySelectorAll('.gantt_marker').forEach(m => m.remove());
-            
+
             // 업무명 및 업무 설명 길이에 따른 가변 행 높이 자동 계산
             const processedTasks = tasks.map(t => {
                 const text = t.text || "";
                 const description = t.description || "";
-                
+
                 // 줄바꿈 문자(\\n) 기준으로 분할하여 각 줄의 높이 합산하는 공통 함수
                 const calculateLines = (content: string, maxUnits: number) => {
                     const linesByNewline = content.split('\n');
@@ -677,7 +677,7 @@ export default function GanttChart({
                             const charCode = line.charCodeAt(i);
                             const isCJK = charCode >= 0x0800; // 한글/특수문자 등 넓은 문자 판별
                             const unit = isCJK ? 2 : 1;
-                            
+
                             if (currentUnits + unit > maxUnits) {
                                 lineWraps++;
                                 currentUnits = unit;
@@ -690,17 +690,17 @@ export default function GanttChart({
                     return totalLines;
                 };
 
-                // 업무명(250px)과 업무 설명(250px) 각각의 예상 줄 수 계산
-                // 250px 기준 약 45-50단위 (영문 1, 한글 2) 내외이나, 업무명은 인덴트 및 아이콘으로 인해 더 좁음
-                const textLines = calculateLines(text, 36); 
-                const descLines = calculateLines(description, 50);
-                
+                // 업무명(250px)과 업무 설명(300px) 각각의 예상 줄 수 계산
+                // 250px/300px 기준 약 50-80단위 (영문 1, 한글 2) 내외이나, 업무명은 인덴트 및 아이콘으로 인해 더 좁음
+                const textLines = calculateLines(text, 30);
+                const descLines = calculateLines(description, 65);
+
                 // 둘 중 더 많은 줄 수 선택하여 행 높이 결정
                 const maxLines = Math.max(textLines, descLines);
-                
+
                 // 최소 40px, 줄당 약 21px + 여유 패딩(14px)
                 const rowHeight = Math.max(40, maxLines * 21 + 14);
-                
+
                 return {
                     ...t,
                     row_height: rowHeight
