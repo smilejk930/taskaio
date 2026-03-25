@@ -33,7 +33,6 @@ export function SetupForm() {
       adminName: '',
       adminEmail: '',
       adminPassword: '',
-      appUrl: '',
       supabaseUrl: '',
       supabaseAnonKey: '',
       supabaseServiceRoleKey: '',
@@ -72,7 +71,7 @@ export function SetupForm() {
   // Step1 완료 후 다음 단계로 — 신규 설치만 Step2(관리자 정보) 진행, 기존 DB는 바로 Submit
   const handleNextOrSubmit = async () => {
     // 현재 단계의 필드만 검증
-    const fieldsToTrigger: (keyof SetupInput)[] = ['dbType', 'databaseUrl', 'appUrl']
+    const fieldsToTrigger: (keyof SetupInput)[] = ['dbType', 'databaseUrl']
     if (form.getValues('dbType') === 'supabase') {
       fieldsToTrigger.push('supabaseUrl', 'supabaseAnonKey', 'supabaseServiceRoleKey')
     }
@@ -367,24 +366,6 @@ export function SetupForm() {
                   </p>
                 </div>
 
-                {/* App URL */}
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold flex items-center gap-2">
-                    <ArrowRight className="w-4 h-4 text-slate-400" /> 애플리케이션 접속 URL (App URL) <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    {...form.register('appUrl')}
-                    className="h-11 bg-slate-50/50"
-                    placeholder="https://taskaio.example.com"
-                    autoComplete="off"
-                  />
-                  {shouldShowError('appUrl') && (
-                    <p className="text-xs text-destructive">{form.formState.errors.appUrl?.message}</p>
-                  )}
-                  <p className="text-[11px] text-slate-400 ml-1 italic">
-                    * 본 서비스에 접속할 도메인 또는 IP 주소를 입력하세요. (NextAuth 설정에 사용)
-                  </p>
-                </div>
 
                 {form.watch('dbType') === 'supabase' && (
                   <div className="space-y-4 pt-2 border-t border-slate-100 animate-in fade-in duration-500">

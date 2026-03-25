@@ -8,7 +8,7 @@ export const setupSchema = z.object({
   adminName: z.string().optional(),
   adminEmail: z.string().optional(),
   adminPassword: z.string().optional(),
-  appUrl: z.string().min(1, '접속 URL은 필수입니다.').url('올바른 URL 형식이 아닙니다.'),
+  appUrl: z.string().url('올바른 URL 형식이 아닙니다.').optional().or(z.literal('')),
   supabaseUrl: z.string().optional().or(z.literal('')),
   supabaseAnonKey: z.string().optional().or(z.literal('')),
   supabaseServiceRoleKey: z.string().optional().or(z.literal('')),

@@ -10,7 +10,7 @@ import * as schema from '@/lib/db/schema/pg'
 import { isConfigured } from '@/lib/db/setup-check'
 
 import { setupSchema, SetupInput } from '@/lib/validations/setup'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 
 export async function testDbConnection(input: { dbType: string, databaseUrl: string }) {
   const { dbType, databaseUrl } = input
@@ -92,10 +92,18 @@ export async function setupConfig(input: SetupInput) {
         fs.mkdirSync(dataDirPath, { recursive: true })
       }
 
+      // App URL 자동 감지 (입력이 없으면 현재 요청 기반)
+      let appUrl = input.appUrl
+      if (!appUrl) {
+        const host = headers().get('host')
+        const proto = headers().get('x-forwarded-proto') || 'http'
+        appUrl = `${proto}://${host}`
+      }
+
       const config: Record<string, string> = {
         DB_TYPE: dbType,
         DATABASE_URL: databaseUrl,
-        NEXTAUTH_URL: input.appUrl,
+        NEXTAUTH_URL: appUrl,
         NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET || crypto.randomBytes(32).toString('base64'),
         SETUP_COMPLETED_AT: new Date().toISOString(),
       }
