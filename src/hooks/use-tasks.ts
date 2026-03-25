@@ -22,11 +22,20 @@ export function useTasks(initialTasks: ProjectTask[]) {
             if (data.status === 'done') {
                 data.progress = 100
             } else if (data.progress === 100) {
-                data.status = 'done'
+                const currentStatus = data.status as string
+                if (!currentStatus || ['todo', 'review', 'in_progress'].includes(currentStatus)) {
+                    data.status = 'done' as any
+                }
             } else if (data.progress === 0) {
-                data.status = 'todo'
+                const currentStatus = data.status as string
+                if (!currentStatus || ['in_progress', 'review', 'done'].includes(currentStatus)) {
+                    data.status = 'todo' as any
+                }
             } else if (data.progress !== undefined && data.progress !== null && data.progress > 0 && data.progress < 100) {
-                data.status = 'in_progress'
+                const currentStatus = data.status as string
+                if (!currentStatus || ['todo', 'done'].includes(currentStatus)) {
+                    data.status = 'in_progress' as any
+                }
             }
 
             const payloadBase: TaskInsert = { ...formData, status: data.status, progress: data.progress }
@@ -41,6 +50,7 @@ export function useTasks(initialTasks: ProjectTask[]) {
                 parentId: payloadBase.parent_id,
                 assigneeId: payloadBase.assignee_id,
                 progress: payloadBase.progress,
+                priority: payloadBase.priority,
             } as unknown as TaskInsertPayload; // Cast to bypass dynamic inferred type differences
 
             const newTask = await createTask(payload)
@@ -72,14 +82,22 @@ export function useTasks(initialTasks: ProjectTask[]) {
         try {
             // 비즈니스 로직: 상태와 진척률 자동 연동
             const updates: TaskUpdate = { ...formData }
-            if (updates.status === 'done') {
-                updates.progress = 100
-            } else if (updates.progress === 100) {
-                updates.status = 'done'
-            } else if (updates.progress === 0) {
-                updates.status = 'todo'
-            } else if (updates.progress !== undefined && updates.progress !== null && updates.progress > 0 && updates.progress < 100) {
-                updates.status = 'in_progress'
+            if (formData.status !== undefined) {
+                // 사용자가 명시적으로 상태를 변경한 경우
+                if (updates.status === 'done') updates.progress = 100
+            } else if (formData.progress !== undefined) {
+                // 사용자가 진척률만 변경한 경우 자동 상태 연동
+                if (updates.progress === 100) {
+                    updates.status = 'done'
+                } else if (updates.progress === 0) {
+                    updates.status = 'todo'
+                } else if (updates.progress !== undefined && updates.progress !== null && updates.progress > 0 && updates.progress < 100) {
+                    // 기존 상태가 todo나 done인 경우에만 in_progress로 자동 전환 (review 등은 유지)
+                    const currentTask = tasks.find(t => t.id === id)
+                    if (currentTask && (currentTask.status === 'todo' || currentTask.status === 'done')) {
+                        updates.status = 'in_progress'
+                    }
+                }
             }
 
             const payloadBase: TaskUpdate = { ...updates }
@@ -94,6 +112,7 @@ export function useTasks(initialTasks: ProjectTask[]) {
             if (payloadBase.parent_id !== undefined) payload.parentId = payloadBase.parent_id
             if (payloadBase.assignee_id !== undefined) payload.assigneeId = payloadBase.assignee_id
             if (payloadBase.progress !== undefined) payload.progress = payloadBase.progress
+            if (payloadBase.priority !== undefined) payload.priority = payloadBase.priority
 
             const updatedTask = await updateTask(id, payload)
             const mappedUpdated: ProjectTask = {
