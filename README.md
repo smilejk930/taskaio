@@ -108,6 +108,17 @@ pnpm dev
     ```
 3.  **초기 설정**: 브라우저에서 `http://서버IP:3000`으로 접속하여 설정을 완료합니다.
 
+### 💾 데이터 영속성 (Persistence)
+Docker 환경에서 컨테이너를 삭제하거나 업데이트해도 설정과 데이터를 유지하기 위해 볼륨 설정이 필수적입니다.
+
+- **설정 파일 (`.env`)**: 셋업 완료 시 `/app/data/.env`에 자동 저장됩니다. 컨테이너 재시작 시 `start.sh`가 이를 `/app/.env`로 복사하여 설정을 복원합니다.
+- **SQLite DB**: SQLite를 사용하는 경우, 데이터베이스 파일 경로를 `data/sqlite.db`와 같이 `/app/data` 하위로 지정해야 데이터가 보존됩니다.
+- **볼륨 매핑**: `docker-compose.yml`에서 반드시 호스트 디렉토리를 `/app/data`에 연결하세요.
+  ```yaml
+  volumes:
+    - ./taskaio_data:/app/data
+  ```
+
 ### 🛠️ 문제 해결 (Troubleshooting)
 - **로그 확인**: `docker compose logs -f`
 - **설정 초기화**: 프로젝트 루트의 `.env` 파일을 삭제하고 컨테이너 재시작
