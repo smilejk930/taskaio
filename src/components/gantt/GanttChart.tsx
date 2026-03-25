@@ -191,9 +191,11 @@ export default function GanttChart({
                 ganttInstance.config.time_step = 1440
                 ganttInstance.config.duration_unit = "day"
                 ganttInstance.config.xml_date = "%Y-%m-%d %H:%i"
-                ganttInstance.config.grid_width = 700;
+                ganttInstance.config.grid_width = 900;
                 ganttInstance.config.grid_resizer = true;
                 ganttInstance.config.key_navigation = false;
+                ganttInstance.config.row_height = 40;
+                ganttInstance.config.variable_tree_nodes = true;
 
                 // ── 컬럼 설정 ──────────────────────────────────────────────────────────
                 ganttInstance.config.columns = [
@@ -207,7 +209,25 @@ export default function GanttChart({
                             return `<span style="font-size:13px;color:#475569;">${name}</span>`;
                         }
                     },
-                    { name: "text", label: "업무명", tree: true, width: 350, min_width: 150 },
+                    { 
+                        name: "text", 
+                        label: "업무명", 
+                        tree: true, 
+                        width: 250, 
+                        min_width: 150,
+                        template: (task: GanttTask) => {
+                            return `<div style="display:flex;align-items:center;height:100%;white-space:pre-wrap;line-height:1.4;word-break:break-all;padding:4px 0;">${task.text}</div>`;
+                        }
+                    },
+                    {
+                        name: "description",
+                        label: "업무 설명",
+                        width: 250,
+                        min_width: 100,
+                        template: (task: GanttTask) => {
+                            return `<div style="font-size:12px;color:#64748b;white-space:pre-wrap;line-height:1.4;word-break:break-all;display:flex;align-items:center;height:100%;padding:4px 0;">${task.description || '-'}</div>`;
+                        }
+                    },
                     {
                         name: "status",
                         label: "상태",
@@ -639,7 +659,55 @@ export default function GanttChart({
         try {
             g.clearAll()
             document.querySelectorAll('.gantt_marker').forEach(m => m.remove());
-            g.parse({ data: validTasks, links })
+            
+            // 업무명 및 업무 설명 길이에 따른 가변 행 높이 자동 계산
+            const processedTasks = tasks.map(t => {
+                const text = t.text || "";
+                const description = t.description || "";
+                
+                // 줄바꿈 문자(\\n) 기준으로 분할하여 각 줄의 높이 합산하는 공통 함수
+                const calculateLines = (content: string, maxUnits: number) => {
+                    const linesByNewline = content.split('\n');
+                    let totalLines = 0;
+                    linesByNewline.forEach(line => {
+                        // 한글(2단위)과 영문(1단위)의 가로폭 차이를 고려하여 실질적 라인 수 계산
+                        let currentUnits = 0;
+                        let lineWraps = 1;
+                        for (let i = 0; i < line.length; i++) {
+                            const charCode = line.charCodeAt(i);
+                            const isCJK = charCode >= 0x0800; // 한글/특수문자 등 넓은 문자 판별
+                            const unit = isCJK ? 2 : 1;
+                            
+                            if (currentUnits + unit > maxUnits) {
+                                lineWraps++;
+                                currentUnits = unit;
+                            } else {
+                                currentUnits += unit;
+                            }
+                        }
+                        totalLines += lineWraps;
+                    });
+                    return totalLines;
+                };
+
+                // 업무명(250px)과 업무 설명(250px) 각각의 예상 줄 수 계산
+                // 250px 기준 약 45-50단위 (영문 1, 한글 2) 내외이나, 업무명은 인덴트 및 아이콘으로 인해 더 좁음
+                const textLines = calculateLines(text, 36); 
+                const descLines = calculateLines(description, 50);
+                
+                // 둘 중 더 많은 줄 수 선택하여 행 높이 결정
+                const maxLines = Math.max(textLines, descLines);
+                
+                // 최소 40px, 줄당 약 21px + 여유 패딩(14px)
+                const rowHeight = Math.max(40, maxLines * 21 + 14);
+                
+                return {
+                    ...t,
+                    row_height: rowHeight
+                };
+            });
+
+            g.parse({ data: processedTasks, links })
         } finally {
             isSilentUpdateRef.current = false;
         }

@@ -64,6 +64,7 @@ export interface GanttTask {
     assignee_name?: string
     color?: string
     description?: string | null
+    row_height?: number
     _original_duration?: number
 }
 
