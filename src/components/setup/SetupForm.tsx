@@ -129,11 +129,10 @@ export function SetupForm() {
                   <button
                     type="button"
                     onClick={() => form.setValue('mode', 'new')}
-                    className={`flex flex-col items-start gap-1 p-4 rounded-xl border-2 text-left transition-all ${
-                      mode === 'new'
+                    className={`flex flex-col items-start gap-1 p-4 rounded-xl border-2 text-left transition-all ${mode === 'new'
                         ? 'border-primary bg-primary/5'
                         : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <Plus className={`w-4 h-4 ${mode === 'new' ? 'text-primary' : 'text-slate-400'}`} />
@@ -145,11 +144,10 @@ export function SetupForm() {
                   <button
                     type="button"
                     onClick={() => form.setValue('mode', 'existing')}
-                    className={`flex flex-col items-start gap-1 p-4 rounded-xl border-2 text-left transition-all ${
-                      mode === 'existing'
+                    className={`flex flex-col items-start gap-1 p-4 rounded-xl border-2 text-left transition-all ${mode === 'existing'
                         ? 'border-primary bg-primary/5'
                         : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <RefreshCw className={`w-4 h-4 ${mode === 'existing' ? 'text-primary' : 'text-slate-400'}`} />
@@ -206,7 +204,7 @@ export function SetupForm() {
                 <Input
                   {...form.register('appUrl')}
                   className="h-11 bg-slate-50/50"
-                  placeholder="http://192.168.0.10:3000"
+                  placeholder="http://localhost:3000"
                 />
                 <p className="text-[11px] text-slate-400 ml-1 italic">
                   * 본 서비스에 접속할 도메인 또는 IP 주소를 입력하세요. (NextAuth 설정에 사용)
@@ -250,7 +248,7 @@ export function SetupForm() {
 
               <div className="space-y-2">
                 <Label className="text-sm font-semibold flex items-center gap-2">
-                   이메일 주소 (ID)
+                  이메일 주소 (ID)
                 </Label>
                 <Input
                   {...form.register('adminEmail')}
