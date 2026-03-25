@@ -38,6 +38,9 @@ export async function signup(formData: FormData) {
     // Check existing
     const [existing] = await db.select().from(schema.users).where(eq(schema.users.email, email))
     if (existing) {
+        if (existing.isDeleted) {
+            return { error: '탈퇴한 계정의 이메일은 다시 사용할 수 없습니다.' }
+        }
         return { error: '이미 사용 중인 이메일입니다.' }
     }
 

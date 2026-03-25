@@ -5,6 +5,8 @@ import bcrypt from "bcryptjs"
 import { requireAdmin } from "@/lib/auth-checks"
 import * as userRepo from "@/lib/db/repositories/users"
 import { passwordSchema } from "@/lib/validations/auth"
+import { db, schema } from "@/lib/db"
+import { eq } from "drizzle-orm"
 
 /**
  * 모든 사용자 목록을 가져옵니다.
@@ -37,6 +39,15 @@ export async function createAdminUserAction(formData: FormData) {
         const passwordValidation = passwordSchema.safeParse(password)
         if (!passwordValidation.success) {
             return { error: passwordValidation.error.issues[0].message }
+        }
+
+        // 이메일 중복 체크 (탈퇴 회원 포함)
+        const [existing] = await db.select().from(schema.users).where(eq(schema.users.email, email))
+        if (existing) {
+            if (existing.isDeleted) {
+                return { error: '탈퇴한 계정의 이메일은 다시 사용할 수 없습니다.' }
+            }
+            return { error: '이미 사용 중인 이메일입니다.' }
         }
 
         const hashedPassword = await bcrypt.hash(password, 10)
