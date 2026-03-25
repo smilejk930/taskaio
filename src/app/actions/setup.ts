@@ -169,12 +169,18 @@ export async function setupConfig(input: SetupInput) {
       }
 
       // 6. 설정 완료 쿠키 설정 (미들웨어 즉시 반영용)
-      cookies().set('taskaio_setup_done', 'true', {
+      const instanceId = process.env.SERVER_INSTANCE_ID
+      const cookieOptions = {
         maxAge: 60 * 60 * 24, // 24시간
         path: '/',
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-      })
+      }
+
+      cookies().set('taskaio_setup_done', 'true', cookieOptions)
+      if (instanceId) {
+        cookies().set('taskaio_setup_instance_id', instanceId, cookieOptions)
+      }
 
       return { success: true }
     } catch (error) {

@@ -3,7 +3,10 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     const { existsSync, readFileSync } = await import('fs')
     const { join } = await import('path')
+    const crypto = await import('crypto')
     
+    // 서버 인스턴스 ID 생성 (메모리상에만 존재, 재시작 시 변경됨)
+    process.env.SERVER_INSTANCE_ID = crypto.randomUUID()
     const configPath = join(process.cwd(), 'data', 'config.json')
     
     if (existsSync(configPath)) {

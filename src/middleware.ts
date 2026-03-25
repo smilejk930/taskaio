@@ -10,19 +10,28 @@ const { auth } = NextAuth({
 
 export default auth((req) => {
     const { pathname } = req.nextUrl;
-    // process.env 또는 완료 쿠키 확인 (재시작 전 즉시 반영 대응)
-    const configured = isConfigured() || req.cookies.has('taskaio_setup_done');
-
     // 1. 설치(Setup) 체크
+    const isHardConfigured = isConfigured(); // 서버 시작 시 config.json 존재 여부
+    const setupCookie = req.cookies.get('taskaio_setup_done')?.value === 'true';
+    const instanceIdCookie = req.cookies.get('taskaio_setup_instance_id')?.value;
+    
+    // 현재 서버 인스턴스에서 방금 설정이 완료되었는지 확인
+    const isFreshlyConfigured = setupCookie && instanceIdCookie === process.env.SERVER_INSTANCE_ID;
+    
+    const configured = isHardConfigured || isFreshlyConfigured;
+    
+    // 1-1. 미설치 상태에서 /setup 이외의 접근 차단
     if (!configured && pathname !== '/setup' && !pathname.startsWith('/api')) {
         const url = req.nextUrl.clone();
         url.pathname = '/setup';
         return Response.redirect(url);
     }
 
-    // 이미 설정된 상태에서 /setup 접근 시 가드
+    // 1-2. 이미 설정된 상태에서 /setup 접근 시 가드 
+    // (설정 완료 시 - 파일 존재 혹은 방금 설치됨 - 차단)
     if (configured && pathname === '/setup') {
         const url = req.nextUrl.clone();
+        // 이미 설정된 경우 프로젝트 목록으로 이동
         url.pathname = '/projects';
         return Response.redirect(url);
     }
