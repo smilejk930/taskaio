@@ -1,0 +1,14 @@
+services:
+  taskaio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: taskaio:latest
+    container_name: taskaio-app
+    ports:
+      - "${PORT:-3001}:3000"
+    volumes:
+      - /data/taskaio/data:/app/data
+    restart: always
+    environment:
+      - NODE_ENV=production
