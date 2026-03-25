@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1774241376180,
-      "tag": "0000_chemical_robbie_robertson",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1774241540723,
-      "tag": "0001_strange_vapor",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1774463960864,
-      "tag": "0002_outgoing_skaar",
+      "when": 1774466718570,
+      "tag": "0000_red_hex",
       "breakpoints": true
     }
   ]

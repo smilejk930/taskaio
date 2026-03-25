@@ -33,7 +33,7 @@ src/lib/db/
 │   ├── tasks.ts
 │   ├── members.ts
 │   ├── task-dependencies.ts
-│   └── auth.ts           ← NextAuth 테이블 (users, sessions, accounts)
+│   └── auth.ts           ← NextAuth 테이블 (users)
 ├── repositories/         ← 테이블별 CRUD (리포지토리 패턴)
 │   ├── projects.ts
 │   ├── tasks.ts

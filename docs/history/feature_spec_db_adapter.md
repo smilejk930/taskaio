@@ -10,7 +10,7 @@
 4. 사용자는 DB 전환 사실을 인지하지 못하며, 기존과 동일한 UI/UX를 경험한다.
 
 ## DB 변경사항
-- 기존 Supabase 빌트인 Auth 시스템을 대체하기 위해 **사용자(Users), 세션(Sessions), 계정(Accounts)** 등 인증 라우팅용 공통 테이블이 추가된다. (NextAuth.js/Auth.js 권장 스키마)
+- 기존 Supabase 빌트인 Auth 시스템을 대체하기 위해 **사용자(Users)** 인증 라우팅용 공통 테이블이 추가된다. (NextAuth.js/Auth.js 권장 스키마)
 - 기존 RLS(Row Level Security)로 데이터 접근을 제어하던 것을 폐기하고, 애플리케이션 레벨(API/Server Action)에서 명시적으로 권한 검증(Authorization) 로직을 추가하여 멀티 DB 호환성을 확보한다.
 
 **기존 스키마(PostgreSQL/SQLite 호환 Drizzle Schema 모델 기반 마련):**
