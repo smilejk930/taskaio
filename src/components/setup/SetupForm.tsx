@@ -16,10 +16,10 @@ import { useEffect, useCallback } from 'react'
 import { setupSchema } from '@/lib/validations/setup'
 import type { SetupInput } from '@/lib/validations/setup'
 
-export function SetupForm() {
+export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?: boolean }) {
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isCompleted, setIsCompleted] = useState(false)
+  const [isCompleted, setIsCompleted] = useState(initialIsCompleted)
   const [isRestarting, setIsRestarting] = useState(false)
   const [restartMessage, setRestartMessage] = useState('')
 
