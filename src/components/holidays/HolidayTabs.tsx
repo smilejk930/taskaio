@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, List, Calendar as CalendarIcon } from 'lucide-react'
+import { Plus, List, Calendar as CalendarIcon, Upload } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { useSearchParams } from 'next/navigation'
@@ -10,6 +10,7 @@ import { Holiday, HolidayFormData, HolidayProfile, useHolidays } from '@/hooks/u
 import HolidayDialog from '@/components/holidays/HolidayDialog'
 import HolidayClientView from '@/components/holidays/HolidayClientView'
 import HolidayCalendarView from '@/components/holidays/HolidayCalendarView'
+import HolidayImportDialog from '@/components/holidays/HolidayImportDialog'
 import { AppLogo } from '@/components/common/AppLogo'
 
 interface HolidayTabsProps {
@@ -37,10 +38,11 @@ export default function HolidayTabs({
     profiles,
     currentUser,
 }: HolidayTabsProps) {
-    const { holidays, isLoading, handleCreate, handleUpdate, handleDelete } =
+    const { holidays, isLoading, handleCreate, handleUpdate, handleDelete, handleImport } =
         useHolidays(initialHolidays, profiles)
 
     const [isCreateOpen, setIsCreateOpen] = useState(false)
+    const [isImportOpen, setIsImportOpen] = useState(false)
     const [dialogInitialData, setDialogInitialData] = useState<HolidayFormData & { id?: string }>(EMPTY_FORM)
 
     const searchParams = useSearchParams()
@@ -90,10 +92,16 @@ export default function HolidayTabs({
                         </TabsTrigger>
                     </TabsList>
 
-                    <Button onClick={() => openCreateDialog()} size="sm">
-                        <Plus className="h-4 w-4 mr-1" />
-                        휴일 등록
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button onClick={() => setIsImportOpen(true)} size="sm" variant="outline" className="hidden sm:flex">
+                            <Upload className="h-4 w-4 mr-1" />
+                            JSON 업로드
+                        </Button>
+                        <Button onClick={() => openCreateDialog()} size="sm">
+                            <Plus className="h-4 w-4 mr-1" />
+                            휴일 등록
+                        </Button>
+                    </div>
                 </div>
 
                 <TabsContent value="calendar" className="flex-1 overflow-hidden m-0 p-0 data-[state=active]:flex data-[state=active]:flex-col">
@@ -125,6 +133,12 @@ export default function HolidayTabs({
                 onSubmit={handleCreateSubmit}
                 onDelete={handleDelete}
                 isLoading={isLoading}
+            />
+
+            <HolidayImportDialog
+                open={isImportOpen}
+                onOpenChange={setIsImportOpen}
+                onImport={handleImport}
             />
         </div>
     )

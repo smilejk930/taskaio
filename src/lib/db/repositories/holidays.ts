@@ -35,3 +35,7 @@ export async function updateHolidayById(id: string, updates: Partial<typeof sche
 export async function deleteHolidayById(id: string) {
     await db.delete(schema.holidays).where(eq(schema.holidays.id, id))
 }
+
+export async function bulkInsertHolidays(holidays: (typeof schema.holidays.$inferInsert)[]) {
+    return await db.insert(schema.holidays).values(holidays).returning()
+}

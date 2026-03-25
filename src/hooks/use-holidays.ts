@@ -6,6 +6,7 @@ import {
     createHoliday,
     updateHoliday,
     deleteHoliday,
+    importHolidays,
 } from '@/app/actions/holidays'
 
 // ──── 타입 정의 ────────────────────────────────────────────────────────────────
@@ -158,11 +159,40 @@ export function useHolidays(initialHolidays: Holiday[], profiles: HolidayProfile
         }
     }, [])
 
+    // 휴일 일괄 가져오기 (JSON Import)
+    const handleImport = useCallback(async (items: { dateName: string, startDate: string, endDate: string }[]) => {
+        // 일괄 등록은 양이 많을 수 있으므로 낙관적 업데이트보다는 서버 등록 후 전체 갱신 또는 결과 병합 처리
+        try {
+            const createdList = await importHolidays(items)
+            
+            const mappedList: Holiday[] = createdList.map(created => ({
+                ...created,
+                id: created.id,
+                name: created.name,
+                start_date: created.startDate,
+                end_date: created.endDate,
+                member_id: created.memberId,
+                created_at: created.createdAt,
+                type: created.type as Holiday['type'],
+                profiles: null // 공휴일이므로 프로필 없음
+            })) as unknown as Holiday[]
+
+            setHolidays(prev => [...prev, ...mappedList])
+            toast.success(`${items.length}개의 공휴일이 등록되었습니다.`)
+            return true
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : '알 수 없는 오류'
+            toast.error('휴일 일괄 등록 실패', { description: message })
+            return false
+        }
+    }, [])
+
     return {
         holidays,
         isLoading,
         handleCreate,
         handleUpdate,
         handleDelete,
+        handleImport,
     }
 }
