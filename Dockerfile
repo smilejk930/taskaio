@@ -37,7 +37,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/scripts/start.sh ./start.sh
 RUN sed -i 's/\r//' ./start.sh && chmod +x ./start.sh
 
 # 데이터 저장용 디렉토리 생성 및 권한 설정
-RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
+RUN mkdir -p /app/data && chown -R nextjs:nodejs /app
 VOLUME /app/data
 
 USER nextjs

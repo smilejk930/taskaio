@@ -96,6 +96,12 @@ pnpm dev
 ```powershell
 ./scripts/build-docker.ps1
 ```
+
+또는 Dockerfile 수정 후 이미지 재빌드:
+```powershell
+docker build -t taskaio:latest .
+```
+
 이 스크립트는 `pnpm build`, `docker build`, `docker save` 과정을 자동으로 수행하여 `taskaio-latest.tar` 파일을 생성합니다.
 
 ### 🚀 서버 배포 단계
@@ -107,6 +113,11 @@ pnpm dev
     docker compose up -d
     ```
 3.  **초기 설정**: 브라우저에서 `http://서버IP:3000`으로 접속하여 설정을 완료합니다.
+
+postgres와 같은 경우 Database URL은 다음과 같이 설정합니다.
+```
+postgresql://usr_taskaio:aio0930@%@taskaio-db:5432/db_taskaio
+```
 
 ### 💾 데이터 영속성 (Persistence)
 Docker 환경에서 컨테이너를 삭제하거나 업데이트해도 설정과 데이터를 유지하기 위해 볼륨 설정이 필수적입니다.
