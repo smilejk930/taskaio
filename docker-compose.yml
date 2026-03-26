@@ -8,12 +8,13 @@ services:
     ports:
       - "${PORT:-3001}:3000"
     volumes:
-      - /data/taskaio/data:/app/data
+      #- /data/taskaio/data:/app/data
+      - D:/develop/docker/taskaio/data:/app/data
     restart: always
     environment:
       - NODE_ENV=production
     depends_on:
-      db:
+      taskaio-db:
         condition: service_healthy # DB 준비 완료 후 앱 시작
     networks:
       - taskaio-network
@@ -26,8 +27,8 @@ services:
       POSTGRES_PASSWORD: aio0930@% # 자동생성
       POSTGRES_DB: db_taskaio # 자동생성
     volumes:
-      - /data/taskaio/db/postgresql/data:/var/lib/postgresql/data:Z
-      - /data/taskaio/db/postgresql/ts_taskaio:/mnt/ts_taskaio:Z
+      #- /data/taskaio/db/postgresql/data:/var/lib/postgresql/data:Z
+      - D:/develop/docker/taskaio/db/postgresql/data:/var/lib/postgresql/data:Z
     ports:
       - "5432:5432"
     healthcheck:

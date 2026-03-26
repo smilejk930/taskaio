@@ -119,6 +119,36 @@ Docker 환경에서 컨테이너를 삭제하거나 업데이트해도 설정과
     - ./taskaio/data:/app/data
   ```
 
+`docker-compose.yml`는 `./taskaio`에 옮기고
+```sh
+
+# 상태 확인
+docker compose ps
+
+# 로그 확인
+docker compose logs -f
+docker compose logs -f taskaio   # 앱만
+docker compose logs -f taskaio-db        # DB만
+
+# 백그라운드 실행 (일반적으로 이걸 사용)
+docker compose up -d
+
+# 로그 보면서 실행 (디버깅 시)
+docker compose up
+
+# 이미지 새로 빌드하고 실행
+docker compose up -d --build
+
+# 중지
+docker compose down
+
+# 중지 + 볼륨(데이터)까지 삭제 (초기화)
+docker compose down -v
+
+# 재시작
+docker compose restart
+```
+
 ### 🛠️ 문제 해결 (Troubleshooting)
 - **로그 확인**: `docker compose logs -f`
 - **설정 초기화**: 프로젝트 루트의 `.env` 파일을 삭제하고 컨테이너 재시작
