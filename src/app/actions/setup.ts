@@ -12,9 +12,11 @@ import { isConfigured } from '@/lib/db/setup-check'
 import { setupSchema, SetupInput } from '@/lib/validations/setup'
 import { headers, cookies } from 'next/headers'
 import Database from 'better-sqlite3'
+import { encodeDatabaseUrl } from '@/lib/db-url'
 
 export async function testDbConnection(input: { dbType: string, databaseUrl: string }) {
-  const { dbType, databaseUrl } = input
+  const { dbType, databaseUrl: rawDatabaseUrl } = input
+  const databaseUrl = encodeDatabaseUrl(rawDatabaseUrl)
   try {
     let isInstalled = false
 
@@ -73,7 +75,8 @@ export async function setupConfig(input: SetupInput) {
     throw new Error('이미 설치가 완료된 상태입니다.')
   }
 
-  const { mode, dbType, databaseUrl, adminName, adminEmail, adminPassword } = setupSchema.parse(input)
+  const { mode, dbType, databaseUrl: rawDatabaseUrl, adminName, adminEmail, adminPassword } = setupSchema.parse(input)
+  const databaseUrl = encodeDatabaseUrl(rawDatabaseUrl)
 
   try {
     // 2. DB 연결 테스트 (최종 확인)

@@ -58,4 +58,5 @@ refactor(db): supabase.from() 호출을 리포지토리 레이어로 교체
 
 - 제목은 50자 이내, 명령형으로 작성 ("추가했다" → "추가")
 - 한국어 사용 가능
+- 스테이징된 파일과 그렇지 않은 파일이 섞여 있다면, 논리적 단위로 나누어 각각 별도로 커밋을 진행한다.
 - Breaking change가 있으면 footer에 `BREAKING CHANGE:` 명시
