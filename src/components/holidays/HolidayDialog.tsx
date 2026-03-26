@@ -138,10 +138,10 @@ export default function HolidayDialog({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="public_holiday">🗓️ 공휴일</SelectItem>
                                 <SelectItem value="member_leave">👤 팀원 휴가</SelectItem>
                                 <SelectItem value="business_trip">🏢 출장</SelectItem>
                                 <SelectItem value="workshop">🎤 워크샵</SelectItem>
+                                <SelectItem value="public_holiday">🗓️ 공휴일</SelectItem>
                                 <SelectItem value="other">📌 기타</SelectItem>
                             </SelectContent>
                         </Select>
