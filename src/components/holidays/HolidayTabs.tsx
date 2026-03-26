@@ -96,7 +96,7 @@ export default function HolidayTabs({
                     <div className="flex gap-2">
                         <Button onClick={() => setIsImportOpen(true)} size="sm" variant="outline" className="hidden sm:flex">
                             <Upload className="h-4 w-4 mr-1" />
-                            JSON 업로드
+                            공휴일 일괄 등록
                         </Button>
                         <Button onClick={() => openCreateDialog()} size="sm">
                             <Plus className="h-4 w-4 mr-1" />
