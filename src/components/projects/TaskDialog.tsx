@@ -187,6 +187,19 @@ export default function TaskDialog({
                         {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
                     </div>
 
+                    {/* 설명 */}
+                    <div className="space-y-2">
+                        <Label htmlFor="task-description" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">업무 설명 (선택)</Label>
+                        <Textarea
+                            id="task-description"
+                            value={form.description || ''}
+                            onChange={(e) => setField('description', e.target.value)}
+                            placeholder="업무 설명을 입력하세요"
+                            rows={3}
+                            className="resize-none"
+                        />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         {/* 상태 */}
                         <div className="space-y-2">
@@ -300,19 +313,6 @@ export default function TaskDialog({
                                 <span className="text-xs font-mono text-muted-foreground uppercase">{form.color}</span>
                             </div>
                         </div>
-                    </div>
-
-                    {/* 설명 */}
-                    <div className="space-y-2">
-                        <Label htmlFor="task-description" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">업무 설명 (선택)</Label>
-                        <Textarea
-                            id="task-description"
-                            value={form.description || ''}
-                            onChange={(e) => setField('description', e.target.value)}
-                            placeholder="업무 설명을 입력하세요"
-                            rows={3}
-                            className="resize-none"
-                        />
                     </div>
                 </div>
 
