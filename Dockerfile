@@ -21,7 +21,6 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-# Next.js standalone 모드는 텔레메트리 관련 경고가 뜰 수 있으므로 비활성화 권장
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN addgroup --system --gid 1001 nodejs
@@ -33,8 +32,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # 마이그레이션 및 시작 스크립트 포함
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
+# ✅ scripts/start.sh 경로 유지 + CRLF → LF 변환 추가 (Windows 줄바꿈 문제 방지)
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/start.sh ./start.sh
-RUN chmod +x ./start.sh
+RUN sed -i 's/\r//' ./start.sh && chmod +x ./start.sh
 
 # 데이터 저장용 디렉토리 생성 및 권한 설정
 RUN mkdir -p /app/data && chown nextjs:nodejs /app/data
@@ -46,5 +46,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# standalone 모드에서는 server.js를 실행하는 대신 start.sh를 통해 환경변수를 로드한다.
 CMD ["./start.sh"]

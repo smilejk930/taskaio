@@ -12,3 +12,30 @@ services:
     restart: always
     environment:
       - NODE_ENV=production
+    depends_on:
+      db:
+        condition: service_healthy # DB 준비 완료 후 앱 시작
+    networks:
+      - taskaio-network
+
+  taskaio-db:
+    image: postgres:15-alpine
+    container_name: taskaio-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-postgres}
+    volumes:
+      - /data/taskaio/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-postgres}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - taskaio-network
+
+networks:
+  taskaio-network:
+    driver: bridge

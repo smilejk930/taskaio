@@ -116,7 +116,7 @@ Docker 환경에서 컨테이너를 삭제하거나 업데이트해도 설정과
 - **볼륨 매핑**: `docker-compose.yml`에서 반드시 호스트 디렉토리를 `/app/data`에 연결하세요.
   ```yaml
   volumes:
-    - ./taskaio_data:/app/data
+    - ./taskaio/data:/app/data
   ```
 
 ### 🛠️ 문제 해결 (Troubleshooting)
