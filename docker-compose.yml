@@ -22,13 +22,16 @@ services:
     image: postgres:15-alpine
     container_name: taskaio-db
     environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-postgres}
+      POSTGRES_USER: usr_taskaio # 자동생성
+      POSTGRES_PASSWORD: aio0930@% # 자동생성
+      POSTGRES_DB: db_taskaio # 자동생성
     volumes:
-      - /data/taskaio/postgres:/var/lib/postgresql/data
+      - /data/taskaio/db/postgresql/data:/var/lib/postgresql/data:Z
+      - /data/taskaio/db/postgresql/ts_taskaio:/mnt/ts_taskaio:Z
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-postgres}" ]
+      test: [ "CMD-SHELL", "pg_isready -U usr_taskaio -d db_taskaio" ]
       interval: 5s
       timeout: 5s
       retries: 5
