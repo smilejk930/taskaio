@@ -176,7 +176,9 @@ export default function TaskDialog({
                 <div className="grid gap-4 px-1 py-4 overflow-y-auto max-h-[70vh] pr-2">
                     {/* 업무명 */}
                     <div className="space-y-2">
-                        <Label htmlFor="task-title" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">업무명</Label>
+                        <Label htmlFor="task-title" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            업무명 <span className="text-destructive">*</span>
+                        </Label>
                         <Input
                             id="task-title"
                             value={form.title}
@@ -239,7 +241,9 @@ export default function TaskDialog({
                     <div className="grid grid-cols-2 gap-4">
                         {/* 시작일 */}
                         <div className="space-y-2">
-                            <Label htmlFor="task-start" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">시작일</Label>
+                            <Label htmlFor="task-start" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                시작일 <span className="text-destructive">*</span>
+                            </Label>
                             <Input
                                 id="task-start"
                                 type="date"
@@ -251,7 +255,9 @@ export default function TaskDialog({
                         </div>
                         {/* 종료일 */}
                         <div className="space-y-2">
-                            <Label htmlFor="task-end" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">종료일</Label>
+                            <Label htmlFor="task-end" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                종료일 <span className="text-destructive">*</span>
+                            </Label>
                             <Input
                                 id="task-end"
                                 type="date"
