@@ -11,7 +11,14 @@ const { auth: middlewareAuth } = NextAuth({
 
 export default async function middleware(req: NextRequest) {
     const { pathname } = req.nextUrl;
-    console.log(`[Middleware Root] Path: ${pathname}, Secret: ${!!process.env.AUTH_SECRET}`);
+    const isSecretSet = !!process.env.AUTH_SECRET;
+    
+    // 개발 모드에서 초기 설정 전일 경우 로그 수준 조정 
+    if (process.env.NODE_ENV === 'development' && !isSecretSet && pathname === '/setup') {
+        console.log(`[Middleware] Setup Mode: Initializing environment...`);
+    } else {
+        console.log(`[Middleware Root] Path: ${pathname}, Secret: ${isSecretSet}`);
+    }
     
     // 1. 설치(Setup) 체크 (Edge Runtime 대응을 위해 쿠키 확인 포함)
     const isConfigCookie = req.cookies.get('taskaio_configured')?.value === 'true';

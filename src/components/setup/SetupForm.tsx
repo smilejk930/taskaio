@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { Database, User, ShieldCheck, Loader2, ArrowRight, CheckCircle2, RefreshCw, Plus } from 'lucide-react'
+import { Database, User, ShieldCheck, Loader2, ArrowRight, CheckCircle2, RefreshCw, Plus, AlertCircle } from 'lucide-react'
 import { setupConfig, testDbConnection, restartServer } from '@/app/actions/setup'
+import { Skeleton } from '@/components/ui/skeleton'
 
 import { setupSchema } from '@/lib/validations/setup'
 import type { SetupInput } from '@/lib/validations/setup'
@@ -219,12 +220,47 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
     }, 30000)
   }, [])
 
-  if (!mounted) {
-    return (
-      <Card className="max-w-lg w-full h-[600px] border-none shadow-2xl bg-white/50 backdrop-blur-xl flex items-center justify-center">
+  // 하이드레이션 전(서버 렌더링 포함) 또는 초기 로딩 시 보여줄 스켈레톤 UI
+  const SetupSkeleton = () => (
+    <Card className="max-w-lg w-full border-none shadow-2xl bg-white/90 backdrop-blur-xl">
+      <CardHeader className="space-y-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-4 w-full" />
+      </CardHeader>
+      <CardContent className="space-y-6 pt-4">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-20" />
+          <div className="grid grid-cols-2 gap-3">
+            <Skeleton className="h-16 w-full rounded-xl" />
+            <Skeleton className="h-16 w-full rounded-xl" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-11 w-full" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-11 w-full" />
+        </div>
+      </CardContent>
+      <CardFooter className="pt-6">
+        <Skeleton className="h-12 w-full" />
+      </CardFooter>
+      <div className="absolute inset-0 bg-white/10 flex flex-col items-center justify-center gap-3 rounded-xl">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      </Card>
-    )
+        <p className="text-xs font-medium text-slate-500 animate-pulse">시스템 구성 요소를 로드하고 있습니다...</p>
+        <div className="mt-4 px-4 py-2 bg-slate-100 rounded-full border border-slate-200 flex items-center gap-2">
+            <AlertCircle className="w-3 h-3 text-slate-400" />
+            <span className="text-[10px] text-slate-500">지연이 계속될 경우 페이지를 새로고침(F5) 해주세요.</span>
+        </div>
+      </div>
+    </Card>
+  )
+
+  if (!mounted) {
+    return <SetupSkeleton />
   }
 
   if (isCompleted) {
