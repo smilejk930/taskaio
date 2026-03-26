@@ -131,7 +131,21 @@ Docker 환경에서 컨테이너를 삭제하거나 업데이트해도 설정과
   ```
 
 `docker-compose.yml`는 `./taskaio`에 옮기고
+
+### 폴더 생성 및 권한 생성
+
 ```sh
+sudo mkdir -p /data/taskaio/data
+sudo chown -R devsvr:devsvr /data/taskaio/db
+
+sudo mkdir -p /data/taskaio/db/postgresql/data
+sudo chown -R 999:999 /data/taskaio/db/postgresql/data
+sudo chmod -R 700 /data/taskaio/db/postgresql/data
+```
+
+### 실행
+```sh
+cd /data/taskaio
 
 # 상태 확인
 docker compose ps
@@ -143,6 +157,7 @@ docker compose logs -f taskaio-db        # DB만
 
 # 백그라운드 실행 (일반적으로 이걸 사용)
 docker compose up -d
+docker compose up -d && docker compose logs -f
 
 # 로그 보면서 실행 (디버깅 시)
 docker compose up
