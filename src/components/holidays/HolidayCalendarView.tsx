@@ -299,14 +299,14 @@ export default function HolidayCalendarView({
                                 <div className="relative z-10 flex flex-col h-full pointer-events-none">
                                     <div className="flex items-center justify-between p-1 shrink-0 px-2 min-h-[32px]">
                                         <div className="pointer-events-auto">
-                                            {dayHolidays.length > 4 && (
+                                            {dayHolidays.length > 3 && (
                                                 <Popover>
                                                     <PopoverTrigger asChild>
                                                         <button 
                                                             className="text-[10px] font-bold text-muted-foreground hover:text-primary bg-muted/50 hover:bg-muted px-1.5 py-0.5 rounded transition-colors cursor-pointer"
                                                             onClick={(e) => e.stopPropagation()}
                                                         >
-                                                            +{dayHolidays.length - 4} 더보기
+                                                            +{dayHolidays.length - 3} 더보기
                                                         </button>
                                                     </PopoverTrigger>
                                                     <PopoverContent 
@@ -367,7 +367,7 @@ export default function HolidayCalendarView({
                                                 <Skeleton className="h-5 w-[90%] mx-auto" />
                                                 <Skeleton className="h-5 w-[70%] mx-auto" />
                                             </>
-                                        ) : dayHolidays.slice(0, 4).map(holiday => {
+                                        ) : dayHolidays.slice(0, 3).map(holiday => {
                                             const isStart = holiday.start_date === dayStr
                                             const isEnd = holiday.end_date === dayStr
                                             const colorClass = HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS['other']
