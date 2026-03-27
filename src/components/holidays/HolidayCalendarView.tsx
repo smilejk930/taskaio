@@ -297,7 +297,57 @@ export default function HolidayCalendarView({
 
                                 {/* 실제 컨텐츠 레이어 */}
                                 <div className="relative z-10 flex flex-col h-full pointer-events-none">
-                                    <div className="text-right p-1 shrink-0">
+                                    <div className="flex items-center justify-between p-1 shrink-0 px-2 min-h-[32px]">
+                                        <div className="pointer-events-auto">
+                                            {dayHolidays.length > 4 && (
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <button 
+                                                            className="text-[10px] font-bold text-muted-foreground hover:text-primary bg-muted/50 hover:bg-muted px-1.5 py-0.5 rounded transition-colors cursor-pointer"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            +{dayHolidays.length - 4} 더보기
+                                                        </button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent 
+                                                        className="w-64 p-2 shadow-xl z-[100]" 
+                                                        align="start" 
+                                                        side="bottom" 
+                                                        sideOffset={4}
+                                                    >
+                                                        <h4 className="font-semibold text-sm mb-2 pb-2 border-b">{format(day, 'yyyy년 MM월 dd일')}</h4>
+                                                        <div className="space-y-1.5 max-h-[300px] overflow-auto pr-1">
+                                                            {dayHolidays.map(holiday => (
+                                                                <div
+                                                                    key={holiday.id}
+                                                                    onClick={() => onCreateClick({
+                                                                        id: holiday.id,
+                                                                        name: holiday.name,
+                                                                        start_date: holiday.start_date,
+                                                                        end_date: holiday.end_date,
+                                                                        type: holiday.type,
+                                                                        member_id: holiday.member_id,
+                                                                        note: holiday.note || ''
+                                                                    })}
+                                                                    className={cn(
+                                                                        "text-xs px-2 py-1.5 border rounded-md cursor-pointer",
+                                                                        HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS['other']
+                                                                    )}
+                                                                >
+                                                                    <div className="font-semibold flex items-center justify-between">
+                                                                        <span>{holiday.name}</span>
+                                                                        <span className="text-[10px] opacity-70 border rounded px-1">{HOLIDAY_LABELS[holiday.type]}</span>
+                                                                    </div>
+                                                                    {holiday.profiles?.display_name && (
+                                                                        <div className="mt-0.5 opacity-90">{holiday.profiles.display_name}</div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </PopoverContent>
+                                                </Popover>
+                                            )}
+                                        </div>
                                         <span className={cn(
                                             "inline-flex items-center justify-center w-6 h-6 text-sm rounded-full",
                                             today && "bg-primary text-primary-foreground font-bold",
@@ -361,56 +411,6 @@ export default function HolidayCalendarView({
                                                 </div>
                                             )
                                         })}
-
-                                        {dayHolidays.length > 4 && (
-                                            <div onClick={(e) => e.stopPropagation()}>
-                                                <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <div 
-                                                            className="text-xs px-2 py-0.5 text-muted-foreground cursor-pointer hover:bg-muted rounded text-center ml-1 mr-1"
-                                                        >
-                                                            +{dayHolidays.length - 4}개 더보기
-                                                        </div>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent 
-                                                        className="w-64 p-2 shadow-xl" 
-                                                        align="center" 
-                                                        side="top" 
-                                                        sideOffset={8}
-                                                    >
-                                                        <h4 className="font-semibold text-sm mb-2 pb-2 border-b">{format(day, 'yyyy년 MM월 dd일')}</h4>
-                                                        <div className="space-y-1.5 max-h-[300px] overflow-auto pr-1">
-                                                            {dayHolidays.map(holiday => (
-                                                                <div
-                                                                    key={holiday.id}
-                                                                    onClick={() => onCreateClick({
-                                                                        id: holiday.id,
-                                                                        name: holiday.name,
-                                                                        start_date: holiday.start_date,
-                                                                        end_date: holiday.end_date,
-                                                                        type: holiday.type,
-                                                                        member_id: holiday.member_id,
-                                                                        note: holiday.note || ''
-                                                                    })}
-                                                                    className={cn(
-                                                                        "text-xs px-2 py-1.5 border rounded-md cursor-pointer",
-                                                                        HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS['other']
-                                                                    )}
-                                                                >
-                                                                    <div className="font-semibold flex items-center justify-between">
-                                                                        <span>{holiday.name}</span>
-                                                                        <span className="text-[10px] opacity-70 border rounded px-1">{HOLIDAY_LABELS[holiday.type]}</span>
-                                                                    </div>
-                                                                    {holiday.profiles?.display_name && (
-                                                                        <div className="mt-0.5 opacity-90">{holiday.profiles.display_name}</div>
-                                                                    )}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </PopoverContent>
-                                                </Popover>
-                                            </div>
-                                        )}
                                 </div>
                             </div>
                         </div>
