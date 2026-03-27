@@ -39,7 +39,7 @@ const EMPTY_FORM: HolidayFormData = {
     name: '',
     start_date: '',
     end_date: '',
-    type: 'public_holiday',
+    type: 'member_leave',
     member_id: null,
     note: '',
 }

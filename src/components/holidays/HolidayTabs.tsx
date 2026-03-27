@@ -29,7 +29,7 @@ const EMPTY_FORM: HolidayFormData = {
     name: '',
     start_date: '',
     end_date: '',
-    type: 'public_holiday',
+    type: 'member_leave',
     member_id: null,
     note: '',
 }
@@ -66,7 +66,13 @@ export default function HolidayTabs({
     }
 
     const openCreateDialog = (initialData?: Partial<HolidayFormData & { id: string }>) => {
-        setDialogInitialData({ ...EMPTY_FORM, ...initialData })
+        // 새 등록일 때(+id가 없을 때) currentUser가 있으면 기본 member_id로 설정
+        const defaultMemberId = !initialData?.id && currentUser?.id ? currentUser.id : (initialData?.member_id ?? null)
+        setDialogInitialData({ 
+            ...EMPTY_FORM, 
+            ...initialData,
+            member_id: defaultMemberId
+        })
         setIsCreateOpen(true)
     }
 
