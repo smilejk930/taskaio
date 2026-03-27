@@ -110,7 +110,9 @@ export default function HolidayCalendarView({
     const [dragSelectionStart, setDragSelectionStart] = useState<string | null>(null)
     const [dragHover, setDragHover] = useState<string | null>(null)
 
-    const handleMouseDown = (dayStr: string) => {
+    const handleMouseDown = (e: React.MouseEvent, dayStr: string) => {
+        // 명시적으로 휴일 항목이나 더보기 링크가 아닌 경우에만 드래그 시작
+        if ((e.target as HTMLElement).closest('.holiday-item, .more-link')) return
         setDragSelectionStart(dayStr)
         setDragHover(dayStr)
     }
@@ -121,7 +123,7 @@ export default function HolidayCalendarView({
         }
     }
 
-    const handleMouseUp = (dayStr: string) => {
+    const handleMouseUp = (e: React.MouseEvent, dayStr: string) => {
         if (dragSelectionStart) {
             let start = dragSelectionStart
             let end = dayStr
@@ -275,7 +277,7 @@ export default function HolidayCalendarView({
                             <div
                                 key={dayStr}
                                 className={cn(
-                                    "border-b border-r p-1 flex flex-col transition-colors",
+                                    "min-h-[135px] border-b border-r relative flex flex-col transition-colors",
                                     !isCurrentMonth && "bg-muted/30 text-muted-foreground",
                                     isHolidayBg && "bg-red-50/50 dark:bg-red-950/20",
                                     today && "bg-blue-50 dark:bg-blue-950/30",
@@ -284,128 +286,138 @@ export default function HolidayCalendarView({
                                 )}
                                 onDragOver={(e) => e.preventDefault()}
                                 onDrop={(e) => handleDrop(e, dayStr)}
-                                onMouseDown={() => handleMouseDown(dayStr)}
-                                onMouseEnter={() => handleMouseEnter(dayStr)}
-                                onMouseUp={() => handleMouseUp(dayStr)}
                             >
-                                <div className="text-right p-1 shrink-0 pointer-events-none">
-                                    <span className={cn(
-                                        "inline-flex items-center justify-center w-6 h-6 text-sm rounded-full",
-                                        today && "bg-primary text-primary-foreground font-bold",
-                                        !today && (day.getDay() === 0 || hasPublicHoliday) && "text-red-500 font-semibold"
-                                    )}>
+                                {/* 드래그 선택을 위한 투명 배경 레이어 */}
+                                <div 
+                                    className="absolute inset-0 z-0 cursor-default"
+                                    onMouseDown={(e) => handleMouseDown(e, dayStr)}
+                                    onMouseEnter={() => handleMouseEnter(dayStr)}
+                                    onMouseUp={(e) => handleMouseUp(e, dayStr)}
+                                />
+
+                                {/* 실제 컨텐츠 레이어 */}
+                                <div className="relative z-10 flex flex-col h-full pointer-events-none">
+                                    <div className="text-right p-1 shrink-0">
+                                        <span className={cn(
+                                            "inline-flex items-center justify-center w-6 h-6 text-sm rounded-full",
+                                            today && "bg-primary text-primary-foreground font-bold",
+                                            !today && (day.getDay() === 0 || hasPublicHoliday) && "text-red-500 font-semibold"
+                                        )}>
+                                            {isLoading && holidays.length === 0 ? (
+                                                <Skeleton className="h-4 w-4 rounded-full" />
+                                            ) : (
+                                                format(day, 'd')
+                                            )}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex-1 overflow-hidden space-y-1 p-1 pointer-events-auto">
                                         {isLoading && holidays.length === 0 ? (
-                                            <Skeleton className="h-4 w-4 rounded-full" />
-                                        ) : (
-                                            format(day, 'd')
-                                        )}
-                                    </span>
-                                </div>
+                                            <>
+                                                <Skeleton className="h-5 w-[90%] mx-auto" />
+                                                <Skeleton className="h-5 w-[70%] mx-auto" />
+                                            </>
+                                        ) : dayHolidays.slice(0, 4).map(holiday => {
+                                            const isStart = holiday.start_date === dayStr
+                                            const isEnd = holiday.end_date === dayStr
+                                            const colorClass = HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS['other']
 
-                                <div className="flex-1 overflow-hidden space-y-1 p-1">
-                                    {isLoading && holidays.length === 0 ? (
-                                        <>
-                                            <Skeleton className="h-5 w-[90%] mx-auto" />
-                                            <Skeleton className="h-5 w-[70%] mx-auto" />
-                                        </>
-                                    ) : dayHolidays.slice(0, 4).map(holiday => {
-                                        const isStart = holiday.start_date === dayStr
-                                        const isEnd = holiday.end_date === dayStr
-                                        const colorClass = HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS['other']
-
-                                        return (
-                                            <div
-                                                key={holiday.id}
-                                                draggable
-                                                onDragStart={(e) => {
-                                                    e.stopPropagation()
-                                                    handleDragStart(e, holiday.id, dayStr)
-                                                }}
-                                                onMouseDown={(e) => e.stopPropagation()}
-                                                onMouseUp={(e) => e.stopPropagation()}
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    onCreateClick({
-                                                        id: holiday.id,
-                                                        name: holiday.name,
-                                                        start_date: holiday.start_date,
-                                                        end_date: holiday.end_date,
-                                                        type: holiday.type,
-                                                        member_id: holiday.member_id,
-                                                        note: holiday.note || ''
-                                                    })
-                                                }}
-                                                className={cn(
-                                                    "text-xs px-1.5 py-0.5 border cursor-pointer select-none truncate opacity-90 hover:opacity-100",
-                                                    colorClass,
-                                                    isStart ? "rounded-l-md ml-1" : "border-l-0 ml-[-2px]",
-                                                    isEnd ? "rounded-r-md mr-1" : "border-r-0 mr-[-2px]"
-                                                )}
-                                                title={`${holiday.name} (${holiday.profiles?.display_name || HOLIDAY_LABELS[holiday.type]})`}
-                                            >
-                                                {isStart ? (
-                                                    <span className="font-semibold text-[11px]">
-                                                        {holiday.profiles?.display_name ? `${holiday.profiles.display_name} - ` : ''}
-                                                        {holiday.name}
-                                                    </span>
-                                                ) : (
-                                                    <span className="opacity-0">-</span> // 레이아웃 유지를 위한 투명 텍스트
-                                                )}
-                                            </div>
-                                        )
-                                    })}
-
-                                    {dayHolidays.length > 4 && (
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <div 
-                                                    className="text-xs px-2 py-0.5 text-muted-foreground cursor-pointer hover:bg-muted rounded text-center ml-1 mr-1"
-                                                    onMouseDown={(e) => e.stopPropagation()}
-                                                    onMouseUp={(e) => e.stopPropagation()}
-                                                    onClick={(e) => e.stopPropagation()}
+                                            return (
+                                                <div
+                                                    key={holiday.id}
+                                                    draggable
+                                                    onDragStart={(e) => {
+                                                        e.stopPropagation()
+                                                        handleDragStart(e, holiday.id, dayStr)
+                                                    }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        onCreateClick({
+                                                            id: holiday.id,
+                                                            name: holiday.name,
+                                                            start_date: holiday.start_date,
+                                                            end_date: holiday.end_date,
+                                                            type: holiday.type,
+                                                            member_id: holiday.member_id,
+                                                            note: holiday.note || ''
+                                                        })
+                                                    }}
+                                                    className={cn(
+                                                        "text-xs px-1.5 py-0.5 border cursor-pointer select-none truncate opacity-90 hover:opacity-100",
+                                                        colorClass,
+                                                        isStart ? "rounded-l-md ml-1" : "border-l-0 ml-[-2px]",
+                                                        isEnd ? "rounded-r-md mr-1" : "border-r-0 mr-[-2px]"
+                                                    )}
+                                                    title={`${holiday.name} (${holiday.profiles?.display_name || HOLIDAY_LABELS[holiday.type]})`}
                                                 >
-                                                    +{dayHolidays.length - 4}개 더보기
+                                                    {isStart ? (
+                                                        <span className="font-semibold text-[11px]">
+                                                            {holiday.profiles?.display_name ? `${holiday.profiles.display_name} - ` : ''}
+                                                            {holiday.name}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="opacity-0">-</span>
+                                                    )}
                                                 </div>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-64 p-2 shadow-xl" align="center" side="top" sideOffset={8}>
-                                                <h4 className="font-semibold text-sm mb-2 pb-2 border-b">{format(day, 'yyyy년 MM월 dd일')}</h4>
-                                                <div className="space-y-1.5 max-h-[300px] overflow-auto pr-1">
-                                                    {dayHolidays.map(holiday => (
-                                                        <div
-                                                            key={holiday.id}
-                                                            onClick={() => onCreateClick({
-                                                                id: holiday.id,
-                                                                name: holiday.name,
-                                                                start_date: holiday.start_date,
-                                                                end_date: holiday.end_date,
-                                                                type: holiday.type,
-                                                                member_id: holiday.member_id,
-                                                                note: holiday.note || ''
-                                                            })}
-                                                            className={cn(
-                                                                "text-xs px-2 py-1.5 border rounded-md cursor-pointer",
-                                                                HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS['other']
-                                                            )}
+                                            )
+                                        })}
+
+                                        {dayHolidays.length > 4 && (
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <div 
+                                                            className="text-xs px-2 py-0.5 text-muted-foreground cursor-pointer hover:bg-muted rounded text-center ml-1 mr-1"
                                                         >
-                                                            <div className="font-semibold flex items-center justify-between">
-                                                                <span>{holiday.name}</span>
-                                                                <span className="text-[10px] opacity-70 border rounded px-1">{HOLIDAY_LABELS[holiday.type]}</span>
-                                                            </div>
-                                                            {holiday.profiles?.display_name && (
-                                                                <div className="mt-0.5 opacity-90">{holiday.profiles.display_name}</div>
-                                                            )}
+                                                            +{dayHolidays.length - 4}개 더보기
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            </PopoverContent>
-                                        </Popover>
-                                    )}
+                                                    </PopoverTrigger>
+                                                    <PopoverContent 
+                                                        className="w-64 p-2 shadow-xl" 
+                                                        align="center" 
+                                                        side="top" 
+                                                        sideOffset={8}
+                                                    >
+                                                        <h4 className="font-semibold text-sm mb-2 pb-2 border-b">{format(day, 'yyyy년 MM월 dd일')}</h4>
+                                                        <div className="space-y-1.5 max-h-[300px] overflow-auto pr-1">
+                                                            {dayHolidays.map(holiday => (
+                                                                <div
+                                                                    key={holiday.id}
+                                                                    onClick={() => onCreateClick({
+                                                                        id: holiday.id,
+                                                                        name: holiday.name,
+                                                                        start_date: holiday.start_date,
+                                                                        end_date: holiday.end_date,
+                                                                        type: holiday.type,
+                                                                        member_id: holiday.member_id,
+                                                                        note: holiday.note || ''
+                                                                    })}
+                                                                    className={cn(
+                                                                        "text-xs px-2 py-1.5 border rounded-md cursor-pointer",
+                                                                        HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS['other']
+                                                                    )}
+                                                                >
+                                                                    <div className="font-semibold flex items-center justify-between">
+                                                                        <span>{holiday.name}</span>
+                                                                        <span className="text-[10px] opacity-70 border rounded px-1">{HOLIDAY_LABELS[holiday.type]}</span>
+                                                                    </div>
+                                                                    {holiday.profiles?.display_name && (
+                                                                        <div className="mt-0.5 opacity-90">{holiday.profiles.display_name}</div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </div>
+                                        )}
                                 </div>
                             </div>
-                        )
-                    })}
-                </div>
+                        </div>
+                    )
+                })}
             </div>
         </div>
-    )
+    </div>
+)
 }
