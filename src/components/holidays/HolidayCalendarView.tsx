@@ -256,7 +256,7 @@ export default function HolidayCalendarView({
 
                 {/* 날짜 셀 */}
                 <div 
-                    className="flex-1 overflow-y-auto grid grid-cols-7 auto-rows-[minmax(150px,1fr)]" 
+                    className="flex-1 overflow-y-auto grid grid-cols-7 auto-rows-[minmax(180px,1fr)]" 
                     onMouseLeave={() => { setDragSelectionStart(null); setDragHover(null) }}
                 >
                     {days.map((day, i) => {
@@ -277,7 +277,7 @@ export default function HolidayCalendarView({
                             <div
                                 key={dayStr}
                                 className={cn(
-                                    "min-h-[150px] border-b border-r relative flex flex-col transition-colors",
+                                    "min-h-[180px] border-b border-r relative flex flex-col transition-colors",
                                     !isCurrentMonth && "bg-muted/30 text-muted-foreground",
                                     isHolidayBg && "bg-red-50/50 dark:bg-red-950/20",
                                     today && "bg-blue-50 dark:bg-blue-950/30",
