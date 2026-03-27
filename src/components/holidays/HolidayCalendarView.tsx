@@ -254,7 +254,7 @@ export default function HolidayCalendarView({
 
                 {/* 날짜 셀 */}
                 <div 
-                    className="flex-1 overflow-y-auto grid grid-cols-7 auto-rows-[minmax(120px,1fr)]" 
+                    className="flex-1 overflow-y-auto grid grid-cols-7 auto-rows-[minmax(135px,1fr)]" 
                     onMouseLeave={() => { setDragSelectionStart(null); setDragHover(null) }}
                 >
                     {days.map((day, i) => {
@@ -308,7 +308,7 @@ export default function HolidayCalendarView({
                                             <Skeleton className="h-5 w-[90%] mx-auto" />
                                             <Skeleton className="h-5 w-[70%] mx-auto" />
                                         </>
-                                    ) : dayHolidays.slice(0, 3).map(holiday => {
+                                    ) : dayHolidays.slice(0, 4).map(holiday => {
                                         const isStart = holiday.start_date === dayStr
                                         const isEnd = holiday.end_date === dayStr
                                         const colorClass = HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS['other']
@@ -321,6 +321,8 @@ export default function HolidayCalendarView({
                                                     e.stopPropagation()
                                                     handleDragStart(e, holiday.id, dayStr)
                                                 }}
+                                                onMouseDown={(e) => e.stopPropagation()}
+                                                onMouseUp={(e) => e.stopPropagation()}
                                                 onClick={(e) => {
                                                     e.stopPropagation()
                                                     onCreateClick({
@@ -342,7 +344,7 @@ export default function HolidayCalendarView({
                                                 title={`${holiday.name} (${holiday.profiles?.display_name || HOLIDAY_LABELS[holiday.type]})`}
                                             >
                                                 {isStart ? (
-                                                    <span className="font-semibold">
+                                                    <span className="font-semibold text-[11px]">
                                                         {holiday.profiles?.display_name ? `${holiday.profiles.display_name} - ` : ''}
                                                         {holiday.name}
                                                     </span>
@@ -353,17 +355,19 @@ export default function HolidayCalendarView({
                                         )
                                     })}
 
-                                    {dayHolidays.length > 3 && (
+                                    {dayHolidays.length > 4 && (
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <div 
                                                     className="text-xs px-2 py-0.5 text-muted-foreground cursor-pointer hover:bg-muted rounded text-center ml-1 mr-1"
+                                                    onMouseDown={(e) => e.stopPropagation()}
+                                                    onMouseUp={(e) => e.stopPropagation()}
                                                     onClick={(e) => e.stopPropagation()}
                                                 >
-                                                    +{dayHolidays.length - 3}개 더보기
+                                                    +{dayHolidays.length - 4}개 더보기
                                                 </div>
                                             </PopoverTrigger>
-                                            <PopoverContent className="w-64 p-2 shadow-xl" align="center">
+                                            <PopoverContent className="w-64 p-2 shadow-xl" align="center" side="top" sideOffset={8}>
                                                 <h4 className="font-semibold text-sm mb-2 pb-2 border-b">{format(day, 'yyyy년 MM월 dd일')}</h4>
                                                 <div className="space-y-1.5 max-h-[300px] overflow-auto pr-1">
                                                     {dayHolidays.map(holiday => (

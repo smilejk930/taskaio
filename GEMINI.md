@@ -59,13 +59,14 @@ Next.js 14+ (App Router) · TypeScript · Drizzle ORM · NextAuth(Auth.js) · sh
 
 | 명령어 | 역할 | 파일 |
 |---|---|---|
+| `/pm` | **PM 에이전트 원사이클 자동 액션** (분석→구현→테스트→배포) | `@.agents/workflows/pm.md` |
 | `/analyze-feature` | 요구사항 분석 + Feature Spec 작성 (코드 작성 안 함) | `@.agents/workflows/analyze-feature.md` |
 | `/build-feature` | 승인된 Spec 기반 구현 | `@.agents/workflows/build-feature.md` |
 | `/db-migrate` | Drizzle 스키마 변경 + 마이그레이션 적용 | `@.agents/workflows/db-migrate.md` |
 | `/test-feature` | TDD(Red-Green-Refactor) + 회귀 검증 | `@.agents/workflows/test-feature.md` |
 | `/review` | PR 전 코드 품질·보안 게이트 | `@.agents/workflows/review.md` |
 
-> `/analyze-feature` → (승인) → `/build-feature` → `/test-feature` → `/review` 순서를 권장합니다.
+> `/pm` 실행 시 분석→빌드→테스트→커밋→푸시가 자동으로 연결됩니다. (중간 Spec 승인 필요)
 
 ---
 
