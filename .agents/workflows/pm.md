@@ -17,7 +17,7 @@ description: 사용자의 요구사항에 대해 분석 -> 구현 -> 테스트 -
 
 ### 1. 요구사항 수용 및 분석 (/analyze-feature)
 사용자의 요청이 들어오면 즉시 `@.agents/workflows/analyze-feature.md`를 기동한다.
-- 코드베이스를 분석하고 **Feature Spec Artifact**를 작성한다.
+- 코드베이스를 분석하고 **Feature Spec Artifact**를 한글로 작성한다.
 - **[BREAK]:** 작성이 완료되면 사용자에게 Spec 승인을 요청한다.
 
 ### 2. 자동 구현 (/build-feature)
