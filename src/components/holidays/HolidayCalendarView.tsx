@@ -281,7 +281,7 @@ export default function HolidayCalendarView({
                             <div
                                 key={dayStr}
                                 className={cn(
-                                    "min-h-[180px] border-b border-r relative flex flex-col transition-colors",
+                                    "min-h-[180px] border-b border-r relative flex flex-col transition-colors cursor-default",
                                     !isCurrentMonth && "bg-muted/30 text-muted-foreground",
                                     isHolidayBg && "bg-red-50/50 dark:bg-red-950/20",
                                     today && "bg-blue-50 dark:bg-blue-950/30",
@@ -290,15 +290,10 @@ export default function HolidayCalendarView({
                                 )}
                                 onDragOver={(e) => e.preventDefault()}
                                 onDrop={(e) => handleDrop(e, dayStr)}
+                                onMouseDown={(e) => handleMouseDown(e, dayStr)}
+                                onMouseEnter={() => handleMouseEnter(dayStr)}
+                                onMouseUp={(e) => handleMouseUp(e, dayStr)}
                             >
-                                {/* 드래그 선택을 위한 투명 배경 레이어 */}
-                                <div 
-                                    className="absolute inset-0 z-0 cursor-default"
-                                    onMouseDown={(e) => handleMouseDown(e, dayStr)}
-                                    onMouseEnter={() => handleMouseEnter(dayStr)}
-                                    onMouseUp={(e) => handleMouseUp(e, dayStr)}
-                                />
-
                                 {/* 실제 컨텐츠 레이어 */}
                                 <div className="relative z-10 flex flex-col h-full pointer-events-none">
                                     <div className="flex items-center justify-between p-1 shrink-0 px-2 min-h-[32px]">
@@ -307,8 +302,9 @@ export default function HolidayCalendarView({
                                                 <Popover>
                                                     <PopoverTrigger asChild>
                                                         <button 
-                                                            className="text-[10px] font-bold text-muted-foreground hover:text-primary bg-muted/50 hover:bg-muted px-1.5 py-0.5 rounded transition-colors cursor-pointer"
+                                                            className="more-link text-[10px] font-bold text-muted-foreground hover:text-primary bg-muted/50 hover:bg-muted px-1.5 py-0.5 rounded transition-colors cursor-pointer"
                                                             onClick={(e) => e.stopPropagation()}
+                                                            onMouseDown={(e) => e.stopPropagation()}
                                                         >
                                                             +{dayHolidays.length - 5} 더보기
                                                         </button>
@@ -334,7 +330,7 @@ export default function HolidayCalendarView({
                                                                         note: holiday.note || ''
                                                                     })}
                                                                     className={cn(
-                                                                        "text-xs px-2 py-1.5 border rounded-md cursor-pointer",
+                                                                        "holiday-item text-xs px-2 py-1.5 border rounded-md cursor-pointer",
                                                                         HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS['other']
                                                                     )}
                                                                 >
@@ -365,7 +361,7 @@ export default function HolidayCalendarView({
                                         </span>
                                     </div>
 
-                                    <div className="flex-1 overflow-hidden space-y-1 p-1 pointer-events-auto">
+                                    <div className="flex-1 overflow-hidden space-y-1 p-1 pointer-events-none md:pointer-events-auto">
                                         {isLoading && holidays.length === 0 ? (
                                             <>
                                                 <Skeleton className="h-5 w-[90%] mx-auto" />
@@ -384,6 +380,7 @@ export default function HolidayCalendarView({
                                                         e.stopPropagation()
                                                         handleDragStart(e, holiday.id, dayStr)
                                                     }}
+                                                    onMouseDown={(e) => e.stopPropagation()}
                                                     onClick={(e) => {
                                                         e.stopPropagation()
                                                         onCreateClick({
@@ -397,7 +394,7 @@ export default function HolidayCalendarView({
                                                         })
                                                     }}
                                                     className={cn(
-                                                        "text-xs px-1.5 py-0.5 border cursor-pointer select-none truncate opacity-90 hover:opacity-100",
+                                                        "holiday-item text-xs px-1.5 py-0.5 border cursor-pointer select-none truncate opacity-90 hover:opacity-100 pointer-events-auto",
                                                         colorClass,
                                                         isStart ? "rounded-l-md ml-1" : "border-l-0 ml-[-2px]",
                                                         isEnd ? "rounded-r-md mr-1" : "border-r-0 mr-[-2px]"
