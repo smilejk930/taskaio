@@ -145,9 +145,13 @@ export default function HolidayCalendarView({
 
     const days = eachDayOfInterval({ start: startDate, end: endDate })
 
-    const filteredHolidays = holidays.filter(h =>
-        selectedMember === 'all' ? true : h.member_id === selectedMember
-    )
+    const filteredHolidays = holidays
+        .filter(h => selectedMember === 'all' ? true : h.member_id === selectedMember)
+        .sort((a, b) => {
+            if (a.start_date !== b.start_date) return a.start_date.localeCompare(b.start_date)
+            if (a.end_date !== b.end_date) return b.end_date.localeCompare(a.end_date)
+            return a.name.localeCompare(b.name)
+        })
 
     // 선택 영역 확인
     const isDayInSelection = (dayStr: string) => {
