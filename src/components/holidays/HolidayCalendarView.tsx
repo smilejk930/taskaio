@@ -256,7 +256,7 @@ export default function HolidayCalendarView({
 
                 {/* 날짜 셀 */}
                 <div 
-                    className="flex-1 overflow-y-auto grid grid-cols-7 auto-rows-[minmax(135px,1fr)]" 
+                    className="flex-1 overflow-y-auto grid grid-cols-7 auto-rows-[minmax(150px,1fr)]" 
                     onMouseLeave={() => { setDragSelectionStart(null); setDragHover(null) }}
                 >
                     {days.map((day, i) => {
@@ -277,7 +277,7 @@ export default function HolidayCalendarView({
                             <div
                                 key={dayStr}
                                 className={cn(
-                                    "min-h-[135px] border-b border-r relative flex flex-col transition-colors",
+                                    "min-h-[150px] border-b border-r relative flex flex-col transition-colors",
                                     !isCurrentMonth && "bg-muted/30 text-muted-foreground",
                                     isHolidayBg && "bg-red-50/50 dark:bg-red-950/20",
                                     today && "bg-blue-50 dark:bg-blue-950/30",
@@ -299,14 +299,14 @@ export default function HolidayCalendarView({
                                 <div className="relative z-10 flex flex-col h-full pointer-events-none">
                                     <div className="flex items-center justify-between p-1 shrink-0 px-2 min-h-[32px]">
                                         <div className="pointer-events-auto">
-                                            {dayHolidays.length > 2 && (
+                                            {dayHolidays.length > 5 && (
                                                 <Popover>
                                                     <PopoverTrigger asChild>
                                                         <button 
                                                             className="text-[10px] font-bold text-muted-foreground hover:text-primary bg-muted/50 hover:bg-muted px-1.5 py-0.5 rounded transition-colors cursor-pointer"
                                                             onClick={(e) => e.stopPropagation()}
                                                         >
-                                                            +{dayHolidays.length - 2} 더보기
+                                                            +{dayHolidays.length - 5} 더보기
                                                         </button>
                                                     </PopoverTrigger>
                                                     <PopoverContent 
@@ -367,7 +367,7 @@ export default function HolidayCalendarView({
                                                 <Skeleton className="h-5 w-[90%] mx-auto" />
                                                 <Skeleton className="h-5 w-[70%] mx-auto" />
                                             </>
-                                        ) : dayHolidays.slice(0, 2).map(holiday => {
+                                        ) : dayHolidays.slice(0, 5).map(holiday => {
                                             const isStart = holiday.start_date === dayStr
                                             const isEnd = holiday.end_date === dayStr
                                             const colorClass = HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS['other']
