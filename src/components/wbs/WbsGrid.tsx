@@ -117,7 +117,8 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                 }, 200)
             }
         }
-    }, [newRows])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [newRows.length]) // 배열 길이가 변할 때(즉, 행이 추가될 때)만 포커스 로직 실행
 
     /** 계층 구조 및 정렬 로직 (tasks + newRows를 합쳐서 트리 구성) */
     const allDataTree = useMemo(() => {
