@@ -225,6 +225,7 @@ export default function GanttChart({
                 ganttInstance.config.time_step = 1440
                 ganttInstance.config.duration_unit = "day"
                 ganttInstance.config.xml_date = "%Y-%m-%d %H:%i"
+                ganttInstance.config.autofit = false // 타임라인 컬럼 자동 축소 방지 (횡 스크롤 활성화)
                 
                 // ── 레이아웃 및 스크롤 설정 ──────────────────────────────────────────
                 ganttInstance.config.layout = {
@@ -711,12 +712,14 @@ export default function GanttChart({
                     { unit: 'month', step: 1, format: (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월` },
                     { unit: 'week', step: 1, format: (date: Date) => `${Math.ceil(date.getDate() / 7)} 주차` },
                 ]
+                g.config.min_column_width = 90;
                 break
             case 'month':
                 g.config.scales = [
                     { unit: 'year', step: 1, format: (date: Date) => `${date.getFullYear()}년` },
                     { unit: 'month', step: 1, format: (date: Date) => `${date.getMonth() + 1}월` }
                 ]
+                g.config.min_column_width = 120;
                 break
         }
         g.render()
