@@ -620,39 +620,6 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                 )
             },
         }),
-        columnHelper.accessor('color', {
-            header: () => <div className="text-center">색상</div>,
-            cell: (info) => {
-                const task = info.row.original
-                const meta = info.table.options.meta as WbsTableMeta
-                const { editingTaskIds, tempTasksData, handleLocalChange } = meta
-                const isEditing = editingTaskIds.has(task.id) || task._isNew
-                const val = (isEditing ? (task._isNew ? (task.color || '#94a3b8') : (tempTasksData[task.id]?.color || task.color || '#94a3b8')) : (info.getValue() || '#94a3b8')) as string
-
-                if (isEditing) {
-                    return (
-                        <div className="flex justify-center">
-                            <input
-                                type="color"
-                                value={val}
-                                onChange={(e) => handleLocalChange(task.id, 'color', e.target.value, task._isNew)}
-                                className="w-8 h-8 p-0 border-0 bg-transparent cursor-pointer"
-                            />
-                        </div>
-                    )
-                }
-
-                return (
-                    <div className="flex justify-center items-center gap-1.5">
-                        <div 
-                            className="w-3.5 h-3.5 rounded-sm border border-black/10 shrink-0 shadow-sm" 
-                            style={{ backgroundColor: val }}
-                        />
-                        <span className="text-[10px] font-mono text-muted-foreground uppercase">{val}</span>
-                    </div>
-                )
-            },
-        }),
         columnHelper.accessor('status', {
             header: () => <div className="text-center">상태</div>,
             cell: (info) => {
@@ -686,6 +653,39 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                 return (
                     <div className="text-center">
                         <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium leading-[1.4] whitespace-nowrap ${found.style}`}>{found.label}</span>
+                    </div>
+                )
+            },
+        }),
+        columnHelper.accessor('color', {
+            header: () => <div className="text-center">색상</div>,
+            cell: (info) => {
+                const task = info.row.original
+                const meta = info.table.options.meta as WbsTableMeta
+                const { editingTaskIds, tempTasksData, handleLocalChange } = meta
+                const isEditing = editingTaskIds.has(task.id) || task._isNew
+                const val = (isEditing ? (task._isNew ? (task.color || '#94a3b8') : (tempTasksData[task.id]?.color || task.color || '#94a3b8')) : (info.getValue() || '#94a3b8')) as string
+
+                if (isEditing) {
+                    return (
+                        <div className="flex justify-center">
+                            <input
+                                type="color"
+                                value={val}
+                                onChange={(e) => handleLocalChange(task.id, 'color', e.target.value, task._isNew)}
+                                className="w-8 h-8 p-0 border-0 bg-transparent cursor-pointer"
+                            />
+                        </div>
+                    )
+                }
+
+                return (
+                    <div className="flex justify-center items-center gap-1.5">
+                        <div 
+                            className="w-3.5 h-3.5 rounded-sm border border-black/10 shrink-0 shadow-sm" 
+                            style={{ backgroundColor: val }}
+                        />
+                        <span className="text-[10px] font-mono text-muted-foreground uppercase">{val}</span>
                     </div>
                 )
             },
