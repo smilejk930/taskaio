@@ -692,7 +692,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
         }),
         columnHelper.display({
             id: 'actions',
-            header: <div className="text-center">액션</div>,
+            header: () => <div className="text-center">액션</div>,
             cell: ({ row, table }) => {
                 const task = row.original
                 const meta = table.options.meta as WbsTableMeta
