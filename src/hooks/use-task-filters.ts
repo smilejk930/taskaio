@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { format } from 'date-fns'
 import { ProjectTask } from '@/types/project'
 
 export interface TaskFilters {
@@ -72,11 +73,17 @@ export function useTaskFilters(tasks: ProjectTask[], initialAssigneeIds: string[
                 // Date Range
                 if (filters.dateRange.from || filters.dateRange.to) {
                     if (!task.start_date || !task.end_date) return false
-                    const taskStart = new Date(task.start_date)
-                    const taskEnd = new Date(task.end_date)
+                    
+                    // DB에서 온 날짜(YYYY-MM-DD)와 필터에서 선택된 날짜(Date 객체)를 
+                    // 동일한 'YYYY-MM-DD' 문자열 형식으로 변환하여 비교 (Timezone 오류 방지)
+                    const taskStartStr = task.start_date.split('T')[0]
+                    const taskEndStr = task.end_date.split('T')[0]
+                    
+                    const filterFromStr = filters.dateRange.from ? format(filters.dateRange.from, 'yyyy-MM-dd') : null
+                    const filterToStr = filters.dateRange.to ? format(filters.dateRange.to, 'yyyy-MM-dd') : null
 
-                    if (filters.dateRange.from && taskEnd < filters.dateRange.from) return false
-                    if (filters.dateRange.to && taskStart > filters.dateRange.to) return false
+                    if (filterFromStr && taskEndStr < filterFromStr) return false
+                    if (filterToStr && taskStartStr > filterToStr) return false
                 }
 
                 return true

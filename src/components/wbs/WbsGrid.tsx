@@ -682,8 +682,8 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
 
                 return (
                     <div className="flex justify-center items-center gap-1.5">
-                        <div 
-                            className="w-3.5 h-3.5 rounded-sm border border-black/10 shrink-0 shadow-sm" 
+                        <div
+                            className="w-3.5 h-3.5 rounded-sm border border-black/10 shrink-0 shadow-sm"
                             style={{ backgroundColor: val }}
                         />
                         <span className="text-[10px] font-mono text-muted-foreground uppercase">{val}</span>
@@ -844,16 +844,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                             <tr>
                                 <td colSpan={columns.length} className="p-12 text-center text-muted-foreground">
                                     <div className="flex flex-col items-center gap-2">
-                                        <p>등록된 업무가 없습니다.</p>
-                                        <Button
-                                            variant="default"
-                                            size="sm"
-                                            className="gap-2 shadow-sm hover:scale-105 active:scale-95 transition-all duration-200"
-                                            onClick={() => handleAddNewRow()}
-                                        >
-                                            <Plus className="h-4 w-4" />
-                                            업무 등록
-                                        </Button>
+                                        <p className="text-xl font-bold text-blue-600">등록된 업무가 없습니다.</p>
                                     </div>
                                 </td>
                             </tr>
