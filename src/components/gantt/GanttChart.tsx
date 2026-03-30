@@ -61,8 +61,8 @@ export default function GanttChart({
     const isSilentUpdateRef = useRef(false);
 
     // ── 휴일 데이터 최적화 (날짜 기반 Lookup Map) ────────────────
-    const holidayDateMap = useMemo(() => {
-        const map = new Map<string, 'public' | 'leave'>();
+    const holidayInfoMap = useMemo(() => {
+        const map = new Map<string, { type: 'public' | 'leave'; names: string[] }>();
         if (!holidays) return map;
 
         holidays.forEach(h => {
@@ -75,11 +75,23 @@ export default function GanttChart({
                 const dateStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
                 const type = ['public_holiday', 'workshop'].includes(h.type) ? 'public' : 'leave';
 
+                const existing = map.get(dateStr) || { type, names: [] };
+
                 // 공휴일(public) 우선순위 적용
-                const current = map.get(dateStr);
-                if (current !== 'public') {
-                    map.set(dateStr, type);
+                if (type === 'public' && existing.type !== 'public') {
+                    existing.type = 'public';
                 }
+
+                // 휴일 명칭 추가 (중복 방지)
+                const hName = ['member_leave', 'business_trip'].includes(h.type) && h.member_name
+                    ? `${h.member_name}(${h.name})`
+                    : h.name;
+
+                if (!existing.names.includes(hName)) {
+                    existing.names.push(hName);
+                }
+
+                map.set(dateStr, existing);
                 cur.setDate(cur.getDate() + 1);
             }
         });
@@ -88,12 +100,12 @@ export default function GanttChart({
 
 
     // 스케일 및 휴일 상태를 최신으로 유지하기 위한 Ref
-    const holidayDateMapRef = useRef(holidayDateMap);
+    const holidayInfoMapRef = useRef(holidayInfoMap);
     useEffect(() => {
         scalesRef.current = scales
         holidaysRef.current = holidays
-        holidayDateMapRef.current = holidayDateMap;
-    }, [scales, holidays, holidayDateMap])
+        holidayInfoMapRef.current = holidayInfoMap;
+    }, [scales, holidays, holidayInfoMap])
 
     // 콜백 함수들을 최신 상태로 유지하기 위한 Ref
     const callbacksRef = useRef({ onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete, onDateClick })
@@ -518,9 +530,9 @@ export default function GanttChart({
 
                     // 휴일 및 연차 배경색 클래스 추가
                     if (scalesRef.current === 'day') {
-                        const hType = holidayDateMapRef.current.get(dateStr);
-                        if (hType === 'public') classes += " holiday_public_cell ";
-                        else if (hType === 'leave') classes += " holiday_leave_cell ";
+                        const hInfo = holidayInfoMapRef.current.get(dateStr);
+                        if (hInfo?.type === 'public') classes += " holiday_public_cell ";
+                        else if (hInfo?.type === 'leave') classes += " holiday_leave_cell ";
                     }
 
                     return classes;
@@ -695,7 +707,16 @@ export default function GanttChart({
                 g.config.scales = [
                     { unit: 'month', step: 1, format: (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월` },
                     {
-                        unit: 'day', step: 1, format: (date: Date) => `${date.getDate()} (${days[date.getDay()]})`, css: (date: Date) => {
+                        unit: 'day', step: 1, format: (date: Date) => {
+                            const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                            const hInfo = holidayInfoMapRef.current.get(dateStr);
+                            const label = `${date.getDate()} (${days[date.getDay()]})`;
+
+                            if (hInfo && hInfo.names.length > 0) {
+                                return `<span title="${hInfo.names.join(', ')}">${label}</span>`;
+                            }
+                            return label;
+                        }, css: (date: Date) => {
                             const cellStart = new Date(date).setHours(0, 0, 0, 0);
                             const todayStart = new Date().setHours(0, 0, 0, 0);
                             let cls = " day_scale_cell ";
@@ -788,7 +809,7 @@ export default function GanttChart({
 
             // 기존 Marker 기반 휴일 표시 로직 제거 (timeline_cell_class로 이관)
             g.render()
-    }, [isGanttLoaded, tasks, links, holidays, holidayDateMap, scales])
+    }, [isGanttLoaded, tasks, links, holidays, holidayInfoMap, scales])
 
     return (
         <div className="w-full h-full flex flex-col overflow-hidden">
