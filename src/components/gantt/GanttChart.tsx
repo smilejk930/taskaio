@@ -472,9 +472,15 @@ export default function GanttChart({
 
                 eventIdsRef.current.push(ganttInstance.attachEvent("onEmptyClick", (e: unknown) => {
                     const _e = e as MouseEvent;
-                    const gExtended = ganttInstance as any;
-                    const pos = gExtended.getRelativeEventPos(_e);
-                    const date = gExtended.dateFromPos(pos.x);
+                    const g = ganttInstance as typeof gantt & { 
+                        utils: { dom: { getRelativeEventPosition: (e: MouseEvent, node: HTMLElement) => { x: number, y: number } } },
+                        $task_data: HTMLElement,
+                        dateFromPos: (x: number) => Date
+                    };
+                    // dhtmlx-gantt에서 이벤트의 상대 좌표를 가져오는 공식 API는 getRelativeEventPosition임
+                    // 그리고 이 함수는 utils.dom 하위에 위치함
+                    const pos = g.utils.dom.getRelativeEventPosition(_e, g.$task_data);
+                    const date = g.dateFromPos(pos.x);
                     
                     // dateFromPos는 좌표에 해당하는 날짜를 반환함. 
                     // day 스케일에서는 해당 날짜, week/month에서는 해당 구간 시작일이 변환됨.
