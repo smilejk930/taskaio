@@ -56,8 +56,8 @@ interface TaskDialogProps {
 
 const EMPTY_FORM: TaskFormData = {
     title: '',
-    start_date: new Date().toISOString().split('T')[0],
-    end_date: new Date().toISOString().split('T')[0],
+    start_date: null,
+    end_date: null,
     progress: 0,
     priority: 'medium',
     status: 'todo',
@@ -136,8 +136,8 @@ export default function TaskDialog({
     const validate = (): boolean => {
         const newErrors: Partial<Record<keyof TaskFormData, string>> = {}
         if (!form.title.trim()) newErrors.title = '업무명을 입력해주세요.'
-        if (!form.start_date) newErrors.start_date = '시작일을 선택해주세요.'
-        if (!form.end_date) newErrors.end_date = '종료일을 선택해주세요.'
+        
+        // 날짜가 둘 다 있는 경우에만 순서 검증
         if (form.start_date && form.end_date && form.end_date < form.start_date) {
             newErrors.end_date = '종료일은 시작일 이후여야 합니다.'
         }
@@ -242,7 +242,7 @@ export default function TaskDialog({
                         {/* 시작일 */}
                         <div className="space-y-2">
                             <Label htmlFor="task-start" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                시작일 <span className="text-destructive">*</span>
+                                시작일 (선택)
                             </Label>
                             <Input
                                 id="task-start"
@@ -256,7 +256,7 @@ export default function TaskDialog({
                         {/* 종료일 */}
                         <div className="space-y-2">
                             <Label htmlFor="task-end" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                종료일 <span className="text-destructive">*</span>
+                                종료일 (선택)
                             </Label>
                             <Input
                                 id="task-end"

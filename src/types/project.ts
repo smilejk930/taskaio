@@ -52,8 +52,9 @@ export interface Holiday {
 export interface GanttTask {
     id: string
     text: string
-    start_date: Date
+    start_date?: Date
     end_date?: Date
+    unscheduled?: boolean
     duration: number
     progress: number
     parent: string | null

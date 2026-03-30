@@ -210,10 +210,10 @@ export default function ProjectClientView({
 
     // ── 간트 태스크/링크 콜백 핸들러 ──────────────────────────────────────────────
     const handleGanttTaskUpdated = async (ganttTask: GanttTask) => {
+        if (!ganttTask.start_date || !ganttTask.end_date) return;
+
         // GanttTask 인터페이스와 DBTask 간의 필드명 차이 및 타입 변환 처리
-        const adjustedEndDate = ganttTask.end_date
-            ? format(new Date(new Date(ganttTask.end_date).getTime() - 1000), 'yyyy-MM-dd')
-            : undefined;
+        const adjustedEndDate = format(new Date(new Date(ganttTask.end_date).getTime() - 1000), 'yyyy-MM-dd');
 
         await handleUpdateTask(ganttTask.id, {
             title: ganttTask.text,
@@ -350,28 +350,30 @@ export default function ProjectClientView({
             children.filter(c => c.parent_id === p.id).forEach(c => sorted.push(c));
         });
 
-        return sorted.map(task => {
-            const assignee = members.find(m => m.id === task.assignee_id)
-            const startDate = normalizeDate(task.start_date)
-            const duration = calculateGanttDuration(task.start_date, task.end_date)
+        return sorted
+            .filter(task => task.start_date && task.end_date)
+            .map(task => {
+                const assignee = members.find(m => m.id === task.assignee_id)
+                const startDate = normalizeDate(task.start_date)
+                const duration = calculateGanttDuration(task.start_date, task.end_date)
 
-            const gTask: GanttTask = {
-                id: task.id,
-                text: task.title,
-                start_date: startDate,
-                duration: duration,
-                progress: (task.progress ?? 0) / 100,
-                parent: task.parent_id,
-                open: true,
-                status: (task.status as string) ?? 'todo',
-                priority: (task.priority as string) ?? 'medium',
-                assignee_id: task.assignee_id,
-                assignee_name: assignee?.display_name ?? assignee?.email ?? '',
-                color: task.color ?? undefined,
-                description: task.description ?? null,
-            }
-            return gTask
-        })
+                const gTask: GanttTask = {
+                    id: task.id,
+                    text: task.title,
+                    start_date: startDate,
+                    duration: duration,
+                    progress: (task.progress ?? 0) / 100,
+                    parent: task.parent_id,
+                    open: true,
+                    status: (task.status as string) ?? 'todo',
+                    priority: (task.priority as string) ?? 'medium',
+                    assignee_id: task.assignee_id,
+                    assignee_name: assignee?.display_name ?? assignee?.email ?? '',
+                    color: task.color ?? undefined,
+                    description: task.description ?? null,
+                }
+                return gTask
+            })
     }, [filteredTasks, members])
 
     const ganttLinks: GanttLink[] = links.map(link => ({

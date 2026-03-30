@@ -519,7 +519,7 @@ export default function GanttChart({
                     // 드래그 종료 시 최종 데이터 저장 보장 (중복 체크 포함)
                     const task = ganttInstance.getTask(_id) as unknown as GanttTask;
                     if (task) {
-                        const updateKey = `${task.id}-${task.start_date.getTime()}-${(task.end_date as Date)?.getTime()}-${task.progress}`;
+                        const updateKey = `${task.id}-${task.start_date?.getTime()}-${(task.end_date as Date)?.getTime()}-${task.progress}`;
                         if (lastUpdateKeyRef.current !== updateKey) {
                             lastUpdateKeyRef.current = updateKey;
                             callbacksRef.current.onTaskUpdated?.(task);
@@ -552,7 +552,7 @@ export default function GanttChart({
                     if (isDragging.current || isTempId || creatingIdsRef.current.has(_id.toString())) return true;
 
                     // 데이터 실질 변경 여부 체크 (중복 토스트 방지)
-                    const updateKey = `${item.id}-${item.start_date.getTime()}-${item.end_date?.getTime()}-${item.progress}`;
+                    const updateKey = `${item.id}-${item.start_date?.getTime()}-${item.end_date?.getTime()}-${item.progress}`;
                     if (lastUpdateKeyRef.current === updateKey) return true;
 
                     lastUpdateKeyRef.current = updateKey;
