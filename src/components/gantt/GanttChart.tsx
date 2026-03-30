@@ -119,8 +119,11 @@ export default function GanttChart({
                 }
                 .gantt_color_picker input:focus { outline: 2px solid #3b82f6 !important; outline-offset: 2px; }
                 
-                /* 그리드 행, 업무 바, 타임라인 셀 포인터 커서 추가 */
-                .gantt_row, .gantt_task_line, .gantt_grid_data .gantt_row, .gantt_task_cell { cursor: pointer !important; }
+                /* 그리드 행, 업무 바 포인터 커서 (타임라인 셀 .gantt_task_cell 제거) */
+                .gantt_row, .gantt_task_line, .gantt_grid_data .gantt_row { cursor: pointer !important; }
+                
+                /* 상단 일자 헤더(day_scale_cell)에만 포인터 커서 적용 */
+                .day_scale_cell { cursor: pointer !important; }
                 
                 /* 라이트박스 하단 버튼 영역 - Flexbox를 이용한 레이아웃 */
                 .gantt_cal_light_footer {
@@ -470,22 +473,12 @@ export default function GanttChart({
                     return false; // 기본 라이트박스 방지
                 }));
 
-                eventIdsRef.current.push(ganttInstance.attachEvent("onEmptyClick", (e: unknown) => {
+                eventIdsRef.current.push(ganttInstance.attachEvent("onScaleClick", (e: unknown, date: unknown) => {
                     const _e = e as MouseEvent;
-                    const g = ganttInstance as typeof gantt & { 
-                        utils: { dom: { getRelativeEventPosition: (e: MouseEvent, node: HTMLElement) => { x: number, y: number } } },
-                        $task_data: HTMLElement,
-                        dateFromPos: (x: number) => Date
-                    };
-                    // dhtmlx-gantt에서 이벤트의 상대 좌표를 가져오는 공식 API는 getRelativeEventPosition임
-                    // 그리고 이 함수는 utils.dom 하위에 위치함
-                    const pos = g.utils.dom.getRelativeEventPosition(_e, g.$task_data);
-                    const date = g.dateFromPos(pos.x);
-                    
-                    // dateFromPos는 좌표에 해당하는 날짜를 반환함. 
-                    // day 스케일에서는 해당 날짜, week/month에서는 해당 구간 시작일이 변환됨.
-                    if (date) {
-                        callbacksRef.current.onDateClick?.(date);
+                    const _date = date as Date;
+                    // day_scale_cell 클래스를 가진(일자 헤더) 경우에만 휴일 등록 실행
+                    if ((_e.target as HTMLElement).closest(".day_scale_cell")) {
+                        callbacksRef.current.onDateClick?.(_date);
                     }
                     return true;
                 }));
@@ -687,7 +680,7 @@ export default function GanttChart({
                         unit: 'day', step: 1, format: (date: Date) => `${date.getDate()} (${days[date.getDay()]})`, css: (date: Date) => {
                             const cellStart = new Date(date).setHours(0, 0, 0, 0);
                             const todayStart = new Date().setHours(0, 0, 0, 0);
-                            let cls = "";
+                            let cls = " day_scale_cell ";
                             if (cellStart === todayStart) cls += " today_scale ";
                             if (date.getDay() === 0 || date.getDay() === 6) cls += " weekend_scale ";
                             return cls;

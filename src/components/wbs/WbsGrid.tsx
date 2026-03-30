@@ -90,52 +90,53 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
     // ── 신규 행 포커스 제어 ───────────────────────────────────────────────────
     useEffect(() => {
         if (newRows.length > 0) {
-            lastRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            setTimeout(() => {
-                const inputs = lastRowRef.current?.querySelectorAll('input')
-                if (inputs && inputs.length > 0) {
-                    inputs[0].focus()
-                }
-            }, 100)
+            // 새로 추가된 행이 화면에 보이도록 스크롤 (하위 업무의 경우 특정 행 아래일 수 있음)
+            const latestNewRow = newRows[newRows.length - 1]
+            const el = document.getElementById(`task-row-${latestNewRow.id}`)
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                setTimeout(() => {
+                    const input = el.querySelector('input')
+                    input?.focus()
+                }, 200)
+            }
         }
     }, [newRows.length])
 
-    /** 상위(부모) 업무 우선 정렬 후 하위 업무 표시 (시작일 ASC 정렬 추가) */
-    const sortedTasks = useMemo(() => {
+    /** 계층 구조 및 정렬 로직 (tasks + newRows를 합쳐서 트리 구성) */
+    const allDataTree = useMemo(() => {
         const priorityWeight = { urgent: 3, high: 2, medium: 1, low: 0 };
-        const multiLevelSort = (a: ProjectTask, b: ProjectTask) => {
+        const combined = [...(tasks as LocalTask[]), ...newRows];
+
+        const multiLevelSort = (a: LocalTask, b: LocalTask) => {
+            // 1. 시작일 ASC
             const dateA = a.start_date || '9999-12-31';
             const dateB = b.start_date || '9999-12-31';
             if (dateA !== dateB) return dateA.localeCompare(dateB);
-            const endA = a.end_date || '9999-12-31';
-            const endB = b.end_date || '9999-12-31';
-            if (endA !== endB) return endA.localeCompare(endB);
+            
+            // 2. 우선순위 DESC
             const pA = priorityWeight[a.priority as keyof typeof priorityWeight] ?? -1;
             const pB = priorityWeight[b.priority as keyof typeof priorityWeight] ?? -1;
             if (pA !== pB) return pB - pA;
-            const statusWeight = { todo: 3, review: 2, in_progress: 1, done: 0 };
-            const sA = statusWeight[a.status as keyof typeof statusWeight] ?? -1;
-            const sB = statusWeight[b.status as keyof typeof statusWeight] ?? -1;
-            if (sA !== sB) return sB - sA;
-            const memberA = members.find(m => m.id === a.assignee_id);
-            const nameA = memberA?.display_name || memberA?.email || '';
-            const memberB = members.find(m => m.id === b.assignee_id);
-            const nameB = memberB?.display_name || memberB?.email || '';
-            if (nameA !== nameB) return nameA.localeCompare(nameB);
+
+            // 3. 생성시간 ASC (동일 차수 내에서 신규 추가 행이 아래로 가도록)
+            const createdA = a.created_at || '';
+            const createdB = b.created_at || '';
+            if (createdA !== createdB) return createdA.localeCompare(createdB);
+
+            // 4. 업무명 ASC
             return (a.title || '').localeCompare(b.title || '');
         };
 
-        const buildTree = (parentId: string | null = null): ProjectTask[] => {
-            return tasks
+        const buildTree = (parentId: string | null = null): LocalTask[] => {
+            return combined
                 .filter(t => t.parent_id === parentId)
                 .sort(multiLevelSort)
                 .flatMap(t => [t, ...buildTree(t.id)]);
         };
 
         return buildTree(null);
-    }, [tasks, members])
-
-    const allData = useMemo(() => [...(sortedTasks as LocalTask[]), ...newRows], [sortedTasks, newRows])
+    }, [tasks, newRows, members])
 
     // ── 핸들러 ──────────────────────────────────────────────────────────────────
 
@@ -196,10 +197,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
     }
 
     const handleSave = async (id: string, isNew?: boolean) => {
-        const target = isNew 
-            ? newRows.find(r => r.id === id) 
-            : allData.find(r => r.id === id)
-        
+        const target = allDataTree.find(r => r.id === id)
         if (!target) return
 
         const dataToSave: Partial<TaskFormData> = isNew ? {
@@ -296,11 +294,12 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                 
                 let depth = 0;
                 let current = task;
-                while (current.parent_id) {
-                    const parent = tasks.find(p => p.id === current.parent_id);
-                    if (!parent) break;
+                // combined 데이터를 기반으로 depth 계산
+                const findParent = (tid: string | null) => allDataTree.find(t => t.id === tid);
+                let p = findParent(task.parent_id);
+                while (p) {
                     depth++;
-                    current = parent;
+                    p = findParent(p.parent_id);
                 }
 
                 if (isEditing) {
@@ -332,7 +331,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                         <span className={`text-sm ${depth === 0 ? 'font-semibold' : depth === 1 ? 'font-medium' : 'font-normal'} border-b border-transparent group-hover:border-primary/30 transition-all`}>
                             {task.title || '(제목 없음)'}
                         </span>
-                        <Edit2 className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 ml-1 transition-opacity" />
+                        <Edit2 className="h-3 w-3 text-muted-foreground opacity-30 group-hover:opacity-100 ml-1 transition-opacity" />
                     </div>
                 )
             },
@@ -532,16 +531,16 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                 }
 
                 return (
-                    <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-center gap-0.5 transition-opacity">
                         <Button
-                            variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                            variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/60 hover:text-foreground hover:bg-muted"
                             onClick={() => handleEditStart(task)}
                             title="수정"
                         >
                             <Edit2 className="h-3.5 w-3.5" />
                         </Button>
                         <Button
-                            variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-600"
+                            variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/60 hover:text-red-600 hover:bg-red-50"
                             onClick={() => handleDelete(task.id)}
                             title="삭제"
                         >
@@ -551,7 +550,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                             <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-blue-600"
+                                className="h-7 w-7 text-muted-foreground/60 hover:text-blue-600 hover:bg-blue-50"
                                 title="하위 업무 등록"
                                 onClick={(e) => {
                                      e.stopPropagation()
@@ -565,10 +564,10 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                 )
             },
         }),
-    ], [editingTaskId, tempTaskData, members, isSaving, tasks])
+    ], [editingTaskId, tempTaskData, members, isSaving, tasks, allDataTree])
 
     const table = useReactTable({
-        data: allData,
+        data: allDataTree,
         columns,
         getCoreRowModel: getCoreRowModel(),
     })
@@ -583,7 +582,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                                 {headerGroup.headers.map((header, index) => {
                                     const widthClass = header.id === 'indent' ? 'w-[30%]' : 
                                                      header.id === 'description' ? 'w-[20%]' : 
-                                                     header.id === 'actions' ? 'w-[100px]' : 'w-[100px]';
+                                                     header.id === 'actions' ? 'w-[105px]' : 'w-[100px]';
                                     return (
                                         <th
                                             key={header.id}
@@ -616,12 +615,10 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                             </tr>
                         ) : (
                             table.getRowModel().rows.map((row, idx) => {
-                                const isLast = idx === table.getRowModel().rows.length - 1
                                 return (
                                     <tr
                                         key={row.id || idx}
                                         id={`task-row-${row.original.id}`}
-                                        ref={isLast ? lastRowRef : null}
                                         className={`group transition-colors border-b ${row.original._isNew ? 'bg-primary/5 hover:bg-primary/10 animate-in fade-in slide-in-from-bottom-2' : 'hover:bg-muted/30'} 
                                             ${editingTaskId === row.original.id ? 'bg-accent' : ''}`}
                                     >
