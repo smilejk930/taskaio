@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { authCheckManager, authCheck } from '@/lib/auth-checks'
+import { authCheck } from '@/lib/auth-checks'
 import * as tasksRepo from '@/lib/db/repositories/tasks'
 import { schema } from '@/lib/db'
 
@@ -75,7 +75,7 @@ export async function deleteTask(id: string) {
     const task = await tasksRepo.getTaskById(id)
     if (!task) throw new Error('업무를 찾을 수 없습니다.')
     
-    await authCheckManager(task.projectId)
+    await authCheck(task.projectId)
 
     await tasksRepo.softDeleteTaskCascade(id)
 
