@@ -472,28 +472,31 @@ export default function GanttChart({
 
                     let tooltipHtml = `<div style="font-size:14px;font-weight:600;margin-bottom:6px;color:#1e293b;word-break:break-word;overflow-wrap:break-word;white-space:normal;">${_task.text}</div>`;
                     tooltipHtml += `<div style="font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.5;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;">${desc}</div>`;
-                    tooltipHtml += `<div style="font-size:13px;color:#475569;"><span style="font-weight:600;">기 간:</span> ${formatYMD(start)} ~ ${formatYMD(new Date(end.getTime() - 1000))}</div>`;
 
-                    // 해당 업무 기간 내 겹치는 휴일 정보 찾기
-                    const currentHolidays = holidaysRef.current;
-                    if (currentHolidays && currentHolidays.length > 0) {
-                        const taskStartStr = formatYMD(start);
-                        const taskEndStr = formatYMD(new Date(end.getTime() - 1000));
+                    if (!_task.unscheduled) {
+                        tooltipHtml += `<div style="font-size:13px;color:#475569;"><span style="font-weight:600;">기 간:</span> ${formatYMD(start)} ~ ${formatYMD(new Date(end.getTime() - 1000))}</div>`;
 
-                        const overlappingHolidays = currentHolidays.filter(h => {
-                            return h.start_date <= taskEndStr && h.end_date >= taskStartStr;
-                        });
+                        // 해당 업무 기간 내 겹치는 휴일 정보 찾기
+                        const currentHolidays = holidaysRef.current;
+                        if (currentHolidays && currentHolidays.length > 0) {
+                            const taskStartStr = formatYMD(start);
+                            const taskEndStr = formatYMD(new Date(end.getTime() - 1000));
 
-                        if (overlappingHolidays.length > 0) {
-                            tooltipHtml += `<div style="margin-top:12px;padding-top:10px;border-top:1px dashed #cbd5e1;">`;
-                            tooltipHtml += `<div style="color:#ef4444;font-size:13px;font-weight:700;margin-bottom:6px;">[해당 기간 휴일/연차]</div>`;
-                            overlappingHolidays.forEach(h => {
-                                const hName = ['member_leave', 'business_trip'].includes(h.type) && h.member_name
-                                    ? `${h.member_name}(${h.name})`
-                                    : h.name;
-                                tooltipHtml += `<div style="font-size:12px;color:#334155;margin-bottom:4px;display:flex;align-items:center;"><span style="margin-right:4px;">•</span> ${hName} (${h.start_date} ~ ${h.end_date})</div>`;
+                            const overlappingHolidays = currentHolidays.filter(h => {
+                                return h.start_date <= taskEndStr && h.end_date >= taskStartStr;
                             });
-                            tooltipHtml += `</div>`;
+
+                            if (overlappingHolidays.length > 0) {
+                                tooltipHtml += `<div style="margin-top:12px;padding-top:10px;border-top:1px dashed #cbd5e1;">`;
+                                tooltipHtml += `<div style="color:#ef4444;font-size:13px;font-weight:700;margin-bottom:6px;">[해당 기간 휴일/연차]</div>`;
+                                overlappingHolidays.forEach(h => {
+                                    const hName = ['member_leave', 'business_trip'].includes(h.type) && h.member_name
+                                        ? `${h.member_name}(${h.name})`
+                                        : h.name;
+                                    tooltipHtml += `<div style="font-size:12px;color:#334155;margin-bottom:4px;display:flex;align-items:center;"><span style="margin-right:4px;">•</span> ${hName} (${h.start_date} ~ ${h.end_date})</div>`;
+                                });
+                                tooltipHtml += `</div>`;
+                            }
                         }
                     }
 
