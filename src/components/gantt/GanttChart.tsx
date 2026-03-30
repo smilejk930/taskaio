@@ -196,6 +196,8 @@ export default function GanttChart({
                 ganttInstance.config.key_navigation = false;
                 ganttInstance.config.row_height = 40;
                 ganttInstance.config.variable_tree_nodes = true;
+                ganttInstance.config.show_unscheduled = true; // 날짜 없는 업무 그리드엔 표시
+                ganttInstance.config.allow_unscheduled_tasks = true; // 드래그 등으로 날짜 제거 허용
 
                 // ── 컬럼 설정 ──────────────────────────────────────────────────────────
                 ganttInstance.config.columns = [

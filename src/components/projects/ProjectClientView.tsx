@@ -351,11 +351,11 @@ export default function ProjectClientView({
         });
 
         return sorted
-            .filter(task => task.start_date && task.end_date)
             .map(task => {
                 const assignee = members.find(m => m.id === task.assignee_id)
                 const startDate = normalizeDate(task.start_date)
                 const duration = calculateGanttDuration(task.start_date, task.end_date)
+                const hasSchedule = !!(task.start_date && task.end_date)
 
                 const gTask: GanttTask = {
                     id: task.id,
@@ -371,6 +371,7 @@ export default function ProjectClientView({
                     assignee_name: assignee?.display_name ?? assignee?.email ?? '',
                     color: task.color ?? undefined,
                     description: task.description ?? null,
+                    unscheduled: !hasSchedule,
                 }
                 return gTask
             })
