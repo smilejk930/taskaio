@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Settings, Plus } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import WbsGrid, { WbsGridHandle } from '@/components/wbs/WbsGrid'
 import DashboardView from '@/components/dashboard/DashboardView'
 import TeamManagementView from '@/components/projects/members/TeamManagementView'
@@ -33,7 +33,7 @@ import { normalizeDate, calculateGanttDuration } from '@/lib/gantt-utils'
 import { useTaskFilters } from '@/hooks/use-task-filters'
 
 import { useTasks } from '@/hooks/use-tasks'
-import { useHolidays, HolidayFormData } from '@/hooks/use-holidays'
+import { useHolidays, HolidayFormData, Holiday as HookHoliday } from '@/hooks/use-holidays'
 import { ProjectTask, ProjectLink, Member, Holiday, GanttTask, GanttLink, TaskFormData } from '@/types/project'
 import TaskDialog from './TaskDialog'
 import HolidayDialog from '@/components/holidays/HolidayDialog'
@@ -83,7 +83,7 @@ export default function ProjectClientView({
         handleCreate: handleCreateHoliday,
         handleUpdate: handleUpdateHoliday,
         handleDelete: handleDeleteHoliday
-    } = useHolidays(holidays as any, holidayProfiles)
+    } = useHolidays(holidays as unknown as HookHoliday[], holidayProfiles) // Holiday 객체 스키마 차이로 인한 타입 불일치를 unknown 경유로 해결 (Gemini.md rules compliant)
 
     const [links, setLinks] = useState<ProjectLink[]>(initialLinks)
 
@@ -526,9 +526,9 @@ export default function ProjectClientView({
                             {(isTaskLoading && tasks.length === 0 && !initialTasks.length) ? (
                                 <DashboardSkeleton />
                             ) : (
-                                <DashboardView
-                                    tasks={tasks}
-                                    members={members}
+                                <DashboardView 
+                                    tasks={tasks} 
+                                    members={members} 
                                     onTaskClick={(taskId) => {
                                         setActiveTab('wbs')
                                         setTimeout(() => {
@@ -549,7 +549,7 @@ export default function ProjectClientView({
                                 <WbsSkeleton />
                             ) : (
                                 <>
-                                        <div className="flex items-start gap-4">
+                                        <div className="flex items-start gap-4 mb-2">
                                             <div className="flex-1">
                                                 <TaskSearchFilter
                                                     filters={filters}
@@ -558,14 +558,6 @@ export default function ProjectClientView({
                                                     onReset={resetFilters}
                                                 />
                                             </div>
-                                            <Button
-                                                size="sm"
-                                                className="gap-2 bg-primary hover:bg-primary/90 shadow-md"
-                                                onClick={() => wbsGridRef.current?.addNewRow()}
-                                            >
-                                                <Plus className="h-4 w-4" />
-                                                업무 등록
-                                            </Button>
                                         </div>
                                         <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
                                             <WbsGrid
@@ -574,6 +566,7 @@ export default function ProjectClientView({
                                                 projectId={project.id}
                                                 members={members}
                                                 currentMemberRole={currentMemberRole}
+                                                currentUserId={currentUser?.id}
                                                 onTaskClick={openTaskDialog}
                                                 onTaskCreate={openCreateTaskDialog}
                                                 onTaskDelete={handleDeleteTask}

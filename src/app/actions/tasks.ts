@@ -16,6 +16,23 @@ export async function updateTask(id: string, updates: TaskUpdatePayload, bypassA
         await authCheck(existingTask.projectId)
     }
 
+    // 진척률과 상태 자동 연동 로직 적용
+    const currentProgress = updates.progress ?? 0
+    if (updates.progress !== undefined || updates.status !== undefined) {
+        if (updates.status === 'done' && (updates.progress === undefined || currentProgress < 100)) {
+            updates.progress = 100
+        } else if (updates.progress !== undefined && updates.progress !== null) {
+            if (updates.progress === 100) {
+                updates.status = 'done'
+            } else if (updates.progress === 0) {
+                updates.status = 'todo'
+            } else if (updates.status === undefined || updates.status === 'todo' || updates.status === 'done') {
+                // 진행률이 0보다 크고 100보다 작은데 상태가 '할 일'이나 '완료'인 경우 '진행 중'으로 자동 전환
+                updates.status = 'in_progress'
+            }
+        }
+    }
+
     const task = await tasksRepo.updateTask(id, updates)
 
     // 신규 추가: 시작일이 변경되었고 하위 업무가 있는 경우 날짜 이동 (Cascading)

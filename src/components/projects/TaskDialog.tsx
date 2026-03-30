@@ -136,7 +136,7 @@ export default function TaskDialog({
     const validate = (): boolean => {
         const newErrors: Partial<Record<keyof TaskFormData, string>> = {}
         if (!form.title.trim()) newErrors.title = '업무명을 입력해주세요.'
-        
+
         // 날짜가 둘 다 있는 경우에만 순서 검증
         if (form.start_date && form.end_date && form.end_date < form.start_date) {
             newErrors.end_date = '종료일은 시작일 이후여야 합니다.'

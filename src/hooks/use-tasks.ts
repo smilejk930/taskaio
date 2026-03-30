@@ -147,12 +147,12 @@ export function useTasks(initialTasks: ProjectTask[]) {
                             changed = false;
                             resultTasks = resultTasks.map(t => {
                                 if (t.parent_id && movedIds.has(t.parent_id) && !movedIds.has(t.id)) {
-                                    const updates: any = {};
-                                    if (t.start_date) updates.start_date = new Date(new Date(t.start_date).getTime() + offsetMs).toISOString().split('T')[0];
-                                    if (t.end_date) updates.end_date = new Date(new Date(t.end_date).getTime() + offsetMs).toISOString().split('T')[0];
+                                    const taskUpdates: Partial<ProjectTask> = {};
+                                    if (t.start_date) taskUpdates.start_date = new Date(new Date(t.start_date).getTime() + offsetMs).toISOString().split('T')[0];
+                                    if (t.end_date) taskUpdates.end_date = new Date(new Date(t.end_date).getTime() + offsetMs).toISOString().split('T')[0];
                                     movedIds.add(t.id);
                                     changed = true;
-                                    return { ...t, ...updates };
+                                    return { ...t, ...taskUpdates };
                                 }
                                 return t;
                             });
