@@ -23,24 +23,27 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# 빌드 결과물 복사 (소유권을 node 유저로 지정)
+COPY --from=builder --chown=node:node /app/public ./public
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+COPY --from=builder --chown=node:node /app/drizzle ./drizzle
+COPY --from=builder --chown=node:node /app/scripts/start.sh ./start.sh
 
-# standalone 빌드 결과물 복사
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# 마이그레이션 및 시작 스크립트 포함
-COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
-# ✅ scripts/start.sh 경로 유지 + CRLF → LF 변환 추가 (Windows 줄바꿈 문제 방지)
-COPY --from=builder --chown=nextjs:nodejs /app/scripts/start.sh ./start.sh
-RUN sed -i 's/\r//' ./start.sh && chmod +x ./start.sh
+# ✅ 핵심 설정: 
+# 1. 데이터 디렉토리 생성
+# 2. .env 심볼릭 링크 (앱은 /app/.env를 보고, 실제 데이터는 /app/data/.env에 저장)
+# 3. 전체 권한 부여 및 줄바꿈 처리
+RUN mkdir -p /app/data && \
+    ln -s /app/data/.env /app/.env && \
+    sed -i 's/\r//' ./start.sh && \
+    chmod +x ./start.sh && \
+    chown -R node:node /app
 
-# 데이터 저장용 디렉토리 생성 및 권한 설정
-RUN mkdir -p /app/data && chown -R nextjs:nodejs /app
 VOLUME /app/data
 
-USER nextjs
+# Alpine 이미지 기본 유저(UID 1000) 사용
+USER node
 
 EXPOSE 3000
 ENV PORT=3000

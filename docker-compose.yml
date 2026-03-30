@@ -5,11 +5,13 @@ services:
       dockerfile: Dockerfile
     image: taskaio:latest
     container_name: taskaio-app
+    # ✅ 컨테이너 내부 프로세스를 UID 1000으로 실행
+    user: "1000:1000"
     ports:
       - "${PORT:-3001}:3000"
     volumes:
       #- /data/taskaio/data:/app/data
-      - D:/develop/docker/taskaio/data:/app/data
+      - D:/develop/docker/taskaio/data:/app/data:Z
     restart: always
     environment:
       - NODE_ENV=production
