@@ -451,13 +451,13 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                     return (
                         <div className="flex items-center gap-1" style={{ paddingLeft: `${depth * 20}px` }}>
                             {depth > 0 && <CornerDownRight className="h-3 w-3 text-muted-foreground shrink-0" />}
-                            <Input
+                            <Textarea
                                 value={val}
                                 onChange={(e) => handleLocalChange(task.id, 'title', e.target.value, task._isNew)}
                                 placeholder="업무명 입력..."
-                                className="h-8 text-xs bg-background font-medium"
+                                className="min-h-[60px] text-xs bg-background font-medium py-1 resize-y"
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter') handleSave(task.id, task._isNew)
+                                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSave(task.id, task._isNew)
                                     if (e.key === 'Escape') handleCancel(task.id, task._isNew)
                                 }}
                                 autoFocus={task._isNew && !val} // 새 행이고 비어있으면 자동 포커스
@@ -472,11 +472,11 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                         style={{ paddingLeft: `${depth * 20}px` }}
                         onClick={() => handleEditStart(task)}
                     >
-                        {depth > 0 && <span className="text-muted-foreground text-xs">└</span>}
-                        <span className={`text-sm ${depth === 0 ? 'font-semibold' : depth === 1 ? 'font-medium' : 'font-normal'} border-b border-transparent group-hover:border-primary/30 transition-all`}>
+                        {depth > 0 && <span className="text-muted-foreground text-xs mt-0.5">└</span>}
+                        <span className={`text-sm ${depth === 0 ? 'font-semibold' : depth === 1 ? 'font-medium' : 'font-normal'} border-b border-transparent group-hover:border-primary/30 transition-all whitespace-pre-wrap break-all leading-normal`}>
                             {task.title || '(제목 없음)'}
                         </span>
-                        <Edit2 className="h-3 w-3 text-muted-foreground opacity-30 group-hover:opacity-100 ml-1 transition-opacity" />
+                        <Edit2 className="h-3 w-3 text-muted-foreground opacity-30 group-hover:opacity-100 ml-1 transition-opacity shrink-0" />
                     </div>
                 )
             },
@@ -497,13 +497,13 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                             value={val || ''}
                             onChange={(e) => handleLocalChange(task.id, 'description', e.target.value, task._isNew)}
                             placeholder="설명 입력..."
-                            className="text-xs min-h-[32px] py-1 h-8 bg-background resize-none"
+                            className="text-xs min-h-[60px] py-1 bg-background resize-y"
                         />
                     )
                 }
 
                 return (
-                    <div className="text-xs text-muted-foreground break-words line-clamp-1">
+                    <div className="text-xs text-muted-foreground break-words whitespace-pre-wrap leading-normal py-1">
                         {val || '-'}
                     </div>
                 )
