@@ -95,7 +95,7 @@ export async function shiftChildTasks(parentId: string, offsetMs: number) {
   const children = await db.select({
     id: schema.tasks.id,
     startDate: schema.tasks.startDate,
-    endDate: schema.tasks.endDate as any, // Drizzle type handling if needed
+    endDate: schema.tasks.endDate,
   }).from(schema.tasks).where(and(eq(schema.tasks.parentId, parentId), eq(schema.tasks.isDeleted, false)))
 
   for (const child of children) {
@@ -103,16 +103,16 @@ export async function shiftChildTasks(parentId: string, offsetMs: number) {
     
     if (child.startDate) {
       const oldStart = new Date(child.startDate)
-      updates.startDate = new Date(oldStart.getTime() + offsetMs).toISOString()
+      updates.startDate = new Date(oldStart.getTime() + offsetMs).toISOString().split('T')[0]
     }
     
     if (child.endDate) {
-      const oldEnd = new Date(child.endDate as string)
-      updates.endDate = new Date(oldEnd.getTime() + offsetMs).toISOString()
+      const oldEnd = new Date(child.endDate)
+      updates.endDate = new Date(oldEnd.getTime() + offsetMs).toISOString().split('T')[0]
     }
 
     if (Object.keys(updates).length > 0) {
-      const result = await db.update(schema.tasks)
+      await db.update(schema.tasks)
         .set({ ...updates, updatedAt: new Date().toISOString() })
         .where(eq(schema.tasks.id, child.id))
       
@@ -121,4 +121,3 @@ export async function shiftChildTasks(parentId: string, offsetMs: number) {
     }
   }
 }
-
