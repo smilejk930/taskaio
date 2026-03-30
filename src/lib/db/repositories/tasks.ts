@@ -78,17 +78,27 @@ export async function getTaskById(id: string) {
 }
 
 export async function softDeleteTaskCascade(id: string) {
-  // Soft delete children
-  await db.update(schema.tasks).set({ isDeleted: true }).where(eq(schema.tasks.parentId, id))
-  
-  // Soft delete links
+  // 1. 하위 업무 목록 조회 (삭제되지 않은 것들)
+  const children = await db.select({ id: schema.tasks.id })
+    .from(schema.tasks)
+    .where(and(eq(schema.tasks.parentId, id), eq(schema.tasks.isDeleted, false)))
+
+  // 2. 하위 업무들에 대해 재귀적으로 삭제 호출
+  for (const child of children) {
+    await softDeleteTaskCascade(child.id)
+  }
+
+  // 3. 현재 업무의 의존성(links) 삭제 처리
   await db.update(schema.taskDependencies).set({ isDeleted: true })
     .where(or(
       eq(schema.taskDependencies.sourceId, id),
       eq(schema.taskDependencies.targetId, id)
     ))
 
-  // Soft delete task itself
+  // 4. 현재 업무 본인 삭제 처리 (누락되었던 로직 추가)
+  await db.update(schema.tasks)
+    .set({ isDeleted: true, updatedAt: new Date().toISOString() })
+    .where(eq(schema.tasks.id, id))
 }
 
 export async function shiftChildTasks(parentId: string, offsetMs: number) {
