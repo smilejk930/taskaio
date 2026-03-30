@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Settings, Plus } from 'lucide-react'
-import WbsGrid from '@/components/wbs/WbsGrid'
+import WbsGrid, { WbsGridHandle } from '@/components/wbs/WbsGrid'
 import DashboardView from '@/components/dashboard/DashboardView'
 import TeamManagementView from '@/components/projects/members/TeamManagementView'
 import { TaskSearchFilter } from '@/components/projects/TaskSearchFilter'
@@ -100,6 +100,7 @@ export default function ProjectClientView({
 
     const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
     const [selectedTask, setSelectedTask] = useState<Partial<TaskFormData> & { id?: string } | null>(null)
+    const wbsGridRef = useRef<WbsGridHandle>(null)
 
     const { filters, setFilters, resetFilters, filteredTasks } = useTaskFilters(
         tasks,
@@ -548,35 +549,38 @@ export default function ProjectClientView({
                                 <WbsSkeleton />
                             ) : (
                                 <>
-                                    <div className="flex items-start gap-4">
-                                        <div className="flex-1">
-                                            <TaskSearchFilter
-                                                filters={filters}
-                                                setFilters={setFilters}
+                                        <div className="flex items-start gap-4">
+                                            <div className="flex-1">
+                                                <TaskSearchFilter
+                                                    filters={filters}
+                                                    setFilters={setFilters}
+                                                    members={members}
+                                                    onReset={resetFilters}
+                                                />
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                className="gap-2 bg-primary hover:bg-primary/90 shadow-md"
+                                                onClick={() => wbsGridRef.current?.addNewRow()}
+                                            >
+                                                <Plus className="h-4 w-4" />
+                                                업무 등록
+                                            </Button>
+                                        </div>
+                                        <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
+                                            <WbsGrid
+                                                ref={wbsGridRef}
+                                                tasks={filteredTasks}
+                                                projectId={project.id}
                                                 members={members}
-                                                onReset={resetFilters}
+                                                currentMemberRole={currentMemberRole}
+                                                onTaskClick={openTaskDialog}
+                                                onTaskCreate={openCreateTaskDialog}
+                                                onTaskDelete={handleDeleteTask}
+                                                onInlineCreate={handleCreateTask}
+                                                onInlineUpdate={handleUpdateTask}
                                             />
                                         </div>
-                                        <Button
-                                            size="sm"
-                                            className="gap-2 bg-primary hover:bg-primary/90 shadow-md"
-                                            onClick={() => openCreateTaskDialog(null)}
-                                        >
-                                            <Plus className="h-4 w-4" />
-                                            업무 등록
-                                        </Button>
-                                    </div>
-                                    <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
-                                        <WbsGrid
-                                            tasks={filteredTasks}
-                                            projectId={project.id}
-                                            members={members}
-                                            currentMemberRole={currentMemberRole}
-                                            onTaskClick={openTaskDialog}
-                                            onTaskCreate={openCreateTaskDialog}
-                                            onTaskDelete={handleDeleteTask}
-                                        />
-                                    </div>
                                 </>
                             )}
                         </TabsContent>
