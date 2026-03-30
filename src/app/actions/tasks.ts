@@ -9,13 +9,25 @@ export type TaskUpdatePayload = Partial<typeof schema.tasks.$inferInsert>
 export type TaskInsertPayload = typeof schema.tasks.$inferInsert
 
 export async function updateTask(id: string, updates: TaskUpdatePayload, bypassAuthAndSync: boolean = false) {
+    const existingTask = await tasksRepo.getTaskById(id)
+    if (!existingTask) throw new Error('업무를 찾을 수 없습니다.')
+
     if (!bypassAuthAndSync) {
-        const existingTask = await tasksRepo.getTaskById(id)
-        if (!existingTask) throw new Error('업무를 찾을 수 없습니다.')
         await authCheck(existingTask.projectId)
     }
 
     const task = await tasksRepo.updateTask(id, updates)
+
+    // 신규 추가: 시작일이 변경되었고 하위 업무가 있는 경우 날짜 이동 (Cascading)
+    if (updates.startDate && existingTask.startDate) {
+        const oldStart = new Date(existingTask.startDate).getTime()
+        const newStart = new Date(updates.startDate).getTime()
+        const offsetMs = newStart - oldStart
+
+        if (offsetMs !== 0) {
+            await tasksRepo.shiftChildTasks(id, offsetMs)
+        }
+    }
 
     if (!bypassAuthAndSync && task.projectId) {
         if (task.parentId) {
@@ -26,6 +38,7 @@ export async function updateTask(id: string, updates: TaskUpdatePayload, bypassA
 
     return task
 }
+
 
 export async function createTask(task: TaskInsertPayload) {
     if (!task.projectId) throw new Error('프로젝트 ID가 필요합니다.')

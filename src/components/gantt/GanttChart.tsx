@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css'
 import gantt from 'dhtmlx-gantt'
 import { GanttTask, GanttLink, Holiday, Member } from '@/types/project'
@@ -58,11 +58,40 @@ export default function GanttChart({
     const lastUpdateKeyRef = useRef<string>('');
     const isSilentUpdateRef = useRef(false);
 
+    // ── 휴일 데이터 최적화 (날짜 기반 Lookup Map) ────────────────
+    const holidayDateMap = useMemo(() => {
+        const map = new Map<string, 'public' | 'leave'>();
+        if (!holidays) return map;
+
+        holidays.forEach(h => {
+            const start = new Date(h.start_date + "T00:00:00");
+            const end = new Date(h.end_date + "T00:00:00");
+            if (isNaN(start.getTime()) || isNaN(end.getTime())) return;
+
+            const cur = new Date(start);
+            while (cur <= end) {
+                const dateStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
+                const type = ['public_holiday', 'workshop'].includes(h.type) ? 'public' : 'leave';
+
+                // 공휴일(public) 우선순위 적용
+                const current = map.get(dateStr);
+                if (current !== 'public') {
+                    map.set(dateStr, type);
+                }
+                cur.setDate(cur.getDate() + 1);
+            }
+        });
+        return map;
+    }, [holidays]);
+
+
     // 스케일 및 휴일 상태를 최신으로 유지하기 위한 Ref
+    const holidayDateMapRef = useRef(holidayDateMap);
     useEffect(() => {
         scalesRef.current = scales
         holidaysRef.current = holidays
-    }, [scales, holidays])
+        holidayDateMapRef.current = holidayDateMap;
+    }, [scales, holidays, holidayDateMap])
 
     // 콜백 함수들을 최신 상태로 유지하기 위한 Ref
     const callbacksRef = useRef({ onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete })
@@ -452,11 +481,20 @@ export default function GanttChart({
                 };
 
                 ganttInstance.templates.timeline_cell_class = (_task: unknown, date: Date) => {
+                    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
                     const cellStart = new Date(date).setHours(0, 0, 0, 0);
                     const nowStart = new Date().setHours(0, 0, 0, 0);
                     let classes = "";
                     if (cellStart === nowStart && scalesRef.current === 'day') classes += " today_cell ";
                     if (scalesRef.current === 'day' && (date.getDay() === 0 || date.getDay() === 6)) classes += " weekend_cell ";
+
+                    // 휴일 및 연차 배경색 클래스 추가
+                    if (scalesRef.current === 'day') {
+                        const hType = holidayDateMapRef.current.get(dateStr);
+                        if (hType === 'public') classes += " holiday_public_cell ";
+                        else if (hType === 'leave') classes += " holiday_leave_cell ";
+                    }
+
                     return classes;
                 };
 
@@ -718,37 +756,9 @@ export default function GanttChart({
             isSilentUpdateRef.current = false;
         }
 
-        if (holidays?.length && scales === 'day') {
-            const holidayMap = new Map<string, Holiday[]>();
-            holidays.forEach(holiday => {
-                const start = new Date(holiday.start_date + "T00:00:00")
-                const end = new Date(holiday.end_date + "T00:00:00")
-                if (isNaN(start.getTime()) || isNaN(end.getTime())) return
-                const cur = new Date(start)
-                while (cur <= end) {
-                    const dateStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
-                    if (!holidayMap.has(dateStr)) holidayMap.set(dateStr, []);
-                    holidayMap.get(dateStr)?.push(holiday);
-                    cur.setDate(cur.getDate() + 1);
-                }
-            });
-            holidayMap.forEach((dailyHolidays, dateStr) => {
-                const hasPublic = dailyHolidays.some(h => ['public_holiday', 'workshop'].includes(h.type));
-                const cls = hasPublic ? 'gantt_holiday_public' : 'gantt_holiday_leave';
-
-                const names = dailyHolidays.map(h => ['member_leave', 'business_trip'].includes(h.type) && h.member_name ? `${h.member_name} (${h.name})` : h.name).join('\n');
-
-                g.addMarker({
-                    start_date: new Date(dateStr + "T00:00:00"),
-                    css: cls,
-                    text: "", // 차트 내 레이블 텍스트 제거 (방안 2 적용)
-                    title: names,
-                    id: `holiday_group_${dateStr}`
-                });
-            });
-        }
-        g.render()
-    }, [isGanttLoaded, tasks, links, holidays, scales])
+            // 기존 Marker 기반 휴일 표시 로직 제거 (timeline_cell_class로 이관)
+            g.render()
+    }, [isGanttLoaded, tasks, links, holidays, holidayDateMap, scales])
 
     return (
         <div className="w-full h-full flex flex-col overflow-hidden">
@@ -764,9 +774,13 @@ export default function GanttChart({
                 /* 업무 바가 마커(오늘 선, 휴일 등)보다 위에 표시되도록 z-index 조정 */
                 .gantt_marker { z-index: 1 !important; }
                 
+                /* 휴일 및 연차 배경색 스타일 (Timeline Cell) */
+                .holiday_public_cell { background-color: rgba(239, 68, 68, 0.12) !important; }
+                .holiday_leave_cell { background-color: rgba(245, 158, 11, 0.12) !important; }
+                
+                /* 기존 Marker 스타일 제거 또는 유지 (필요 시) */
                 .gantt_holiday_public.gantt_marker { background-color: rgba(239, 68, 68, 0.08) !important; border-left: 2px solid rgba(239, 68, 68, 0.3) !important; }
                 .gantt_holiday_leave.gantt_marker { background-color: rgba(245, 158, 11, 0.08) !important; border-left: 2px solid rgba(245, 158, 11, 0.3) !important; }
-                /* 부동 레이블 스타일 제거 - 방안 2 (툴팁으로 통합) */
                 .gantt_marker_content { display: none !important; }
                 
                 /* 툴팁 스타일 커스텀: 기본 검은색 배경 제거 */

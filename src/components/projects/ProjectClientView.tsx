@@ -165,12 +165,18 @@ export default function ProjectClientView({
     }
 
     const handleTaskDialogSubmit = async (formData: TaskFormData) => {
+        let result;
         if (selectedTask?.id) {
-            return await handleUpdateTask(selectedTask.id, formData)
+            result = await handleUpdateTask(selectedTask.id, formData)
         } else {
-            return await handleCreateTask(formData)
+            result = await handleCreateTask(formData)
         }
+        
+        // 데이터 연동(Cascading, Sync 등)을 반영하기 위해 서버 데이터 새로고침
+        router.refresh()
+        return result
     }
+
 
     const handleProjectUpdateSubmit = async () => {
         if (!editProjectName.trim()) {
@@ -225,7 +231,11 @@ export default function ProjectClientView({
             description: ganttTask.description ?? null,
             color: ganttTask.color ?? null,
         })
+
+        // 하위 업무 연동 등이 발생할 수 있으므로 전체 새로고침 트리거
+        router.refresh()
     }
+
 
 
 
