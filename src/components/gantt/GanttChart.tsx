@@ -225,7 +225,24 @@ export default function GanttChart({
                 ganttInstance.config.time_step = 1440
                 ganttInstance.config.duration_unit = "day"
                 ganttInstance.config.xml_date = "%Y-%m-%d %H:%i"
-                ganttInstance.config.grid_width = 1000;
+                
+                // ── 레이아웃 및 스크롤 설정 ──────────────────────────────────────────
+                ganttInstance.config.layout = {
+                    css: "gantt_container",
+                    rows: [
+                        {
+                            cols: [
+                                { view: "grid", group: "hierarchical", scrollX: "gridScroll", scrollY: "scrollVer" },
+                                { resizer: true, width: 1 },
+                                { view: "timeline", scrollX: "scrollHor", scrollY: "scrollVer" },
+                                { view: "scrollbar", id: "scrollVer" }
+                            ]
+                        },
+                        { view: "scrollbar", id: "scrollHor", height: 20 },
+                        { view: "scrollbar", id: "gridScroll" }
+                    ]
+                };
+
                 ganttInstance.config.grid_resizer = true;
                 ganttInstance.config.key_navigation = false;
                 ganttInstance.config.row_height = 40;
