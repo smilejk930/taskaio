@@ -95,15 +95,15 @@ export default function WbsGrid({
             return (a.title || '').localeCompare(b.title || '');
         };
 
-        const parents = tasks.filter(t => !t.parent_id).sort(multiLevelSort);
-        const children = tasks.filter(t => t.parent_id).sort(multiLevelSort);
+        const buildTree = (parentId: string | null = null): ProjectTask[] => {
+            return tasks
+                .filter(t => t.parent_id === parentId)
+                .sort(multiLevelSort)
+                .flatMap(t => [t, ...buildTree(t.id)]);
+        };
 
-        const result: ProjectTask[] = [];
-        parents.forEach(p => {
-            result.push(p);
-            children.filter(c => c.parent_id === p.id).forEach(c => result.push(c));
-        });
-        return result;
+        return buildTree(null);
+
     }, [tasks, members])
 
     const columns = useMemo(() => [
@@ -123,16 +123,32 @@ export default function WbsGrid({
             header: () => <div className="min-w-[150px]">업무명</div>,
             cell: ({ row }) => {
                 const task = row.original
-                const isChild = !!task.parent_id
+                // 계층 깊이 계산 (최상위: 0)
+                let depth = 0;
+                let current = task;
+                while (current.parent_id) {
+                    const parent = tasks.find(p => p.id === current.parent_id);
+                    if (!parent) break;
+                    depth++;
+                    current = parent;
+                }
+                
                 return (
-                    <div className={`${isChild ? 'pl-6' : ''} cursor-pointer`} onClick={() => onTaskClick(task)}>
+                    <div 
+                        className="cursor-pointer" 
+                        style={{ paddingLeft: `${depth * 20}px` }}
+                        onClick={() => onTaskClick(task)}
+                    >
                         <div className="flex items-center gap-1">
-                            {isChild && <span className="text-muted-foreground text-xs">└</span>}
-                            <span className="text-sm font-medium">{task.title || '(제목 없음)'}</span>
+                            {depth > 0 && <span className="text-muted-foreground text-xs">└</span>}
+                            <span className={`text-sm ${depth === 0 ? 'font-semibold' : depth === 1 ? 'font-medium' : 'font-normal'}`}>
+                                {task.title || '(제목 없음)'}
+                            </span>
                         </div>
                     </div>
                 )
             },
+
         }),
         // ── 업무 설명 ───────────────────────────────────────────
         columnHelper.accessor('description', {

@@ -32,6 +32,7 @@ interface GanttChartProps {
     onTaskDeleted?: (id: string) => void
     onLinkAdd?: (id: string, source: string, target: string, type: string) => void
     onLinkDelete?: (id: string) => void
+    onDateClick?: (date: Date) => void
 }
 
 export default function GanttChart({
@@ -46,6 +47,7 @@ export default function GanttChart({
     onTaskDeleted,
     onLinkAdd,
     onLinkDelete,
+    onDateClick,
 }: GanttChartProps) {
     const ganttContainer = useRef<HTMLDivElement>(null)
     const [isGanttLoaded, setIsGanttLoaded] = useState(false)
@@ -94,10 +96,10 @@ export default function GanttChart({
     }, [scales, holidays, holidayDateMap])
 
     // 콜백 함수들을 최신 상태로 유지하기 위한 Ref
-    const callbacksRef = useRef({ onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete })
+    const callbacksRef = useRef({ onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete, onDateClick })
     useEffect(() => {
-        callbacksRef.current = { onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete }
-    }, [onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete])
+        callbacksRef.current = { onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete, onDateClick }
+    }, [onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete, onDateClick])
 
     // ── 라이브러리 동기화 및 초기 설정 ──────────────────────
     useEffect(() => {
@@ -468,8 +470,17 @@ export default function GanttChart({
                     return false; // 기본 라이트박스 방지
                 }));
 
-                eventIdsRef.current.push(ganttInstance.attachEvent("onEmptyClick", () => {
-                    // 빈 공간 클릭 시 처리는 필요하면 추가 (현재는 WBS나 버튼을 통해 추가 권장)
+                eventIdsRef.current.push(ganttInstance.attachEvent("onEmptyClick", (e: unknown) => {
+                    const _e = e as MouseEvent;
+                    const gExtended = ganttInstance as any;
+                    const pos = gExtended.getRelativeEventPos(_e);
+                    const date = gExtended.dateFromPos(pos.x);
+                    
+                    // dateFromPos는 좌표에 해당하는 날짜를 반환함. 
+                    // day 스케일에서는 해당 날짜, week/month에서는 해당 구간 시작일이 변환됨.
+                    if (date) {
+                        callbacksRef.current.onDateClick?.(date);
+                    }
                     return true;
                 }));
 

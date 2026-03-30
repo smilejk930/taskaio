@@ -127,7 +127,44 @@ export function useTasks(initialTasks: ProjectTask[]) {
                  is_deleted: updatedTask.isDeleted,
             } as unknown as ProjectTask;
 
-            setTasks(prev => prev.map(t => t.id === id ? { ...t, ...mappedUpdated } : t))
+            setTasks(prev => {
+                const oldTask = prev.find(t => t.id === id);
+                let newTasks = prev.map(t => t.id === id ? { ...t, ...mappedUpdated } : t);
+                
+                // Cascading Update 로컬 반영: 상위 업무 이동 시 하위 업무들도 오프셋만큼 이동
+                if (payloadBase.start_date && oldTask?.start_date) {
+                    const oldStart = new Date(oldTask.start_date).getTime();
+                    const newStart = new Date(payloadBase.start_date).getTime();
+                    const offsetMs = newStart - oldStart;
+                    
+                    if (offsetMs !== 0) {
+                        let iteration = 0;
+                        let changed = true;
+                        let resultTasks = [...newTasks];
+                        const movedIds = new Set([id]);
+                        
+                        while(changed && iteration < 5) {
+                            changed = false;
+                            resultTasks = resultTasks.map(t => {
+                                if (t.parent_id && movedIds.has(t.parent_id) && !movedIds.has(t.id)) {
+                                    const updates: any = {};
+                                    if (t.start_date) updates.start_date = new Date(new Date(t.start_date).getTime() + offsetMs).toISOString().split('T')[0];
+                                    if (t.end_date) updates.end_date = new Date(new Date(t.end_date).getTime() + offsetMs).toISOString().split('T')[0];
+                                    movedIds.add(t.id);
+                                    changed = true;
+                                    return { ...t, ...updates };
+                                }
+                                return t;
+                            });
+                            iteration++;
+                        }
+                        newTasks = resultTasks;
+                    }
+                }
+                return newTasks;
+            });
+
+
             toast.success('업무가 수정되었습니다.')
             return mappedUpdated
         } catch (error: unknown) {

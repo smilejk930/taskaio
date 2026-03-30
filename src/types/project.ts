@@ -59,7 +59,9 @@ export interface GanttTask {
     progress: number
     parent: string | null
     open?: boolean
+    type?: string
     status: string
+
     priority: string
     assignee_id?: string | null
     assignee_name?: string

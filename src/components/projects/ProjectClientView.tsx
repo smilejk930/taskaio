@@ -33,8 +33,10 @@ import { normalizeDate, calculateGanttDuration } from '@/lib/gantt-utils'
 import { useTaskFilters } from '@/hooks/use-task-filters'
 
 import { useTasks } from '@/hooks/use-tasks'
+import { useHolidays, HolidayFormData } from '@/hooks/use-holidays'
 import { ProjectTask, ProjectLink, Member, Holiday, GanttTask, GanttLink, TaskFormData } from '@/types/project'
 import TaskDialog from './TaskDialog'
+import HolidayDialog from '@/components/holidays/HolidayDialog'
 
 // ──── 타입 정의 ────────────────────────────────────────────────────────────────
 
@@ -70,6 +72,18 @@ export default function ProjectClientView({
         updateTask: handleUpdateTask,
         deleteTask: handleDeleteTask
     } = useTasks(initialTasks)
+    
+    // 프로젝트 멤버 정보를 HolidayProfile용으로 정제하여 useHolidays 전달
+    const holidayProfiles = React.useMemo(() => 
+        members.map(m => ({ id: m.id, display_name: m.display_name, avatar_url: null })), 
+        [members]
+    )
+
+    const {
+        handleCreate: handleCreateHoliday,
+        handleUpdate: handleUpdateHoliday,
+        handleDelete: handleDeleteHoliday
+    } = useHolidays(holidays as any, holidayProfiles)
 
     const [links, setLinks] = useState<ProjectLink[]>(initialLinks)
 
@@ -127,6 +141,9 @@ export default function ProjectClientView({
     const [editProjectName, setEditProjectName] = useState(project.name)
     const [editProjectDesc, setEditProjectDesc] = useState(project.description || '')
     const [deleteConfirmInput, setDeleteConfirmInput] = useState('')
+
+    const [selectedHoliday, setSelectedHoliday] = useState<(HolidayFormData & { id?: string }) | null>(null)
+    const [isHolidayDialogOpen, setIsHolidayDialogOpen] = useState(false)
 
     // ── 업무 다이얼로그 핸들러 ──────────────────────────────────────────────
     const openTaskDialog = (taskOrId?: string | ProjectTask | (Partial<TaskFormData> & { id?: string })) => {
@@ -309,6 +326,33 @@ export default function ProjectClientView({
         }
     }
 
+    const handleGanttDateClick = (date: Date) => {
+        // day 스케일이 아닐 때 클릭 위치 정합성을 위해 00:00:00으로 맞춘다.
+        const dateStr = format(date, 'yyyy-MM-dd')
+        setSelectedHoliday({
+            name: '',
+            start_date: dateStr,
+            end_date: dateStr,
+            type: 'member_leave',
+            member_id: currentUser?.id ?? null,
+            note: ''
+        })
+        setIsHolidayDialogOpen(true)
+    }
+
+    const handleHolidaySubmit = async (formData: HolidayFormData) => {
+        let result;
+        if (selectedHoliday?.id) {
+            result = await handleUpdateHoliday(selectedHoliday.id, formData)
+        } else {
+            result = await handleCreateHoliday(formData)
+        }
+        
+        // 휴일 정보 갱신 후 간트 데이터 새로고침 (서버 액션 후 트리거)
+        router.refresh()
+        return result
+    }
+
     // ── 간트 데이터 포맷팅 ──────────────────────────────────────────────────────
     const ganttTasks = React.useMemo(() => {
         const priorityWeight = {
@@ -351,14 +395,15 @@ export default function ProjectClientView({
             return (a.title || '').localeCompare(b.title || '');
         };
 
-        const parents = filteredTasks.filter(t => !t.parent_id).sort(multiLevelSort);
-        const children = filteredTasks.filter(t => t.parent_id).sort(multiLevelSort);
+        const buildTree = (parentId: string | null = null): ProjectTask[] => {
+            return filteredTasks
+                .filter(t => t.parent_id === parentId)
+                .sort(multiLevelSort)
+                .flatMap(t => [t, ...buildTree(t.id)]);
+        };
 
-        const sorted: ProjectTask[] = [];
-        parents.forEach(p => {
-            sorted.push(p);
-            children.filter(c => c.parent_id === p.id).forEach(c => sorted.push(c));
-        });
+        const sorted = buildTree(null);
+
 
         return sorted
             .map(task => {
@@ -366,6 +411,9 @@ export default function ProjectClientView({
                 const startDate = normalizeDate(task.start_date)
                 const duration = calculateGanttDuration(task.start_date, task.end_date)
                 const hasSchedule = !!(task.start_date && task.end_date)
+                
+                // 부모 업무 ID 세트 구성 (하위 업무 연동 여부 판단용)
+                const isParent = !task.parent_id || filteredTasks.some(c => c.parent_id === task.id);
 
                 const gTask: GanttTask = {
                     id: task.id,
@@ -374,8 +422,10 @@ export default function ProjectClientView({
                     duration: duration,
                     progress: (task.progress ?? 0) / 100,
                     parent: task.parent_id,
+                    type: isParent ? 'project' : 'task',
                     open: true,
                     status: (task.status as string) ?? 'todo',
+
                     priority: (task.priority as string) ?? 'medium',
                     assignee_id: task.assignee_id,
                     assignee_name: assignee?.display_name ?? assignee?.email ?? '',
@@ -561,6 +611,7 @@ export default function ProjectClientView({
                                             onTaskDeleted={handleDeleteTask}
                                             onLinkAdd={handleLinkAdd}
                                             onLinkDelete={handleLinkDelete}
+                                            onDateClick={handleGanttDateClick}
                                         />
                                     </div>
                                 </>
@@ -658,6 +709,17 @@ export default function ProjectClientView({
                 onSubmit={handleTaskDialogSubmit}
                 onDelete={handleDeleteTask}
                 isLoading={isTaskLoading}
+            />
+
+            {/* 휴일 등록/수정 다이얼로그 */}
+            <HolidayDialog
+                open={isHolidayDialogOpen}
+                onOpenChange={setIsHolidayDialogOpen}
+                initialData={selectedHoliday ?? undefined}
+                profiles={holidayProfiles}
+                onSubmit={handleHolidaySubmit}
+                onDelete={handleDeleteHoliday}
+                isLoading={false}
             />
         </div>
     )
