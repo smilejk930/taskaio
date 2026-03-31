@@ -59,6 +59,7 @@ export default function GanttChart({
     const eventIdsRef = useRef<string[]>([]);
     const lastUpdateKeyRef = useRef<string>('');
     const isSilentUpdateRef = useRef(false);
+    const holidayTooltipRef = useRef<HTMLDivElement | null>(null);
 
     // ── 휴일 데이터 최적화 (날짜 기반 Lookup Map) ────────────────
     const holidayInfoMap = useMemo(() => {
@@ -237,22 +238,26 @@ export default function GanttChart({
                 ganttInstance.config.time_step = 1440
                 ganttInstance.config.duration_unit = "day"
                 ganttInstance.config.xml_date = "%Y-%m-%d %H:%i"
-                ganttInstance.config.autofit = false // 타임라인 컬럼 자동 축소 방지 (횡 스크롤 활성화)
                 
-                // ── 레이아웃 및 스크롤 설정 ──────────────────────────────────────────
+                // 횡 스크롤 활성화를 위한 핵심 설정
+                ganttInstance.config.autosize = false; 
+                ganttInstance.config.fit_tasks = false; // 업무 기간에 맞춰 시간축 범위를 자동 축소하지 않음
+                ganttInstance.config.autofit = false;   // 그리드 컬럼 자동 축소 방지
+                ganttInstance.config.scroll_size = 12;  // 스크롤바 두께
+                
+                // ── 레이아웃 및 스크롤 설정 (그리드와 타임라인이 하나의 횡 스크롤 공유) ──
                 ganttInstance.config.layout = {
                     css: "gantt_container",
                     rows: [
                         {
                             cols: [
-                                { view: "grid", group: "hierarchical", scrollX: "gridScroll", scrollY: "scrollVer" },
+                                { view: "grid", group: "hierarchical", scrollX: "scrollHor", scrollY: "scrollVer" },
                                 { resizer: true, width: 1 },
                                 { view: "timeline", scrollX: "scrollHor", scrollY: "scrollVer" },
                                 { view: "scrollbar", id: "scrollVer" }
                             ]
                         },
-                        { view: "scrollbar", id: "scrollHor", height: 20 },
-                        { view: "scrollbar", id: "gridScroll" }
+                        { view: "scrollbar", id: "scrollHor", height: 12 }
                     ]
                 };
 
@@ -513,6 +518,70 @@ export default function GanttChart({
                     return true;
                 }));
 
+                // ── 휴일 툴팁 핸들러 ────────────────────────────────────────────────
+                const showHolidayTooltip = (e: MouseEvent, names: string) => {
+                    if (!holidayTooltipRef.current) {
+                        const div = document.createElement('div');
+                        div.id = 'gantt-holiday-tooltip';
+                        div.className = 'gantt_tooltip';
+                        div.style.position = 'fixed';
+                        div.style.pointerEvents = 'none';
+                        div.style.zIndex = '9999';
+                        div.style.display = 'none';
+                        document.body.appendChild(div);
+                        holidayTooltipRef.current = div;
+                    }
+
+                    const tooltip = holidayTooltipRef.current;
+                    let html = `<div style="padding:14px;min-width:200px;background:#ffffff;box-sizing:border-box;border-radius:8px;">`;
+                    html += `<div style="color:#ef4444;font-size:13px;font-weight:700;margin-bottom:8px;">[휴일/연차 정보]</div>`;
+                    names.split(', ').forEach(name => {
+                        html += `<div style="font-size:12px;color:#334155;margin-bottom:4px;display:flex;align-items:center;"><span style="margin-right:4px;">•</span> ${name}</div>`;
+                    });
+                    html += `</div>`;
+
+                    tooltip.innerHTML = html;
+                    tooltip.style.display = 'block';
+
+                    const offset = 20;
+                    let x = e.clientX + offset;
+                    let y = e.clientY + offset;
+
+                    const rect = tooltip.getBoundingClientRect();
+                    if (x + rect.width > window.innerWidth) x = e.clientX - rect.width - offset;
+                    if (y + rect.height > window.innerHeight) y = e.clientY - rect.height - offset;
+
+                    tooltip.style.left = `${x}px`;
+                    tooltip.style.top = `${y}px`;
+                };
+
+                const hideHolidayTooltip = () => {
+                    if (holidayTooltipRef.current) {
+                        holidayTooltipRef.current.style.display = 'none';
+                    }
+                };
+
+                eventIdsRef.current.push(ganttInstance.attachEvent("onMouseMove", (id: unknown, e: unknown) => {
+                    const _e = e as MouseEvent;
+                    const target = _e.target as HTMLElement;
+                    const holidayLabel = target.closest('.holiday-scale-label');
+
+                    if (holidayLabel) {
+                        const names = holidayLabel.getAttribute('data-holiday-names');
+                        if (names) {
+                            showHolidayTooltip(_e, names);
+                            return true;
+                        }
+                    }
+                    hideHolidayTooltip();
+                    return true;
+                }));
+                
+                eventIdsRef.current.push(ganttInstance.attachEvent("onMouseLeave", () => {
+                    hideHolidayTooltip();
+                    return true;
+                }));
+
                 // 2뎁스 이상 하위 업무에 특정 클래스 추가
                 ganttInstance.templates.grid_row_class = (start: Date, end: Date, task: GanttTask) => {
                     const gExtended = ganttInstance as unknown as { calculateTaskLevel: (t: GanttTask) => number };
@@ -695,6 +764,10 @@ export default function GanttChart({
                 eventIdsRef.current = [];
                 g.clearAll();
             }
+            if (holidayTooltipRef.current) {
+                holidayTooltipRef.current.remove();
+                holidayTooltipRef.current = null;
+            }
         }
     }, [members])
 
@@ -713,7 +786,7 @@ export default function GanttChart({
                             const label = `${date.getDate()} (${days[date.getDay()]})`;
 
                             if (hInfo && hInfo.names.length > 0) {
-                                return `<span title="${hInfo.names.join(', ')}">${label}</span>`;
+                                return `<div class="holiday-scale-label" data-holiday-names="${hInfo.names.join(', ')}" style="width:100%;height:100%;">${label}</div>`;
                             }
                             return label;
                         }, css: (date: Date) => {
