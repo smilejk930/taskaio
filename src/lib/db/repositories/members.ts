@@ -1,5 +1,5 @@
 import { db, schema } from "../index"
-import { eq, and, or, like } from "drizzle-orm"
+import { eq, and, or, like, asc } from "drizzle-orm"
 
 export async function searchUsers(query: string) {
     if (!query) return []
@@ -62,4 +62,5 @@ export async function getMembersByProjectId(projectId: string) {
     .innerJoin(schema.profiles, eq(schema.projectMembers.userId, schema.profiles.id))
     .innerJoin(schema.users, eq(schema.profiles.id, schema.users.id))
     .where(eq(schema.projectMembers.projectId, projectId))
+    .orderBy(asc(schema.profiles.displayName))
 }

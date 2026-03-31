@@ -232,12 +232,19 @@ export default function GanttChart({
                 // ── 기본 설정 ──────────────────────────────────────────────────────────
                 ganttInstance.config.date_format = '%Y-%m-%d %H:%i'
                 ganttInstance.config.drag_project = true
-                ganttInstance.config.work_time = false
+                ganttInstance.config.work_time = true  // 워킹데이 기준 기간 계산 활성화
                 ganttInstance.config.show_progress = true
                 ganttInstance.config.round_dnd_dates = true
                 ganttInstance.config.time_step = 1440
                 ganttInstance.config.duration_unit = "day"
-                ganttInstance.config.xml_date = "%Y-%m-%d %H:%i"
+                ganttInstance.config.xml_date = "%Y-%m-%d %H:%i";
+                
+                // ── 주말(토/일) 숨김 처리 ─────────────────────────────────────
+                const g = ganttInstance as unknown as { ignore_time: (date: Date) => boolean };
+                g.ignore_time = (date: Date) => {
+                    const day = date.getDay();
+                    return day === 0 || day === 6; // 일요일(0) 또는 토요일(6)일 때 숨김(true 반환)
+                };
                 
                 // 횡 스크롤 활성화를 위한 핵심 설정
                 ganttInstance.config.autosize = false; 
