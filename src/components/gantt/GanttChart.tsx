@@ -835,6 +835,52 @@ export default function GanttChart({
             g.clearAll()
             document.querySelectorAll('.gantt_marker').forEach(m => m.remove());
 
+            // 업무 필터링 및 변동에 맞춰 동적으로 타임라인(가로축) 범위 계산
+            if (tasks && tasks.length > 0) {
+                let minDate = new Date('9999-12-31').getTime();
+                let maxDate = new Date('1970-01-01').getTime();
+                let hasValidDate = false;
+
+                tasks.forEach(t => {
+                    if (t.start_date && !t.unscheduled) {
+                        const st = t.start_date.getTime();
+                        if (st < minDate) minDate = st;
+                        
+                        // ganttTasks에서 end_date가 Date 객체로 오는 경우 또는 duration 기반 계산
+                        const endDateObj = t.end_date || new Date(st + (t.duration * 24 * 60 * 60 * 1000));
+                        const et = endDateObj.getTime();
+                        if (et > maxDate) maxDate = et;
+                        hasValidDate = true;
+                    }
+                });
+
+                if (hasValidDate) {
+                    const s = new Date(minDate);
+                    const e = new Date(maxDate);
+                    // 여백 확보를 위해 앞뒤 7일 마진
+                    s.setDate(s.getDate() - 7);
+                    e.setDate(e.getDate() + 7);
+                    g.config.start_date = s;
+                    g.config.end_date = e;
+                } else {
+                    const today = new Date();
+                    const s = new Date(today);
+                    const e = new Date(today);
+                    s.setDate(s.getDate() - 15);
+                    e.setDate(e.getDate() + 15);
+                    g.config.start_date = s;
+                    g.config.end_date = e;
+                }
+            } else {
+                const today = new Date();
+                const s = new Date(today);
+                const e = new Date(today);
+                s.setDate(s.getDate() - 15);
+                e.setDate(e.getDate() + 15);
+                g.config.start_date = s;
+                g.config.end_date = e;
+            }
+
             // 업무명 및 업무 설명 길이에 따른 가변 행 높이 자동 계산
             const processedTasks = tasks.map(t => {
                 const text = t.text || "";
