@@ -90,3 +90,18 @@ Next.js 14+ (App Router) · TypeScript · Drizzle ORM · NextAuth(Auth.js) · sh
 - cleanup 시 `gantt.clearAll()` 호출 필수
 
 상세 규칙: `@.agents/skills/gantt-chart/SKILL.md`
+
+---
+
+## 8. 에이전트 작업 도구 (Artifacts)
+
+**프로젝트 내부 문서 생성 금지:**
+- `Feature Spec`, `Task`, `Walkthrough` 등 작업과 관련된 문서는 프로젝트 폴더(특히 `.agents/`) 내부에 **`.md` 파일로 직접 생성하지 않습니다.**
+
+**Antigravity Artifact 활용:**
+- 모든 분석 명세, 진행 상황 체크리스트, 완료 보고는 Antigravity의 **빌트인 Artifact 기능**을 사용합니다.
+- **Feature Spec / Implementation Plan:** 분석 단계에서 사용하며, `implementation_plan` 또는 `other` 타입의 Artifact로 생성합니다.
+- **Task:** 구현 단계에서 실시간 진행 상황을 추적하는 용도로 시스템 내부 `task.md` Artifact를 사용합니다.
+- **Walkthrough:** 구현 완료 후 최종 보고를 위해 `walkthrough.md` Artifact를 생성합니다.
+- 이 Artifact들은 에이전트의 시스템 영역에서 관리되며, 사용자 UI를 통해 제공되지만 프로젝트 소스 코드(Git)에는 포함되지 않습니다.
+
