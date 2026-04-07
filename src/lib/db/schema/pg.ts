@@ -58,6 +58,7 @@ export const projectMembers = pgTable(
       .notNull()
       .references(() => profiles.id, { onDelete: "cascade" }),
     role: text("role", { enum: ["owner", "manager", "member"] }).notNull().default("member"),
+    colorCode: text("color_code"),
   },
   (t) => [primaryKey({ columns: [t.projectId, t.userId] })]
 )

@@ -37,6 +37,7 @@ export interface Member {
     display_name: string | null
     email: string | null
     role?: 'owner' | 'manager' | 'member' | null
+    colorCode?: string | null
 }
 
 export interface Holiday {
