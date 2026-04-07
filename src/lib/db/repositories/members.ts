@@ -23,17 +23,43 @@ export async function searchUsers(query: string) {
     return users
 }
 
+// 랜덤 기본 색상 팔레트
+const DEFAULT_COLORS = [
+    '#f87171', // red-400
+    '#fb923c', // orange-400
+    '#fbbf24', // amber-400
+    '#a3e635', // lime-400
+    '#4ade80', // green-400
+    '#34d399', // emerald-400
+    '#2dd4bf', // teal-400
+    '#38bdf8', // light-blue-400
+    '#60a5fa', // blue-400
+    '#818cf8', // indigo-400
+    '#a78bfa', // violet-400
+    '#c084fc', // purple-400
+    '#f472b6', // pink-400
+    '#fb7185', // rose-400
+]
+
 export async function addMember(projectId: string, userId: string, role: typeof schema.projectMembers.$inferInsert.role) {
+    const randomColor = DEFAULT_COLORS[Math.floor(Math.random() * DEFAULT_COLORS.length)]
     await db.insert(schema.projectMembers).values({
         projectId,
         userId,
-        role
+        role,
+        colorCode: randomColor,
     })
 }
 
 export async function updateMemberRole(projectId: string, userId: string, role: string) {
     await db.update(schema.projectMembers)
         .set({ role: role as typeof schema.projectMembers.$inferInsert.role })
+        .where(and(eq(schema.projectMembers.projectId, projectId), eq(schema.projectMembers.userId, userId)))
+}
+
+export async function updateMemberColor(projectId: string, userId: string, colorCode: string) {
+    await db.update(schema.projectMembers)
+        .set({ colorCode })
         .where(and(eq(schema.projectMembers.projectId, projectId), eq(schema.projectMembers.userId, userId)))
 }
 
@@ -51,8 +77,10 @@ export async function getMemberRole(projectId: string, userId: string) {
 
 export async function getMembersByProjectId(projectId: string) {
     return await db.select({
+        id: schema.projectMembers.userId,
         userId: schema.projectMembers.userId,
         role: schema.projectMembers.role,
+        colorCode: schema.projectMembers.colorCode,
         displayName: schema.profiles.displayName,
         email: schema.users.email,
         avatarUrl: schema.profiles.avatarUrl,

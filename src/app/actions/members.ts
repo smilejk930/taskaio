@@ -86,3 +86,18 @@ export async function removeMember(projectId: string, userId: string) {
     await membersRepo.deleteMember(projectId, userId)
     revalidatePath(`/projects/${projectId}`)
 }
+
+export async function updateMemberColor(projectId: string, userId: string, colorCode: string) {
+    const currentUser = await getUser()
+    if (!currentUser) throw new Error('인증이 필요합니다.')
+
+    const isSystemAdmin = (currentUser as { is_admin?: boolean }).is_admin
+
+    // 본인 색상만 변경 가능하도록, 또는 시스템 관리자인 경우 통과
+    if (currentUser.id !== userId && !isSystemAdmin) {
+        throw new Error('본인의 색상만 변경할 수 있습니다.')
+    }
+
+    await membersRepo.updateMemberColor(projectId, userId, colorCode)
+    revalidatePath(`/projects/${projectId}`)
+}
