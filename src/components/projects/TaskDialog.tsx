@@ -22,6 +22,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Member, TaskFormData } from '@/types/project'
+import { cn } from '@/lib/utils'
 
 // ──── 상수 정의 ─────────────────────────────────────────────────────────────────
 
@@ -180,12 +181,15 @@ export default function TaskDialog({
                         <Label htmlFor="task-title" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                             업무명 <span className="text-destructive">*</span>
                         </Label>
-                        <Input
+                        <Textarea
                             id="task-title"
                             value={form.title}
                             onChange={(e) => setField('title', e.target.value)}
                             placeholder="업무명을 입력하세요"
-                            className={errors.title ? 'border-destructive' : ''}
+                            className={cn(
+                                "resize-y min-h-[40px] py-2",
+                                errors.title ? 'border-destructive' : ''
+                            )}
                         />
                         {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
                     </div>
@@ -198,8 +202,7 @@ export default function TaskDialog({
                             value={form.description || ''}
                             onChange={(e) => setField('description', e.target.value)}
                             placeholder="업무 설명을 입력하세요"
-                            rows={3}
-                            className="resize-none"
+                            className="resize-y min-h-[100px]"
                         />
                     </div>
 
