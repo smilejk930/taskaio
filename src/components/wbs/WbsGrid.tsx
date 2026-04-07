@@ -154,7 +154,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
             assignee_id: currentUserId ?? null,
             start_date: startDate,
             end_date: endDate,
-            color: `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`,
+            color: members.find(m => m.id === currentUserId)?.colorCode || '#94a3b8',
             parent_id: parentId,
             description: '',
             _isNew: true,
