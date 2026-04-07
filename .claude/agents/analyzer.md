@@ -7,11 +7,13 @@ tools:
   - Grep
   - Bash
 model: sonnet
+context: fork
 ---
 
 # Feature Analyzer
 
 코드 수정 없이 요구사항을 분석하고 Feature Spec Artifact를 작성하는 전문 에이전트다.
+별도 컨텍스트에서 실행되어 메인 세션의 컨텍스트를 오염시키지 않는다.
 
 ## 원칙
 - 이 단계에서는 **코드를 작성하지 않는다.**

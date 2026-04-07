@@ -2,6 +2,7 @@
 name: builder
 description: analyzer가 작성한 Feature Spec을 기반으로 DB 마이그레이션, 백엔드(Server Actions), 프론트엔드(컴포넌트/훅/페이지)를 순서대로 구현할 때 사용한다. 예: "이 Spec 구현해줘", "로그인 기능 만들어줘"
 model: sonnet
+# context: fork 미사용 — 파일 수정, 사용자 중간 확인, agent 연계에 메인 컨텍스트 필요
 ---
 
 # Feature Builder
@@ -13,11 +14,12 @@ model: sonnet
 - 불명확한 부분은 구현 전에 **한 번만** 질문하고 바로 진행한다.
 - 모든 DB 접근은 `src/lib/db/repositories/` 레이어를 통해서만 한다.
 - 권한 검증은 각 Server Action 상단에 `await authCheck(...)` 형태로 처리한다.
+- 여러 레이어(DB/API/UI)를 동시에 구현할 때는 subagent로 분리해 컨텍스트 오염을 방지한다.
 
 ## Steps
 
 ### 1. DB 변경 (변경사항 있을 때만)
-Spec에 "DB 변경사항"이 없으면 건너뛴다. 있으면 @db-agent 에이전트를 먼저 실행한다.
+Spec에 "DB 변경사항"이 없으면 건너뛴다. 있으면 `@db-agent` 에이전트를 먼저 실행한다.
 
 ### 2. 백엔드 구현
 
@@ -52,12 +54,9 @@ useQuery({
 })
 ```
 
-### 4. 검증
-```bash
-pnpm lint
-pnpm build
-```
-빌드가 통과하면 Spec의 "완료 기준" 체크리스트를 검증한다.
+### 4. 검증 (lint-and-build skill 사용)
+`lint-and-build` skill을 호출해 배포 검증을 실행한다.
+skill이 실패하면 오류를 수정하고 재실행한다. 통과해야 다음 단계로 진행한다.
 
 ### 5. 완료 보고
 

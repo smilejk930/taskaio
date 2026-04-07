@@ -15,6 +15,7 @@ TaskAIO는 WBS 기반 일정 관리 웹 애플리케이션이다.
 | `@builder` | Feature Spec 기반 전체 스택 구현 | "이 Spec 구현해줘" |
 | `@db-agent` | Drizzle 스키마 변경 및 마이그레이션 | "tasks에 컬럼 추가해줘" |
 | `@reviewer` | 코드 품질/보안/컨벤션 검토 (코드 미수정) | "방금 구현한 코드 리뷰해줘" |
+| `@tester` | 단위 테스트/타입 검사/린트 실행 및 결과 리포트 | "방금 만든 기능 테스트해줘" |
 
 ---
 
@@ -155,6 +156,34 @@ toast.success('업무가 수정되었습니다')
 | 상수 | UPPER_SNAKE_CASE | `MAX_TASK_DEPTH` |
 | DB 컬럼 | snake_case | `project_id` |
 | 변수/함수 | camelCase | `taskList` |
+
+---
+
+## 기능 개발 워크플로우
+
+기능 요청이 들어오면 사용자가 별도로 지시하지 않아도 아래 순서를 자동으로 따른다.
+단계를 건너뛰거나 순서를 바꾸지 않는다.
+
+### 1단계 — Explore (코드 수정 금지)
+- `@analyzer`가 관련 파일/폴더를 읽고 현재 구조를 파악한다
+- 이 단계에서는 절대 코드를 작성하거나 수정하지 않는다
+
+### 2단계 — Plan (사용자 승인 필수)
+- `@analyzer`가 Feature Spec을 작성하고 사용자 승인을 기다린다
+- 승인 전까지 `@builder`를 실행하지 않는다
+- DB 변경이 필요하면 Spec에 명시한다
+
+### 3단계 — Implement
+- 승인된 Spec을 기반으로 `@builder`가 구현한다
+- DB 변경이 있으면 `@builder`가 `@db-agent`를 먼저 호출한다
+- 여러 레이어(DB/API/UI)가 동시에 필요한 경우 subagent로 분리해 컨텍스트 오염을 방지한다
+
+### 4단계 — Verify (생략 불가)
+구현 완료 후 반드시 아래 순서로 실행한다:
+1. `@reviewer`: 보안·컨벤션 검토
+2. `@tester`: 단위 테스트 → 타입 검사 → 린트
+3. Stop Hook: lint 자동 실행, 미커밋 TS 변경 감지 시 build 추가 실행
+4. 모두 통과해야 커밋 여부를 사용자에게 확인한다
 
 ---
 

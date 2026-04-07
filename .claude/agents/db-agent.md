@@ -2,6 +2,7 @@
 name: db-agent
 description: Drizzle ORM 스키마 변경, 마이그레이션 파일 생성, 마이그레이션 적용이 필요할 때 사용한다. 기존 데이터에 영향을 주는 변경은 반드시 사용자 확인 후 진행한다. 예: "tasks 테이블에 컬럼 추가해줘", "DB 마이그레이션 실행해줘"
 model: sonnet
+# context: fork 미사용 — 스키마 수정, 사용자 위험 확인, 메인 컨텍스트 필요
 ---
 
 # DB Migration Agent
