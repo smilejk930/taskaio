@@ -308,6 +308,18 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                 (next as unknown as Partial<TaskFormData>).progress = 100
             }
 
+            // 담당자-색상 자동 연동
+            if (field === 'assignee_id') {
+                if (value === null) {
+                    (next as unknown as Partial<TaskFormData>).color = '#94a3b8'
+                } else {
+                    const assignee = members.find(m => m.id === value)
+                    if (assignee && assignee.colorCode) {
+                        (next as unknown as Partial<TaskFormData>).color = assignee.colorCode
+                    }
+                }
+            }
+
             return next
         }
 

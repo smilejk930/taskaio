@@ -5,15 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { searchUsers, addMember, updateRole, removeMember } from '@/app/actions/members'
+import { searchUsers, addMember, updateRole, removeMember, updateMemberColor } from '@/app/actions/members'
 import { toast } from 'sonner'
 import { Loader2, Search, UserPlus, Shield, UserMinus } from 'lucide-react'
+import { MemberColorPicker } from './MemberColorPicker'
 
 interface Member {
     id: string
     display_name: string | null
     email: string | null
     role?: 'owner' | 'manager' | 'member' | null
+    colorCode?: string | null
 }
 
 interface TeamManagementViewProps {
@@ -93,6 +95,18 @@ export default function TeamManagementView({ projectId, members, currentMemberRo
         try {
             await updateRole(projectId, userId, newRole)
             toast.success('권한이 변경되었습니다.')
+        } catch (error: unknown) {
+            toast.error('변경 실패', { description: error instanceof Error ? error.message : '알 수 없는 오류' })
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    const handleUpdateColor = async (userId: string, colorCode: string) => {
+        setIsSaving(true)
+        try {
+            await updateMemberColor(projectId, userId, colorCode)
+            toast.success('색상이 변경되었습니다.')
         } catch (error: unknown) {
             toast.error('변경 실패', { description: error instanceof Error ? error.message : '알 수 없는 오류' })
         } finally {
@@ -186,6 +200,7 @@ export default function TeamManagementView({ projectId, members, currentMemberRo
                             <thead className="bg-muted border-b">
                                 <tr>
                                     <th className="text-left py-3 px-4 font-medium text-muted-foreground">이름</th>
+                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground w-20">색상</th>
                                     <th className="text-left py-3 px-4 font-medium text-muted-foreground">이메일</th>
                                     <th className="text-left py-3 px-4 font-medium text-muted-foreground w-32">역할</th>
                                     {canManage && <th className="text-center py-3 px-4 font-medium text-muted-foreground w-24">관리</th>}
@@ -205,6 +220,13 @@ export default function TeamManagementView({ projectId, members, currentMemberRo
                                             <td className="py-3 px-4 font-medium">
                                                 {member.display_name || '이름 없음'}
                                                 {isSelf && <span className="ml-2 text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">나</span>}
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <MemberColorPicker
+                                                    color={member.colorCode || ''}
+                                                    onChange={(val) => handleUpdateColor(member.id, val)}
+                                                    disabled={!isSystemAdmin && !isSelf} // 본인 또는 시스템관리자만 가능
+                                                />
                                             </td>
                                             <td className="py-3 px-4 text-muted-foreground">{member.email || '-'}</td>
                                             <td className="py-3 px-4">

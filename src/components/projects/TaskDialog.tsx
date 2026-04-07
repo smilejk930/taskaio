@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -127,6 +126,18 @@ export default function TaskDialog({
                     next.status = 'todo'
                 } else {
                     next.status = 'in_progress'
+                }
+            }
+
+            // 담당자가 변경되면 담당자의 색상으로 자동 연동, 미지정이면 기본값
+            if (key === 'assignee_id') {
+                if (value === null) {
+                    next.color = '#94a3b8'
+                } else {
+                    const assignee = members.find(m => m.id === value)
+                    if (assignee && assignee.colorCode) {
+                        next.color = assignee.colorCode
+                    }
                 }
             }
 
