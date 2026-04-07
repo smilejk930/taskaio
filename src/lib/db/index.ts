@@ -33,9 +33,9 @@ function createDbInstance() {
   }
 
   const client = postgres(dbUrl, {
-    max: 10,
-    idle_timeout: 20,
-    connect_timeout: 10,
+    max: 8,
+    idle_timeout: 10,
+    connect_timeout: 5,
     ssl: dbUrl.includes('supabase.com') ? 'require' : undefined
   })
   return drizzlePg(client, { schema }) as unknown as ReturnType<typeof drizzlePg<typeof schema>>;
@@ -43,8 +43,9 @@ function createDbInstance() {
 
 function getDbInstance() {
   if (globalForDb.__dbInstance) return globalForDb.__dbInstance;
+  
   const instance = createDbInstance();
-  if (instance && process.env.NODE_ENV !== 'production') {
+  if (instance) {
     globalForDb.__dbInstance = instance;
   }
   return instance;
