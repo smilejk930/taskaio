@@ -20,6 +20,7 @@ import {
 import { Plus, Save, X, Trash2, Edit2, CornerDownRight, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { format, addDays } from 'date-fns'
+import { ColorPicker } from '@/components/common/ColorPicker'
 
 // ── 상수 정의 ─────────────────────────────────────────────────────────────────
 
@@ -682,11 +683,11 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                 if (isEditing) {
                     return (
                         <div className="flex justify-center">
-                            <input
-                                type="color"
-                                value={val}
-                                onChange={(e) => handleLocalChange(task.id, 'color', e.target.value, task._isNew)}
-                                className="w-8 h-8 p-0 border-0 bg-transparent cursor-pointer"
+                            <ColorPicker
+                                color={val}
+                                onChange={(c) => handleLocalChange(task.id, 'color', c, task._isNew)}
+                                title="업무 색상 지정"
+                                triggerClassName="w-7 h-7 rounded-md border border-border shadow-sm shrink-0 hover:ring-2 hover:ring-ring hover:ring-offset-1 transition-all"
                             />
                         </div>
                     )
