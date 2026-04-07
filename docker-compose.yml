@@ -15,6 +15,7 @@ services:
     restart: always
     environment:
       - NODE_ENV=production
+      - DB_POOL_MAX=20
     depends_on:
       taskaio-db:
         condition: service_healthy # DB 준비 완료 후 앱 시작

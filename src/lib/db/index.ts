@@ -32,8 +32,11 @@ function createDbInstance() {
     return drizzleSqlite(sqlite, { schema }) as unknown as ReturnType<typeof drizzlePg<typeof schema>>;
   }
 
+  const rawPoolMax = parseInt(process.env.DB_POOL_MAX || '', 10);
+  const poolMax = !isNaN(rawPoolMax) ? rawPoolMax : (process.env.NODE_ENV === 'production' ? 20 : 10);
+
   const client = postgres(dbUrl, {
-    max: 8,
+    max: poolMax,
     idle_timeout: 10,
     connect_timeout: 5,
     ssl: dbUrl.includes('supabase.com') ? 'require' : undefined
