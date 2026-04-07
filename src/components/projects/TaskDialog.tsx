@@ -94,11 +94,20 @@ export default function TaskDialog({
                 return dateValue
             }
 
+            let initialColor = baseForm.color || '#94a3b8'
+            // 새 업무이고 담당자가 지정되어 있는데 색상이 기본값이면 담당자 색상 적용
+            if (!initialData?.id && baseForm.assignee_id && initialColor === '#94a3b8') {
+                const assignee = members.find(m => m.id === baseForm.assignee_id)
+                if (assignee?.colorCode) {
+                    initialColor = assignee.colorCode
+                }
+            }
+
             setForm({
                 ...baseForm,
                 title: baseForm.title || '',
                 description: baseForm.description || '',
-                color: baseForm.color || '#94a3b8',
+                color: initialColor,
                 start_date: formatDate(baseForm.start_date),
                 end_date: formatDate(baseForm.end_date),
             } as TaskFormData)

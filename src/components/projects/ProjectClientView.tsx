@@ -166,7 +166,8 @@ export default function ProjectClientView({
         const today = new Date()
         const startDate = format(today, 'yyyy-MM-dd')
         const endDate = format(addDays(today, 3), 'yyyy-MM-dd')
-        const randomColor = `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`
+        const currentMember = currentUser?.id ? members.find(m => m.id === currentUser.id) : null
+        const defaultColor = currentMember?.colorCode || '#94a3b8'
 
         setSelectedTask({
             parent_id: parentId,
@@ -177,7 +178,7 @@ export default function ProjectClientView({
             assignee_id: currentUser?.id ?? null,
             start_date: startDate,
             end_date: endDate,
-            color: randomColor
+            color: defaultColor
         })
         setIsTaskDialogOpen(true)
     }

@@ -1,0 +1,7 @@
+- [x] `src/app/projects/[id]/page.tsx`: `formattedMembers` 매핑에 `colorCode` 추가
+- [x] `src/components/projects/ProjectClientView.tsx`: 새 업무 생성 시 현재 유저 색상 반영
+- [x] `src/components/projects/TaskDialog.tsx`: 초기 로드 시 담당자 색상 자동 연동 보강
+- [x] 동작 정의 및 검증
+    - [x] 팀원 관리 탭에서 색상 표시 확인
+    - [x] 새 업무 등록 시 본인 색상 자동 선택 확인
+    - [x] 담당자 변경 시 색상 자동 연동 확인

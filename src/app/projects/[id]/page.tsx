@@ -84,7 +84,8 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         id: m.userId,
         display_name: m.displayName,
         email: m.email,
-        role: m.role as 'owner' | 'manager' | 'member' | null
+        role: m.role as 'owner' | 'manager' | 'member' | null,
+        colorCode: m.colorCode
     }))
 
     return (
