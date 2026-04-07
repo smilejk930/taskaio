@@ -69,7 +69,7 @@ export function ColorPicker({
                         {PRESET_COLORS.map(c => (
                             <button
                                 key={c}
-                                className="w-6 h-6 rounded-full border border-border shadow-sm flex items-center justify-center transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
+                                className="w-6 h-6 rounded-full border border-border shadow-sm flex items-center justify-center transition-transform hover:scale-110 focus:outline-none"
                                 style={{ backgroundColor: c }}
                                 onClick={() => setTempColor(c)}
                                 title={c}
