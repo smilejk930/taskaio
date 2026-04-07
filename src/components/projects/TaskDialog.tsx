@@ -114,7 +114,7 @@ export default function TaskDialog({
             } as TaskFormData)
             setErrors({})
         }
-    }, [open, initialData, projectId])
+    }, [open, initialData, projectId, members])
 
     const isEdit = Boolean(initialData?.id)
 
