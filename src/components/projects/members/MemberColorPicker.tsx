@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import {
   Popover,
   PopoverContent,
@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/popover'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Check } from 'lucide-react'
+import { Check, Pipette } from 'lucide-react'
 
 interface MemberColorPickerProps {
     color: string
@@ -25,12 +25,17 @@ const PRESET_COLORS = [
 export function MemberColorPicker({ color, onChange, disabled }: MemberColorPickerProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [tempColor, setTempColor] = useState(color || '#94a3b8')
+    const colorInputRef = useRef<HTMLInputElement>(null)
 
     const hasChanged = tempColor !== color
 
     const handleSave = () => {
         onChange(tempColor)
         setIsOpen(false)
+    }
+
+    const handleNativePickerOpen = () => {
+        colorInputRef.current?.click()
     }
 
     return (
@@ -62,12 +67,29 @@ export function MemberColorPicker({ color, onChange, disabled }: MemberColorPick
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-xs font-medium text-muted-foreground">HEX 색상 코드</label>
+                        <label className="text-xs font-medium text-muted-foreground uppercase flex items-center gap-1">
+                            커스텀 색상 선택
+                        </label>
                         <div className="flex gap-2">
-                            <div 
-                                className="w-9 h-9 rounded-md border shrink-0" 
-                                style={{ backgroundColor: tempColor }}
+                            {/* 숨겨진 네이티브 컬러 피커 */}
+                            <input 
+                                type="color"
+                                ref={colorInputRef}
+                                value={tempColor}
+                                onChange={(e) => setTempColor(e.target.value)}
+                                className="sr-only"
                             />
+                            {/* 커스텀 선택 트리거 (미리보기 사각형) */}
+                            <button 
+                                onClick={handleNativePickerOpen}
+                                className="w-9 h-9 rounded-md border shrink-0 relative group overflow-hidden" 
+                                style={{ backgroundColor: tempColor }}
+                                title="네이티브 컬러 피커 열기"
+                            >
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 flex items-center justify-center transition-colors">
+                                    <Pipette className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 drop-shadow-md" />
+                                </div>
+                            </button>
                             <Input 
                                 value={tempColor}
                                 onChange={(e) => setTempColor(e.target.value)}
