@@ -68,10 +68,6 @@ Next.js 14+ (App Router) · TypeScript · Drizzle ORM · NextAuth(Auth.js) · sh
 
 > `/pm` 실행 시 분석→빌드→테스트→커밋→푸시가 자동으로 연결됩니다. (중간 Spec 승인 필요)
 
-**산출물(Artifact) 저장 경로:**
-- **Feature Spec:** `./.agents/feature_specs` 폴더에 생성 및 저장
-- **Walkthrough:** `./.agents/walkthroughs` 폴더에 생성 및 저장
-
 ---
 
 
