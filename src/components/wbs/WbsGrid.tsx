@@ -408,7 +408,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                             value={val || 'unassigned'}
                             onValueChange={(v) => handleLocalChange(task.id, 'assignee_id', v === 'unassigned' ? null : v, task._isNew)}
                         >
-                            <SelectTrigger className="h-8 text-xs bg-background">
+                            <SelectTrigger className="h-8 text-xs bg-background justify-center">
                                 <SelectValue placeholder="미지정" />
                             </SelectTrigger>
                             <SelectContent>
@@ -566,7 +566,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
 
                 if (isEditing) {
                     return (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center justify-center gap-1">
                             <Input
                                 type="number"
                                 min="0" max="100" step="10"
@@ -597,7 +597,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                             value={val as string}
                             onValueChange={(v) => handleLocalChange(task.id, 'priority', v, task._isNew)}
                         >
-                            <SelectTrigger className="h-8 text-[11px] bg-background">
+                            <SelectTrigger className="h-8 text-[11px] bg-background justify-center">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -636,7 +636,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                             value={val as string}
                             onValueChange={(v) => handleLocalChange(task.id, 'status', v, task._isNew)}
                         >
-                            <SelectTrigger className="h-8 text-[11px] bg-background">
+                            <SelectTrigger className="h-8 text-[11px] bg-background justify-center">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
