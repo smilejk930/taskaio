@@ -134,7 +134,7 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
                                                 <span>진행: {t.progress}%</span>
                                             </div>
                                         </div>
-                                        <Badge variant={t.priority === 'urgent' ? 'destructive' : 'default'} className="text-[10px]">
+                                        <Badge variant={t.priority === 'urgent' ? 'destructive' : 'default'} className="text-xs">
                                             {t.priority === 'urgent' ? '긴급' : '높음'}
                                         </Badge>
                                     </div>
@@ -174,7 +174,7 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
                                                 <span>진행: {t.progress}%</span>
                                             </div>
                                         </div>
-                                        <Badge variant={t.priority === 'urgent' ? 'destructive' : 'default'} className="text-[10px]">
+                                        <Badge variant={t.priority === 'urgent' ? 'destructive' : 'default'} className="text-xs">
                                             {t.priority === 'urgent' ? '긴급' : '높음'}
                                         </Badge>
                                     </div>
@@ -210,7 +210,7 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
                                                 <span>진행: {t.progress}%</span>
                                             </div>
                                         </div>
-                                        <Badge variant="destructive" className="text-[10px]">지연</Badge>
+                                        <Badge variant="destructive" className="text-xs">지연</Badge>
                                     </div>
                                 ))
                             )}

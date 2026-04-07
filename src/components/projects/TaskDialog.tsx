@@ -170,15 +170,13 @@ export default function TaskDialog({
             <DialogContent className="sm:max-w-[550px]">
                 <DialogHeader>
                     <DialogTitle>{isEdit ? '업무 상세 정보' : '새 업무 등록'}</DialogTitle>
-                    <DialogDescription>
-                        업무의 상세 일정을 관리합니다.
-                    </DialogDescription>
+
                 </DialogHeader>
 
-                <div className="grid gap-4 px-1 py-4 overflow-y-auto max-h-[70vh] pr-2">
+                <div className="grid gap-3 px-1 py-3 overflow-y-auto max-h-[80vh] pr-2">
                     {/* 업무명 */}
-                    <div className="space-y-2">
-                        <Label htmlFor="task-title" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <div className="space-y-1">
+                        <Label htmlFor="task-title" className="text-sm font-semibold text-muted-foreground">
                             업무명 <span className="text-destructive">*</span>
                         </Label>
                         <Textarea
@@ -195,29 +193,29 @@ export default function TaskDialog({
                     </div>
 
                     {/* 설명 */}
-                    <div className="space-y-2">
-                        <Label htmlFor="task-description" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">업무 설명 (선택)</Label>
+                    <div className="space-y-1">
+                        <Label htmlFor="task-description" className="text-sm font-semibold text-muted-foreground">업무 설명 (선택)</Label>
                         <Textarea
                             id="task-description"
                             value={form.description || ''}
                             onChange={(e) => setField('description', e.target.value)}
                             placeholder="업무 설명을 입력하세요"
-                            className="resize-y min-h-[100px]"
+                            className="resize-y min-h-[80px]"
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-3">
                         {/* 상태 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="task-status" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">상태</Label>
+                        <div className="space-y-1">
+                            <Label htmlFor="task-status" className="text-sm font-semibold text-muted-foreground">상태</Label>
                             <Select value={form.status} onValueChange={(v) => setField('status', v as TaskFormData['status'])}>
-                                <SelectTrigger id="task-status">
+                                <SelectTrigger id="task-status" className="h-9">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {STATUS_OPTIONS.map(s => (
                                         <SelectItem key={s.value} value={s.value}>
-                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${s.style}`}>{s.label}</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${s.style}`}>{s.label}</span>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -225,27 +223,42 @@ export default function TaskDialog({
                         </div>
 
                         {/* 우선순위 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="task-priority" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">우선순위</Label>
+                        <div className="space-y-1">
+                            <Label htmlFor="task-priority" className="text-sm font-semibold text-muted-foreground">우선순위</Label>
                             <Select value={form.priority} onValueChange={(v) => setField('priority', v as TaskFormData['priority'])}>
-                                <SelectTrigger id="task-priority">
+                                <SelectTrigger id="task-priority" className="h-9">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {PRIORITY_OPTIONS.map(p => (
                                         <SelectItem key={p.value} value={p.value}>
-                                            <Badge variant={p.variant} className="text-xs font-normal">{p.label}</Badge>
+                                            <Badge variant={p.variant} className="text-[10px] font-normal px-1.5 py-0">{p.label}</Badge>
                                         </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* 진척률 */}
+                        <div className="space-y-1">
+                            <Label htmlFor="task-progress" className="text-sm font-semibold text-muted-foreground">진척률 ({form.progress}%)</Label>
+                            <Select value={String(form.progress)} onValueChange={(v) => setField('progress', parseInt(v))}>
+                                <SelectTrigger id="task-progress" className="h-9">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {PROGRESS_OPTIONS.map(p => (
+                                        <SelectItem key={p} value={String(p)} className="text-xs">{p}%</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                         {/* 시작일 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="task-start" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        <div className="space-y-1">
+                            <Label htmlFor="task-start" className="text-sm font-semibold text-muted-foreground">
                                 시작일 (선택)
                             </Label>
                             <Input
@@ -253,13 +266,13 @@ export default function TaskDialog({
                                 type="date"
                                 value={form.start_date || ''}
                                 onChange={(e) => setField('start_date', e.target.value)}
-                                className={errors.start_date ? 'border-destructive' : ''}
+                                className={cn("h-9", errors.start_date ? 'border-destructive' : '')}
                             />
                             {errors.start_date && <p className="text-xs text-destructive">{errors.start_date}</p>}
                         </div>
                         {/* 종료일 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="task-end" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        <div className="space-y-1">
+                            <Label htmlFor="task-end" className="text-sm font-semibold text-muted-foreground">
                                 종료일 (선택)
                             </Label>
                             <Input
@@ -267,18 +280,18 @@ export default function TaskDialog({
                                 type="date"
                                 value={form.end_date || ''}
                                 onChange={(e) => setField('end_date', e.target.value)}
-                                className={errors.end_date ? 'border-destructive' : ''}
+                                className={cn("h-9", errors.end_date ? 'border-destructive' : '')}
                             />
                             {errors.end_date && <p className="text-xs text-destructive">{errors.end_date}</p>}
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-3">
                         {/* 담당자 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="task-assignee" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">담당자</Label>
+                        <div className="col-span-2 space-y-1">
+                            <Label htmlFor="task-assignee" className="text-sm font-semibold text-muted-foreground">담당자</Label>
                             <Select value={form.assignee_id || 'unassigned'} onValueChange={(v) => setField('assignee_id', v === 'unassigned' ? null : v)}>
-                                <SelectTrigger id="task-assignee">
+                                <SelectTrigger id="task-assignee" className="h-9">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -292,35 +305,18 @@ export default function TaskDialog({
                             </Select>
                         </div>
 
-                        {/* 진척률 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="task-progress" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">진척률 ({form.progress}%)</Label>
-                            <Select value={String(form.progress)} onValueChange={(v) => setField('progress', parseInt(v))}>
-                                <SelectTrigger id="task-progress">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {PROGRESS_OPTIONS.map(p => (
-                                        <SelectItem key={p} value={String(p)}>{p}%</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
                         {/* 색상 */}
-                        <div className="space-y-2">
-                            <Label htmlFor="task-color" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">간트 차트 색상</Label>
-                            <div className="flex items-center gap-3">
+                        <div className="space-y-1">
+                            <Label htmlFor="task-color" className="text-sm font-semibold text-muted-foreground">색상</Label>
+                            <div className="flex items-center gap-2">
                                 <Input
                                     id="task-color"
                                     type="color"
                                     value={form.color || '#94a3b8'}
                                     onChange={(e) => setField('color', e.target.value)}
-                                    className="w-12 h-10 p-1 cursor-pointer"
+                                    className="w-full h-9 p-1 cursor-pointer"
                                 />
-                                <span className="text-xs font-mono text-muted-foreground uppercase">{form.color}</span>
+                                <span className="text-xs font-mono text-muted-foreground hidden sm:inline">{form.color}</span>
                             </div>
                         </div>
                     </div>

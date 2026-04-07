@@ -574,7 +574,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                                 onChange={(e) => handleLocalChange(task.id, 'progress', parseInt(e.target.value) || 0, task._isNew)}
                                 className="h-8 w-16 text-xs p-1 bg-background text-center"
                             />
-                            <span className="text-[10px] text-muted-foreground">%</span>
+                            <span className="text-xs text-muted-foreground">%</span>
                         </div>
                     )
                 }
@@ -597,12 +597,12 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                             value={val as string}
                             onValueChange={(v) => handleLocalChange(task.id, 'priority', v, task._isNew)}
                         >
-                            <SelectTrigger className="h-8 text-[11px] bg-background justify-center">
+                            <SelectTrigger className="h-8 text-xs bg-background justify-center">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 {PRIORITY_OPTIONS.map((o) => (
-                                    <SelectItem key={o.value} value={o.value} className="text-[11px]">
+                                    <SelectItem key={o.value} value={o.value} className="text-xs">
                                         {o.label}
                                     </SelectItem>
                                 ))}
@@ -614,7 +614,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                 const found = PRIORITY_OPTIONS.find(p => p.value === val) ?? PRIORITY_OPTIONS[2]
                 return (
                     <div className="text-center">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium leading-[1.4] whitespace-nowrap ${found.style}`}>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium leading-[1.4] whitespace-nowrap ${found.style}`}>
                             {found.label}
                         </span>
                     </div>
@@ -636,12 +636,12 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                             value={val as string}
                             onValueChange={(v) => handleLocalChange(task.id, 'status', v, task._isNew)}
                         >
-                            <SelectTrigger className="h-8 text-[11px] bg-background justify-center">
+                            <SelectTrigger className="h-8 text-xs bg-background justify-center">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
                                 {STATUS_OPTIONS.map((o) => (
-                                    <SelectItem key={o.value} value={o.value} className="text-[11px]">
+                                    <SelectItem key={o.value} value={o.value} className="text-xs">
                                         {o.label}
                                     </SelectItem>
                                 ))}
@@ -653,7 +653,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                 const found = STATUS_OPTIONS.find(s => s.value === val) ?? STATUS_OPTIONS[0]
                 return (
                     <div className="text-center">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium leading-[1.4] whitespace-nowrap ${found.style}`}>{found.label}</span>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium leading-[1.4] whitespace-nowrap ${found.style}`}>{found.label}</span>
                     </div>
                 )
             },
@@ -686,7 +686,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                             className="w-3.5 h-3.5 rounded-sm border border-black/10 shrink-0 shadow-sm"
                             style={{ backgroundColor: val }}
                         />
-                        <span className="text-[10px] font-mono text-muted-foreground uppercase">{val}</span>
+                        <span className="text-xs font-mono text-muted-foreground uppercase">{val}</span>
                     </div>
                 )
             },
