@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { Badge } from '@/components/ui/badge'
+import { multiLevelSort } from '@/lib/task-utils'
 
 import { GanttSkeleton, DashboardSkeleton, WbsSkeleton, MembersSkeleton } from '@/components/projects/ProjectSkeletons'
 
@@ -355,48 +356,9 @@ export default function ProjectClientView({
         return result
     }
 
+
     // ── 간트 데이터 포맷팅 ──────────────────────────────────────────────────────
     const ganttTasks = React.useMemo(() => {
-        const priorityWeight = {
-            urgent: 3,
-            high: 2,
-            medium: 1,
-            low: 0
-        };
-
-        const multiLevelSort = (a: ProjectTask, b: ProjectTask) => {
-            // 1. 시작일 ASC
-            const dateA = a.start_date || '9999-12-31';
-            const dateB = b.start_date || '9999-12-31';
-            if (dateA !== dateB) return dateA.localeCompare(dateB);
-
-            // 2. 종료일 ASC
-            const endA = a.end_date || '9999-12-31';
-            const endB = b.end_date || '9999-12-31';
-            if (endA !== endB) return endA.localeCompare(endB);
-
-            // 3. 우선순위 DESC (긴급 > 높음 > 보통 > 낮음)
-            const pA = priorityWeight[a.priority as keyof typeof priorityWeight] ?? -1;
-            const pB = priorityWeight[b.priority as keyof typeof priorityWeight] ?? -1;
-            if (pA !== pB) return pB - pA;
-
-            // 4. 상태 DESC (할 일 > 리뷰 > 진행 중 > 완료)
-            const statusWeight = { todo: 3, review: 2, in_progress: 1, done: 0 };
-            const sA = statusWeight[a.status as keyof typeof statusWeight] ?? -1;
-            const sB = statusWeight[b.status as keyof typeof statusWeight] ?? -1;
-            if (sA !== sB) return sB - sA;
-
-            // 5. 담당자 이름 ASC
-            const memberA = members.find(m => m.id === a.assignee_id);
-            const nameA = memberA?.display_name || memberA?.email || '';
-            const memberB = members.find(m => m.id === b.assignee_id);
-            const nameB = memberB?.display_name || memberB?.email || '';
-            if (nameA !== nameB) return nameA.localeCompare(nameB);
-
-            // 6. 업무명 ASC
-            return (a.title || '').localeCompare(b.title || '');
-        };
-
         const buildTree = (parentId: string | null = null): ProjectTask[] => {
             return filteredTasks
                 .filter(t => t.parent_id === parentId)

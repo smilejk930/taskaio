@@ -21,6 +21,7 @@ import { Plus, Save, X, Trash2, Edit2, CornerDownRight, Loader2 } from 'lucide-r
 import { toast } from 'sonner'
 import { format, addDays } from 'date-fns'
 import { ColorPicker } from '@/components/common/ColorPicker'
+import { multiLevelSort } from '@/lib/task-utils'
 
 // ── 상수 정의 ─────────────────────────────────────────────────────────────────
 
@@ -123,33 +124,12 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
 
     /** 계층 구조 및 정렬 로직 (tasks + newRows를 합쳐서 트리 구성) */
     const allDataTree = useMemo(() => {
-        const priorityWeight = { urgent: 3, high: 2, medium: 1, low: 0 };
         const combined = [...(tasks as LocalTask[]), ...newRows];
-
-        const multiLevelSort = (a: LocalTask, b: LocalTask) => {
-            // 1. 시작일 ASC
-            const dateA = a.start_date || '9999-12-31';
-            const dateB = b.start_date || '9999-12-31';
-            if (dateA !== dateB) return dateA.localeCompare(dateB);
-
-            // 2. 우선순위 DESC
-            const pA = priorityWeight[a.priority as keyof typeof priorityWeight] ?? -1;
-            const pB = priorityWeight[b.priority as keyof typeof priorityWeight] ?? -1;
-            if (pA !== pB) return pB - pA;
-
-            // 3. 생성시간 ASC (동일 차수 내에서 신규 추가 행이 아래로 가도록)
-            const createdA = a.created_at || '';
-            const createdB = b.created_at || '';
-            if (createdA !== createdB) return createdA.localeCompare(createdB);
-
-            // 4. 업무명 ASC
-            return (a.title || '').localeCompare(b.title || '');
-        };
 
         const buildTree = (parentId: string | null = null): LocalTask[] => {
             return combined
                 .filter(t => t.parent_id === parentId)
-                .sort(multiLevelSort)
+                .sort(multiLevelSort as (a: LocalTask, b: LocalTask) => number)
                 .flatMap(t => [t, ...buildTree(t.id)]);
         };
 
