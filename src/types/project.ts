@@ -19,6 +19,7 @@ export interface TaskFormData {
     color: string | null
     parent_id?: string | null
     project_id: string
+    shift_subsequent?: boolean
 }
 
 export type ProjectTask = DBTask

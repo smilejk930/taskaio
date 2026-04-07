@@ -77,7 +77,7 @@ export function useTasks(initialTasks: ProjectTask[]) {
         }
     }, [])
 
-    const handleUpdate = useCallback(async (id: string, formData: Partial<TaskFormData>) => {
+    const handleUpdate = useCallback(async (id: string, formData: Partial<TaskFormData> & { shift_subsequent?: boolean }) => {
         setIsLoading(true)
         try {
             // 비즈니스 로직: 상태와 진척률 자동 연동
@@ -113,6 +113,7 @@ export function useTasks(initialTasks: ProjectTask[]) {
             if (payloadBase.assignee_id !== undefined) payload.assigneeId = payloadBase.assignee_id
             if (payloadBase.progress !== undefined) payload.progress = payloadBase.progress
             if (payloadBase.priority !== undefined) payload.priority = payloadBase.priority
+            if (formData.shift_subsequent !== undefined) payload.shiftSubsequentTasks = formData.shift_subsequent
 
             const updatedTask = await updateTask(id, payload)
             const mappedUpdated: ProjectTask = {

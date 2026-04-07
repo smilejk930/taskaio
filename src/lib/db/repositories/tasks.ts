@@ -131,3 +131,53 @@ export async function shiftChildTasks(parentId: string, offsetMs: number) {
     }
   }
 }
+
+export async function shiftUserSubsequentTasks(projectId: string, userId: string, referenceStartDate: Date, offsetMs: number, excludeTaskId: string) {
+  // 기준 시작일자 이후에 시작하며, 로그인한 사용자가 담당자인 업무들 타겟팅
+  // (deleted 되지 않았고, 본인 업무 제외)
+  const referenceDateStr = referenceStartDate.toISOString().split('T')[0];
+  
+  // gt() 대신 날짜 문자열 기반의 gte/gt 확인 (여기서는 원본 업무와 동일한 날짜의 '이후 생성/수정' 판별보다는,
+  // 원본 업무 시작일자 '이후' (gt) 에 있는 것들만 옮기는 것이 일반적입니다. 하지만 명세에 따라 gte도 사용 가능합니다.
+  // "해당 업무 시작일자 이후(늦은 날짜)"를 명확히 하기 위해 gt()를 사용하는 편이 안전합니다.
+  // gte()를 사용하면 동일한 시작일을 가진 다른 작업이 의도치 않게 모두 밀릴 수 있습니다.
+  const { gt, and, eq, ne } = await import('drizzle-orm');
+
+  const targets = await db.select({
+    id: schema.tasks.id,
+    startDate: schema.tasks.startDate,
+    endDate: schema.tasks.endDate,
+  }).from(schema.tasks).where(and(
+    eq(schema.tasks.projectId, projectId),
+    eq(schema.tasks.assigneeId, userId),
+    gt(schema.tasks.startDate, referenceDateStr),
+    ne(schema.tasks.id, excludeTaskId),
+    eq(schema.tasks.isDeleted, false)
+  ))
+
+  if (targets.length === 0) return;
+
+  for (const t of targets) {
+    const updates: Partial<typeof schema.tasks.$inferInsert> = {}
+    
+    if (t.startDate) {
+      const oldStart = new Date(t.startDate)
+      updates.startDate = new Date(oldStart.getTime() + offsetMs).toISOString().split('T')[0]
+    }
+    
+    if (t.endDate) {
+      const oldEnd = new Date(t.endDate)
+      updates.endDate = new Date(oldEnd.getTime() + offsetMs).toISOString().split('T')[0]
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await db.update(schema.tasks)
+        .set({ ...updates, updatedAt: new Date().toISOString() })
+        .where(eq(schema.tasks.id, t.id))
+      
+      // 하위 업무 연쇄 이동 로직이 이미 존재하므로, 일괄 이동된 업무의 하위 업무들도 이동시킴.
+      // (만약 하위 업무가 다른 담당자라면 자동으로 따라가게 됨)
+      await shiftChildTasks(t.id, offsetMs)
+    }
+  }
+}

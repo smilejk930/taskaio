@@ -65,6 +65,7 @@ const EMPTY_FORM: TaskFormData = {
     description: '',
     color: '#94a3b8',
     project_id: '',
+    shift_subsequent: false,
 }
 
 // ──── 컴포넌트 ────────────────────────────────────────────────────────────────
@@ -320,6 +321,25 @@ export default function TaskDialog({
                             </div>
                         </div>
                     </div>
+
+                    {/* 이후 일정 일괄 이동 (수정 시에만 노출) */}
+                    {isEdit && (
+                        <div className="flex items-center space-x-2 bg-blue-50/50 p-3 rounded-md border border-blue-100/50">
+                            <input
+                                type="checkbox"
+                                id="shift_subsequent"
+                                checked={form.shift_subsequent || false}
+                                onChange={(e) => setField('shift_subsequent', e.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
+                            />
+                            <Label 
+                                htmlFor="shift_subsequent" 
+                                className="text-xs font-medium text-slate-700 cursor-pointer select-none"
+                            >
+                                선택한 업무 시작일의 변동 폭만큼 내 본인 담당의 이후 업무들도 일괄 이동
+                            </Label>
+                        </div>
+                    )}
                 </div>
 
                 <DialogFooter className="flex justify-between sm:justify-between border-t pt-4">

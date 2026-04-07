@@ -5,15 +5,17 @@ import { authCheck } from '@/lib/auth-checks'
 import * as tasksRepo from '@/lib/db/repositories/tasks'
 import { schema } from '@/lib/db'
 
-export type TaskUpdatePayload = Partial<typeof schema.tasks.$inferInsert>
+export type TaskUpdatePayload = Partial<typeof schema.tasks.$inferInsert> & { shiftSubsequentTasks?: boolean }
 export type TaskInsertPayload = typeof schema.tasks.$inferInsert
 
 export async function updateTask(id: string, updates: TaskUpdatePayload, bypassAuthAndSync: boolean = false) {
     const existingTask = await tasksRepo.getTaskById(id)
     if (!existingTask) throw new Error('업무를 찾을 수 없습니다.')
 
+    let currentUserId: string | null = null;
     if (!bypassAuthAndSync) {
-        await authCheck(existingTask.projectId)
+        const authData = await authCheck(existingTask.projectId)
+        currentUserId = authData.userId;
     }
 
     // 진척률과 상태 자동 연동 로직 적용
@@ -33,9 +35,10 @@ export async function updateTask(id: string, updates: TaskUpdatePayload, bypassA
         }
     }
 
-    const task = await tasksRepo.updateTask(id, updates)
+    const { shiftSubsequentTasks, ...repoUpdates } = updates;
+    const task = await tasksRepo.updateTask(id, repoUpdates)
 
-    // 신규 추가: 시작일이 변경되었고 하위 업무가 있는 경우 날짜 이동 (Cascading)
+    // 시작일이 변경되었고 하위 업무가 있는 경우 날짜 이동 (Cascading)
     if (updates.startDate && existingTask.startDate) {
         const oldStart = new Date(existingTask.startDate).getTime()
         const newStart = new Date(updates.startDate).getTime()
@@ -43,6 +46,11 @@ export async function updateTask(id: string, updates: TaskUpdatePayload, bypassA
 
         if (offsetMs !== 0) {
             await tasksRepo.shiftChildTasks(id, offsetMs)
+            
+            // 본인의 이후 업무 연쇄 이동
+            if (shiftSubsequentTasks && currentUserId && existingTask.projectId) {
+               await tasksRepo.shiftUserSubsequentTasks(existingTask.projectId, currentUserId, new Date(existingTask.startDate), offsetMs, id);
+            }
         }
     }
 
