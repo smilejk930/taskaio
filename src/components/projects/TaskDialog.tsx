@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Member, TaskFormData } from '@/types/project'
 import { cn } from '@/lib/utils'
+import { ColorPicker } from '@/components/common/ColorPicker'
 
 // ──── 상수 정의 ─────────────────────────────────────────────────────────────────
 
@@ -327,16 +328,15 @@ export default function TaskDialog({
 
                         {/* 색상 */}
                         <div className="space-y-1">
-                            <Label htmlFor="task-color" className="text-sm font-semibold text-muted-foreground">색상</Label>
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    id="task-color"
-                                    type="color"
-                                    value={form.color || '#94a3b8'}
-                                    onChange={(e) => setField('color', e.target.value)}
-                                    className="w-full h-9 p-1 cursor-pointer"
+                            <Label className="text-sm font-semibold text-muted-foreground">색상</Label>
+                            <div className="flex items-center gap-2 h-9">
+                                <ColorPicker
+                                    color={form.color || '#94a3b8'}
+                                    onChange={(c) => setField('color', c)}
+                                    title="업무 색상 지정"
+                                    triggerClassName="w-8 h-8 rounded-md border border-border shadow-sm shrink-0 hover:ring-2 hover:ring-ring hover:ring-offset-1 transition-all"
                                 />
-                                <span className="text-xs font-mono text-muted-foreground hidden sm:inline">{form.color}</span>
+                                <span className="text-xs font-mono text-muted-foreground uppercase">{form.color || '#94a3b8'}</span>
                             </div>
                         </div>
                     </div>
