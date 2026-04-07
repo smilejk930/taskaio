@@ -215,7 +215,7 @@ export default function TaskDialog({
                                 <SelectContent>
                                     {STATUS_OPTIONS.map(s => (
                                         <SelectItem key={s.value} value={s.value}>
-                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${s.style}`}>{s.label}</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${s.style}`}>{s.label}</span>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -232,7 +232,7 @@ export default function TaskDialog({
                                 <SelectContent>
                                     {PRIORITY_OPTIONS.map(p => (
                                         <SelectItem key={p.value} value={p.value}>
-                                            <Badge variant={p.variant} className="text-[10px] font-normal px-1.5 py-0">{p.label}</Badge>
+                                            <Badge variant={p.variant} className="text-xs font-normal px-1.5 py-0">{p.label}</Badge>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -333,7 +333,7 @@ export default function TaskDialog({
                             />
                             <Label 
                                 htmlFor="shift_subsequent" 
-                                className="text-xs font-medium text-slate-700 cursor-pointer select-none"
+                                className="text-sm font-medium text-slate-700 cursor-pointer select-none"
                             >
                                 선택한 업무 시작일의 변동 폭만큼 내 본인 담당의 이후 업무들도 일괄 이동
                             </Label>
