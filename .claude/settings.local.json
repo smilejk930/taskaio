@@ -7,7 +7,22 @@
       "Bash(xargs basename:*)",
       "Bash(wc -l /d/develop/workspace/taskaio/src/app/actions/*.ts /d/develop/workspace/taskaio/src/components/**/*.tsx)",
       "Bash(git add:*)",
-      "Bash(git commit -m ':*)"
+      "Bash(git commit -m ':*)",
+      "Skill(update-config)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /d/develop/workspace/taskaio; pnpm lint 2>&1; if git diff HEAD --name-only 2>/dev/null | grep -qE 'src/(app/actions|app/api|lib|hooks|store)/'; then echo '--- Logic changes detected, running build ---'; pnpm build 2>&1; fi",
+            "timeout": 300,
+            "statusMessage": "배포 안정성 검사 중 (lint + build)..."
+          }
+        ]
+      }
     ]
   }
 }
