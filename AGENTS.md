@@ -1,7 +1,7 @@
-# taskaio Project Master Rules (GEMINI.md)
+# taskaio Project Master Rules (AGENTS.md)
 
 이 파일은 `taskaio` 프로젝트의 핵심 규칙과 워크플로우를 정의합니다.
-Gemini CLI 에이전트는 모든 작업 시 이 규칙을 최우선으로 준수해야 합니다.
+AI 에이전트는 모든 작업 시 이 규칙을 최우선으로 준수해야 합니다.
 
 ---
 
