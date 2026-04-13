@@ -5,6 +5,49 @@ TaskAIO는 WBS 기반 일정 관리 웹 애플리케이션이다.
 
 ---
 
+## gstack
+
+웹 브라우징은 gstack의 `/browse` 스킬을 사용한다. `mcp__claude-in-chrome__*` 도구는 사용하지 않는다.
+
+gstack 설치: `git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && ./setup`
+
+사용 가능한 스킬:
+- `/office-hours` — 디자인/엔지니어링 협업 세션
+- `/plan-ceo-review` — CEO 검토용 플랜 준비
+- `/plan-eng-review` — 엔지니어링 검토용 플랜 준비
+- `/plan-design-review` — 디자인 검토용 플랜 준비
+- `/design-consultation` — 디자인 컨설팅 세션
+- `/design-shotgun` — 빠른 디자인 반복
+- `/design-html` — 디자인에서 HTML 생성
+- `/review` — 코드 리뷰
+- `/ship` — 기능 end-to-end 배포
+- `/land-and-deploy` — 변경사항 랜드 및 배포
+- `/canary` — 카나리 배포
+- `/benchmark` — 벤치마크 실행
+- `/browse` — 웹 브라우징 및 QA용 헤드리스 브라우저
+- `/connect-chrome` — Chrome 인스턴스 연결
+- `/qa` — 전체 QA 패스
+- `/qa-only` — 배포 없이 QA만
+- `/design-review` — 디자인 리뷰 세션
+- `/setup-browser-cookies` — 브라우저 쿠키 설정
+- `/setup-deploy` — 배포 설정
+- `/retro` — 회고
+- `/investigate` — 버그/이슈 조사
+- `/document-release` — 릴리즈 문서화
+- `/codex` — codex 세션
+- `/cso` — 보안 책임자 리뷰
+- `/autoplan` — 자동 플랜 생성
+- `/plan-devex-review` — 개발자 경험 검토용 플랜 준비
+- `/devex-review` — 개발자 경험 리뷰
+- `/careful` — 신중 모드
+- `/freeze` — 기능 동결
+- `/guard` — 기능 보호
+- `/unfreeze` — 기능 동결 해제
+- `/gstack-upgrade` — gstack 업그레이드
+- `/learn` — 학습 세션
+
+---
+
 ## 에이전트 팀
 
 이 프로젝트는 역할별 전문 에이전트를 사용한다. 자동으로 적절한 에이전트가 선택되지만, `@에이전트명`으로 명시 호출도 가능하다.
