@@ -25,17 +25,17 @@ context: fork
 
 ### 1단계: 단위 테스트 (Vitest)
 ```bash
-cd /d/develop/workspace/taskaio && pnpm test --run 2>&1
+cd /home/smilejk930/develop/workspace/taskaio && pnpm test --run 2>&1
 ```
 
 ### 2단계: TypeScript 타입 검사
 ```bash
-cd /d/develop/workspace/taskaio && pnpm tsc --noEmit 2>&1
+cd /home/smilejk930/develop/workspace/taskaio && pnpm tsc --noEmit 2>&1
 ```
 
 ### 3단계: ESLint
 ```bash
-cd /d/develop/workspace/taskaio && pnpm lint 2>&1
+cd /home/smilejk930/develop/workspace/taskaio && pnpm lint 2>&1
 ```
 
 ## 리포트 형식
