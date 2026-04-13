@@ -1,0 +1,25 @@
+services:
+  taskaio-db:
+    image: postgres:15-alpine
+    container_name: taskaio-db
+    environment:
+      POSTGRES_USER: usr_taskaio # 자동생성
+      POSTGRES_PASSWORD: aio0930@% # 자동생성
+      POSTGRES_DB: db_taskaio # 자동생성
+    volumes:
+      - /data/taskaio/db/postgresql/data:/var/lib/postgresql/data:Z
+      - /data/taskaio/backup:/backup:Z
+    ports:
+      - "65432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U usr_taskaio -d db_taskaio" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - taskaio-network
+
+networks:
+  taskaio-network:
+    driver: bridge
