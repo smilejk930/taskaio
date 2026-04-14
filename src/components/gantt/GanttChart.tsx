@@ -723,38 +723,47 @@ export default function GanttChart({
 
                     droppedTaskIds.forEach((taskId) => {
                         const task = ganttInstance.getTask(taskId) as unknown as GanttTask;
-                        if (task && task._original_start) {
+                        if (task && task._original_start && task._original_end) {
                             const currentKey = `${task.id}-${task.start_date?.getTime()}-${task.end_date?.getTime()}-${task.progress}`;
                             const originalKey = `${task.id}-${task._original_start?.getTime()}-${task._original_end?.getTime()}-${task.progress}`;
 
-                            // 부모가 이동했으면 자식도 동일한 오프셋으로 이동
+                            // 부모가 변했는지 확인
                             if (currentKey !== originalKey) {
-                                const gExtended = ganttInstance as unknown as {
-                                    getChildren: (id: string) => (string | number)[];
-                                    getTask: (id: string | number) => GanttTask;
-                                    calculateDuration: (start: Date, end: Date) => number;
-                                    refreshTask: (id: string) => void;
-                                };
+                                // move와 resize 구분: duration이 유지되면 move, 아니면 resize
+                                const originalDuration = task._original_end.getTime() - task._original_start.getTime();
+                                const currentDuration = task.end_date!.getTime() - task.start_date!.getTime();
+                                const isMoveMode = originalDuration === currentDuration;
 
-                                const deltaMs = task.start_date!.getTime() - task._original_start.getTime();
+                                // move 모드일 때만 자식을 동일한 오프셋으로 이동
+                                if (isMoveMode) {
+                                    const gExtended = ganttInstance as unknown as {
+                                        getChildren: (id: string) => (string | number)[];
+                                        getTask: (id: string | number) => GanttTask;
+                                        calculateDuration: (start: Date, end: Date) => number;
+                                        refreshTask: (id: string) => void;
+                                    };
 
-                                // 자식도 동일한 오프셋으로 이동 (재귀)
-                                const applyDeltaRecursive = (parentTaskId: string) => {
-                                    const children = gExtended.getChildren(parentTaskId);
-                                    children.forEach((childId: string | number) => {
-                                        const child = gExtended.getTask(childId) as GanttTask;
-                                        if (!child || !child._original_start || !child._original_end) return;
+                                    const deltaMs = task.start_date!.getTime() - task._original_start.getTime();
 
-                                        child.start_date = new Date(child._original_start.getTime() + deltaMs);
-                                        child.end_date = new Date(child._original_end.getTime() + deltaMs);
-                                        child.duration = gExtended.calculateDuration(child.start_date, child.end_date);
-                                        gExtended.refreshTask(child.id.toString());
+                                    // 자식도 동일한 오프셋으로 이동 (재귀)
+                                    const applyDeltaRecursive = (parentTaskId: string) => {
+                                        const children = gExtended.getChildren(parentTaskId);
+                                        children.forEach((childId: string | number) => {
+                                            const child = gExtended.getTask(childId) as GanttTask;
+                                            if (!child || !child._original_start || !child._original_end) return;
 
-                                        applyDeltaRecursive(child.id.toString());
-                                    });
-                                };
+                                            child.start_date = new Date(child._original_start.getTime() + deltaMs);
+                                            child.end_date = new Date(child._original_end.getTime() + deltaMs);
+                                            child.duration = gExtended.calculateDuration(child.start_date, child.end_date);
+                                            gExtended.refreshTask(child.id.toString());
 
-                                applyDeltaRecursive(taskId);
+                                            applyDeltaRecursive(child.id.toString());
+                                        });
+                                    };
+
+                                    applyDeltaRecursive(taskId);
+                                }
+
                                 callbacksRef.current.onTaskUpdated?.(task);
                             }
                         }
