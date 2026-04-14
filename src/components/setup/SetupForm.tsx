@@ -23,6 +23,7 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
   const [isCompleted, setIsCompleted] = useState(initialIsCompleted)
   const [isRestarting, setIsRestarting] = useState(false)
   const [restartMessage, setRestartMessage] = useState('')
+  const [manualEnvContent, setManualEnvContent] = useState<string | null>(null)
 
   // 하이드레이션 오류 및 초기 지연 방지를 위해 마운트 체크
   useEffect(() => {
@@ -63,6 +64,9 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
     try {
       const result = await setupConfig(data)
       if (result.success) {
+        if (result.requireManualEnv && result.envContent) {
+          setManualEnvContent(result.envContent);
+        }
         setIsCompleted(true)
         toast.success('설치가 완료되었습니다!')
       } else {
@@ -130,6 +134,9 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
         // 직접 setupConfig를 여기서 호출하거나 onSubmit 로직을 더 정교하게 제어
         const result = await setupConfig(form.getValues())
         if (result.success) {
+          if (result.requireManualEnv && result.envContent) {
+            setManualEnvContent(result.envContent);
+          }
           setIsCompleted(true)
           toast.success('연결이 완료되었습니다!')
         } else {
@@ -280,15 +287,35 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 pt-4">
-          <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-sm text-slate-600 leading-relaxed">
-            <p className="font-medium text-slate-900 mb-2">🚀 마지막 단계: 재시작</p>
-            시스템 설정을 안전하게 반영하기 위해 서비스 재시작이 필요합니다. 
-            아래 버튼을 눌러 시스템을 재시작해 주세요.
-            
-            <p className="mt-3 text-[11px] text-slate-400">
-              * 로컬 개발 환경의 경우 수동으로 다시 실행해야 할 수도 있습니다.
-            </p>
-          </div>
+          {manualEnvContent ? (
+            <div className="p-4 bg-amber-50/50 rounded-lg border border-amber-200 text-sm text-slate-700 leading-relaxed space-y-3">
+              <div className="flex items-center gap-2 font-bold text-amber-700">
+                <AlertCircle className="w-5 h-5" />
+                Vercel/서버리스 환경 변수 등록 필요
+              </div>
+              <p>
+                데이터베이스 설정은 완료되었으나, 배포 환경(읽기 전용) 특성상 <code>.env</code> 파일 자동 생성을 건너뛰었습니다. 
+                아래 환경변수를 복사하여 Vercel 등 호스팅 서비스의 <b>Environment Variables</b>에 추가하고 재배포해 주세요.
+              </p>
+              <div className="relative">
+                <textarea 
+                  readOnly 
+                  className="w-full h-32 p-3 bg-slate-900 text-slate-50 text-xs rounded-md font-mono"
+                  value={manualEnvContent} 
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 bg-slate-50 rounded-lg border border-slate-100 text-sm text-slate-600 leading-relaxed">
+              <p className="font-medium text-slate-900 mb-2">🚀 마지막 단계: 재시작</p>
+              시스템 설정을 안전하게 반영하기 위해 서비스 재시작이 필요합니다. 
+              아래 버튼을 눌러 시스템을 재시작해 주세요.
+              
+              <p className="mt-3 text-[11px] text-slate-400">
+                * 로컬 개발 환경의 경우 수동으로 다시 실행해야 할 수도 있습니다.
+              </p>
+            </div>
+          )}
 
           {isRestarting && (
             <div className="flex flex-col items-center justify-center py-4 space-y-3 animate-in fade-in">

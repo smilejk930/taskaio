@@ -116,7 +116,14 @@ export async function setupConfig(input: SetupInput) {
       const envContent = Object.entries(config)
         .map(([k, v]) => `${k}="${v}"`)
         .join('\n')
-      fs.writeFileSync(envPath, envContent, 'utf8')
+
+      let requireManualEnv = false;
+      try {
+        fs.writeFileSync(envPath, envContent, 'utf8')
+      } catch (e) {
+        console.warn('⚠️ 읽기 전용 파일 시스템이거나 .env 파일에 쓸 수 없습니다. (Vercel 배포 등에서는 정상입니다.)')
+        requireManualEnv = true;
+      }
 
       // Docker 환경 대응: /app/data 디렉토리가 있으면 영구 보관용 .env 추가 생성
       const dataDir = path.join(process.cwd(), 'data')
@@ -204,7 +211,7 @@ export async function setupConfig(input: SetupInput) {
         }
       }
 
-      return { success: true }
+      return { success: true, requireManualEnv, envContent }
     } catch (error) {
       // 오류 발생 시 생성된 설정 파일 삭제 시도 (환경 정리를 위해 .env 삭제는 신중해야 함)
       throw error
