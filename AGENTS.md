@@ -64,7 +64,15 @@ Next.js 14+ (App Router) · TypeScript · Drizzle ORM · NextAuth(Auth.js) · sh
 | `/build-feature` | 승인된 Spec 기반 구현 | `@.agents/workflows/build-feature.md` |
 | `/db-migrate` | Drizzle 스키마 변경 + 마이그레이션 적용 | `@.agents/workflows/db-migrate.md` |
 | `/test-feature` | TDD(Red-Green-Refactor) + 회귀 검증 | `@.agents/workflows/test-feature.md` |
-| `/review` | PR 전 코드 품질·보안 게이트 | `@.agents/workflows/review.md` |
+| `/review-feature` | PR 전 코드 품질·보안 게이트 | `@.agents/workflows/review-feature.md` |
+
+## 6.  Superpowers 워크플로우
+
+| 명령어 | 역할 | 파일 |
+|---|---|---|
+| `/plan` | 승인된 디자인 문서 기반 구현 플랜 작성 (파일 구조 맵 → 태스크 분해 → 저장) | `@.agent/workflows/plan.md` |
+| `/review` | 브랜치 머지 전 2단계 코드 리뷰 (Spec 준수 검토 → 코드 품질 검토 → 테스트 실행) | `@.agent/workflows/review.md` |
+| `/finish` | 브랜치 완료 처리 (테스트 확인 → Merge / PR 생성 / 보류 / 폐기 선택) | `@.agent/workflows/finish.md` |
 
 > `/pm` 실행 시 분석→빌드→테스트→커밋→푸시가 자동으로 연결됩니다. (중간 Spec 승인 필요)
 
