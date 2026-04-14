@@ -5,6 +5,10 @@ const nextConfig = {
   ...(process.env.NEXT_BUILD_STANDALONE === 'true' && { output: 'standalone' }),
   experimental: {
     instrumentationHook: true,
+    outputFileTracingIncludes: {
+      '/setup': ['./drizzle/**/*'],
+      '/api/**/*': ['./drizzle/**/*'],
+    },
   },
 };
 
