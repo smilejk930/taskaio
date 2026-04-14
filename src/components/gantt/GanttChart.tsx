@@ -716,34 +716,64 @@ export default function GanttChart({
 
                 eventIdsRef.current.push(ganttInstance.attachEvent("onAfterTaskDrag", () => {
                     isDragging.current = false;
-                    // 드래그 종료 시 모아진 변경 대상 태스크들 중 실질적으로 변한 것들만 저장
-                    Array.from(modifiedTaskIdsDuringDrag).forEach((taskId) => {
+
+                    // 드래그 종료 후 부모 업무가 move 모드로 이동했는지 확인
+                    const droppedTaskIds = Array.from(modifiedTaskIdsDuringDrag);
+                    modifiedTaskIdsDuringDrag.clear();
+
+                    droppedTaskIds.forEach((taskId) => {
                         const task = ganttInstance.getTask(taskId) as unknown as GanttTask;
-                        if (task) {
+                        if (task && task._original_start) {
                             const currentKey = `${task.id}-${task.start_date?.getTime()}-${task.end_date?.getTime()}-${task.progress}`;
                             const originalKey = `${task.id}-${task._original_start?.getTime()}-${task._original_end?.getTime()}-${task.progress}`;
-                            
+
+                            // 부모가 이동했으면 자식도 동일한 오프셋으로 이동
                             if (currentKey !== originalKey) {
+                                const gExtended = ganttInstance as unknown as {
+                                    getChildren: (id: string) => (string | number)[];
+                                    getTask: (id: string | number) => GanttTask;
+                                    calculateDuration: (start: Date, end: Date) => number;
+                                    refreshTask: (id: string) => void;
+                                };
+
+                                const deltaMs = task.start_date!.getTime() - task._original_start.getTime();
+
+                                // 자식도 동일한 오프셋으로 이동 (재귀)
+                                const applyDeltaRecursive = (parentTaskId: string) => {
+                                    const children = gExtended.getChildren(parentTaskId);
+                                    children.forEach((childId: string | number) => {
+                                        const child = gExtended.getTask(childId) as GanttTask;
+                                        if (!child || !child._original_start || !child._original_end) return;
+
+                                        child.start_date = new Date(child._original_start.getTime() + deltaMs);
+                                        child.end_date = new Date(child._original_end.getTime() + deltaMs);
+                                        child.duration = gExtended.calculateDuration(child.start_date, child.end_date);
+                                        gExtended.refreshTask(child.id.toString());
+
+                                        applyDeltaRecursive(child.id.toString());
+                                    });
+                                };
+
+                                applyDeltaRecursive(taskId);
                                 callbacksRef.current.onTaskUpdated?.(task);
                             }
                         }
                     });
-                    modifiedTaskIdsDuringDrag.clear();
                 }));
 
                 eventIdsRef.current.push(ganttInstance.attachEvent("onTaskDrag", (id: unknown, mode: unknown, task: unknown) => {
                     const _id = id as string;
                     const _mode = mode as string;
                     const _task = task as GanttTask;
-                    
+
                     if (_mode === "progress") {
                         _task.progress = Math.round(_task.progress * 10) / 10;
                         ganttInstance.refreshTask(_id);
                         return true;
                     }
 
-                    // 부모 업무 이동/리사이징 시 자식 업무 연동 처리
-                    if ((_mode === "move" || _mode === "resize") && _task.start_date && _task.end_date) {
+                    // resize 모드: 부모 경계 변화에 따른 자식 제약(Clipping) 로직
+                    if (_mode === "resize" && _task.start_date && _task.end_date) {
                         const gExtended = ganttInstance as unknown as {
                             getChildren: (id: string) => (string | number)[];
                             getTask: (id: string | number) => GanttTask;
@@ -751,74 +781,44 @@ export default function GanttChart({
                             calculateEndDate: (start: Date, duration: number) => Date;
                             refreshTask: (id: string) => void;
                         };
+                        const children = gExtended.getChildren(_id);
 
-                        // move 모드: 부모와 자식을 동일한 오프셋으로 이동
-                        if (_mode === "move" && _task._original_start) {
-                            const deltaMs = _task.start_date.getTime() - _task._original_start.getTime();
+                        if (children && children.length > 0) {
+                            children.forEach((childId: string | number) => {
+                                const child = gExtended.getTask(childId) as GanttTask;
+                                if (!child || !child.start_date || !child.end_date) return;
 
-                            // 재귀적으로 모든 자손에 이동 오프셋 적용
-                            const applyDeltaRecursive = (taskId: string) => {
-                                const children = gExtended.getChildren(taskId);
-                                children.forEach((childId: string | number) => {
-                                    const child = gExtended.getTask(childId) as GanttTask;
-                                    if (!child || !child._original_start || !child._original_end) return;
+                                let changed = false;
+                                const pStart = _task.start_date!.getTime();
+                                const pEnd = _task.end_date!.getTime();
 
-                                    // 자식의 원래 위치에 부모의 이동량만큼 적용
-                                    child.start_date = new Date(child._original_start.getTime() + deltaMs);
-                                    child.end_date = new Date(child._original_end.getTime() + deltaMs);
+                                // 부모 경계가 자식 일정을 침범하는 경우 경계에 맞춤
+                                // 시작일 침범 시 (자식 시작일이 부모 시작일보다 빨라진 경우)
+                                if (child.start_date.getTime() < pStart) {
+                                    child.start_date = new Date(pStart);
+                                    // 종료일이 시작일보다 빨라지면 최소 기간(1일) 보장
+                                    if (child.start_date.getTime() >= child.end_date!.getTime()) {
+                                        child.end_date = gExtended.calculateEndDate(child.start_date, 1);
+                                    }
+                                    changed = true;
+                                }
+
+                                // 종료일 침범 시 (자식 종료일이 부모 종료일보다 늦어진 경우)
+                                if (child.end_date!.getTime() > pEnd) {
+                                    child.end_date = new Date(pEnd);
+                                    // 시작일이 종료일보다 늦어지면 최소 기간(1일) 보장
+                                    if (child.start_date.getTime() >= child.end_date!.getTime()) {
+                                        child.start_date = new Date(child.end_date!.getTime() - (24 * 60 * 60 * 1000));
+                                    }
+                                    changed = true;
+                                }
+
+                                if (changed) {
                                     child.duration = gExtended.calculateDuration(child.start_date, child.end_date);
                                     gExtended.refreshTask(child.id.toString());
                                     modifiedTaskIdsDuringDrag.add(child.id.toString());
-
-                                    // 자식의 자식(손자 이상)도 재귀 처리
-                                    applyDeltaRecursive(child.id.toString());
-                                });
-                            };
-
-                            applyDeltaRecursive(_id);
-                        }
-
-                        // resize 모드: 부모 경계 변화에 따른 자식 제약(Clipping) 로직 유지
-                        if (_mode === "resize") {
-                            const children = gExtended.getChildren(_id);
-
-                            if (children && children.length > 0) {
-                                children.forEach((childId: string | number) => {
-                                    const child = gExtended.getTask(childId) as GanttTask;
-                                    if (!child || !child.start_date || !child.end_date) return;
-
-                                    let changed = false;
-                                    const pStart = _task.start_date!.getTime();
-                                    const pEnd = _task.end_date!.getTime();
-
-                                    // 부모 경계가 자식 일정을 침범하는 경우 경계에 맞춤
-                                    // 시작일 침범 시 (자식 시작일이 부모 시작일보다 빨라진 경우)
-                                    if (child.start_date.getTime() < pStart) {
-                                        child.start_date = new Date(pStart);
-                                        // 종료일이 시작일보다 빨라지면 최소 기간(1일) 보장
-                                        if (child.start_date.getTime() >= child.end_date!.getTime()) {
-                                            child.end_date = gExtended.calculateEndDate(child.start_date, 1);
-                                        }
-                                        changed = true;
-                                    }
-
-                                    // 종료일 침범 시 (자식 종료일이 부모 종료일보다 늦어진 경우)
-                                    if (child.end_date!.getTime() > pEnd) {
-                                        child.end_date = new Date(pEnd);
-                                        // 시작일이 종료일보다 늦어지면 최소 기간(1일) 보장
-                                        if (child.start_date.getTime() >= child.end_date!.getTime()) {
-                                            child.start_date = new Date(child.end_date!.getTime() - (24 * 60 * 60 * 1000));
-                                        }
-                                        changed = true;
-                                    }
-
-                                    if (changed) {
-                                        child.duration = gExtended.calculateDuration(child.start_date, child.end_date);
-                                        gExtended.refreshTask(child.id.toString());
-                                        modifiedTaskIdsDuringDrag.add(child.id.toString());
-                                    }
-                                });
-                            }
+                                }
+                            });
                         }
                     }
 
