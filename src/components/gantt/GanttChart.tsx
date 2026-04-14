@@ -742,8 +742,8 @@ export default function GanttChart({
                         return true;
                     }
 
-                    // 부모(1뎁스)의 드래그 또는 리사이징 시 자식(2뎁스)들 연동 처리
-                    if ((_mode === "resize" || _mode === "move") && _task.start_date && _task.end_date) {
+                    // 부모 업무 이동/리사이징 시 자식 업무 연동 처리
+                    if ((_mode === "move" || _mode === "resize") && _task.start_date && _task.end_date) {
                         const gExtended = ganttInstance as unknown as {
                             getChildren: (id: string) => (string | number)[];
                             getTask: (id: string | number) => GanttTask;
@@ -751,60 +751,74 @@ export default function GanttChart({
                             calculateEndDate: (start: Date, duration: number) => Date;
                             refreshTask: (id: string) => void;
                         };
-                        const children = gExtended.getChildren(_id);
-                        
-                        if (children && children.length > 0) {
-                            children.forEach((childId: string | number) => {
-                                const child = gExtended.getTask(childId) as GanttTask;
-                                if (!child || !child.start_date || !child.end_date) return;
 
-                                let changed = false;
-                                const pStart = _task.start_date!.getTime();
-                                const pEnd = _task.end_date!.getTime();
+                        // move 모드: 부모와 자식을 동일한 오프셋으로 이동
+                        if (_mode === "move" && _task._original_start) {
+                            const deltaMs = _task.start_date.getTime() - _task._original_start.getTime();
 
-                                // 1. [기본 위치 복원] 자식의 원래 일정이 현재 부모의 범위 내에 있다면 원래 위치로 강제 고정
-                                // DHTMLX의 자동 이동(Offset)을 무효화하기 위해 원래 값을 항상 체크합니다.
-                                if (child._original_start && child._original_end) {
-                                    const oStart = child._original_start.getTime();
-                                    const oEnd = child._original_end.getTime();
+                            // 재귀적으로 모든 자손에 이동 오프셋 적용
+                            const applyDeltaRecursive = (taskId: string) => {
+                                const children = gExtended.getChildren(taskId);
+                                children.forEach((childId: string | number) => {
+                                    const child = gExtended.getTask(childId) as GanttTask;
+                                    if (!child || !child._original_start || !child._original_end) return;
 
-                                    // 원래 위치가 현재 부모 범위 안에 들어오는 경우 -> 원래 위치 고수
-                                    if (oStart >= pStart && oEnd <= pEnd) {
-                                        if (child.start_date.getTime() !== oStart || child.end_date!.getTime() !== oEnd) {
-                                            child.start_date = new Date(oStart);
-                                            child.end_date = new Date(oEnd);
-                                            changed = true;
-                                        }
-                                    }
-                                }
-
-                                // 2. [Clipping 로직] 부모 경계가 자식 일정을 침범하는 경우만 경계에 맞춤
-                                // 시작일 침범 시 (자식 시작일이 부모 시작일보다 빨라진 경우)
-                                if (child.start_date.getTime() < pStart) {
-                                    child.start_date = new Date(pStart);
-                                    // 종료일이 시작일보다 빨라지면 최소 기간(1일) 보장
-                                    if (child.start_date.getTime() >= child.end_date!.getTime()) {
-                                        child.end_date = gExtended.calculateEndDate(child.start_date, 1);
-                                    }
-                                    changed = true;
-                                }
-
-                                // 종료일 침범 시 (자식 종료일이 부모 종료일보다 늦어진 경우)
-                                if (child.end_date!.getTime() > pEnd) {
-                                    child.end_date = new Date(pEnd);
-                                    // 시작일이 종료일보다 늦어지면 최소 기간(1일) 보장
-                                    if (child.start_date.getTime() >= child.end_date!.getTime()) {
-                                        child.start_date = new Date(child.end_date!.getTime() - (24 * 60 * 60 * 1000));
-                                    }
-                                    changed = true;
-                                }
-
-                                if (changed) {
+                                    // 자식의 원래 위치에 부모의 이동량만큼 적용
+                                    child.start_date = new Date(child._original_start.getTime() + deltaMs);
+                                    child.end_date = new Date(child._original_end.getTime() + deltaMs);
                                     child.duration = gExtended.calculateDuration(child.start_date, child.end_date);
                                     gExtended.refreshTask(child.id.toString());
                                     modifiedTaskIdsDuringDrag.add(child.id.toString());
-                                }
-                            });
+
+                                    // 자식의 자식(손자 이상)도 재귀 처리
+                                    applyDeltaRecursive(child.id.toString());
+                                });
+                            };
+
+                            applyDeltaRecursive(_id);
+                        }
+
+                        // resize 모드: 부모 경계 변화에 따른 자식 제약(Clipping) 로직 유지
+                        if (_mode === "resize") {
+                            const children = gExtended.getChildren(_id);
+
+                            if (children && children.length > 0) {
+                                children.forEach((childId: string | number) => {
+                                    const child = gExtended.getTask(childId) as GanttTask;
+                                    if (!child || !child.start_date || !child.end_date) return;
+
+                                    let changed = false;
+                                    const pStart = _task.start_date!.getTime();
+                                    const pEnd = _task.end_date!.getTime();
+
+                                    // 부모 경계가 자식 일정을 침범하는 경우 경계에 맞춤
+                                    // 시작일 침범 시 (자식 시작일이 부모 시작일보다 빨라진 경우)
+                                    if (child.start_date.getTime() < pStart) {
+                                        child.start_date = new Date(pStart);
+                                        // 종료일이 시작일보다 빨라지면 최소 기간(1일) 보장
+                                        if (child.start_date.getTime() >= child.end_date!.getTime()) {
+                                            child.end_date = gExtended.calculateEndDate(child.start_date, 1);
+                                        }
+                                        changed = true;
+                                    }
+
+                                    // 종료일 침범 시 (자식 종료일이 부모 종료일보다 늦어진 경우)
+                                    if (child.end_date!.getTime() > pEnd) {
+                                        child.end_date = new Date(pEnd);
+                                        // 시작일이 종료일보다 늦어지면 최소 기간(1일) 보장
+                                        if (child.start_date.getTime() >= child.end_date!.getTime()) {
+                                            child.start_date = new Date(child.end_date!.getTime() - (24 * 60 * 60 * 1000));
+                                        }
+                                        changed = true;
+                                    }
+
+                                    if (changed) {
+                                        child.duration = gExtended.calculateDuration(child.start_date, child.end_date);
+                                        gExtended.refreshTask(child.id.toString());
+                                        modifiedTaskIdsDuringDrag.add(child.id.toString());
+                                    }
+                                });
+                            }
                         }
                     }
 
