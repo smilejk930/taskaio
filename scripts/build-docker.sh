@@ -8,20 +8,20 @@ export LANG=ko_KR.UTF-8
 echo "🚀 taskaio Docker 빌드 프로세스를 시작합니다..."
 
 # 1. 의존성 및 빌드 환경 확인
-if ! command -v pnpm &> /dev/null; then
+if ! command -v pnpm > /dev/null 2>&1; then
     echo "❌ Error: pnpm이 설치되어 있지 않습니다. pnpm을 설치해주세요."
     exit 1
 fi
 
 # Docker 명령어 존재 여부 확인
-if ! command -v docker &> /dev/null; then
+if ! command -v docker > /dev/null 2>&1; then
     echo "❌ Error: Docker가 설치되어 있지 않거나 PATH에 추가되지 않았습니다."
     exit 1
 fi
 
 # Docker 데몬 실행 여부 확인
 echo "🔍 Docker 데몬 상태 확인 중..."
-if ! docker version &> /dev/null; then
+if ! docker version > /dev/null 2>&1; then
     echo "❌ Error: Docker 데몬이 실행 중이지 않습니다. Docker Desktop을 실행해주세요."
     exit 1
 fi
