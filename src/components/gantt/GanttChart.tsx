@@ -239,10 +239,6 @@ export default function GanttChart({
                 ganttInstance.config.duration_unit = "day"
                 ganttInstance.config.xml_date = "%Y-%m-%d %H:%i";
 
-                // 부모-자식 간의 원치 않는 일정 전파 차단
-                (ganttInstance.config as any).auto_scheduling_descendants = false;
-                (ganttInstance.config as any).auto_scheduling_move_projects = false;
-                
                 // 횡 스크롤 활성화를 위한 핵심 설정
                 ganttInstance.config.autosize = false; 
                 ganttInstance.config.fit_tasks = false; // 업무 기간에 맞춰 시간축 범위를 자동 축소하지 않음
@@ -361,6 +357,10 @@ export default function GanttChart({
                     tooltip: true,
                     auto_scheduling: true,
                 })
+
+                // 부모-자식 간의 원치 않는 일정 전파 차단 (플러그인 로드 후 재설정)
+                ;(ganttInstance.config as unknown as { auto_scheduling_descendants?: boolean }).auto_scheduling_descendants = false;
+                ;(ganttInstance.config as unknown as { auto_scheduling_move_projects?: boolean }).auto_scheduling_move_projects = false;
 
                 ganttInstance.serverList("staff", members.map(m => ({
                     key: m.id,
@@ -692,7 +692,7 @@ export default function GanttChart({
                             }
                             t._original_end = t.end_date ? new Date(t.end_date.getTime()) : null;
                             
-                            const children = (ganttInstance as any).getChildren(taskId);
+                            const children = (ganttInstance as unknown as { getChildren: (id: string) => (string | number)[] }).getChildren(taskId);
                             children.forEach((childId: string | number) => {
                                 const sChildId = childId.toString();
                                 // 드래그 중인 자식들도 모두 수정 후보로 등록
@@ -744,7 +744,13 @@ export default function GanttChart({
 
                     // 부모(1뎁스)의 드래그 또는 리사이징 시 자식(2뎁스)들 연동 처리
                     if ((_mode === "resize" || _mode === "move") && _task.start_date && _task.end_date) {
-                        const gExtended = ganttInstance as any;
+                        const gExtended = ganttInstance as unknown as {
+                            getChildren: (id: string) => (string | number)[];
+                            getTask: (id: string | number) => GanttTask;
+                            calculateDuration: (start: Date, end: Date) => number;
+                            calculateEndDate: (start: Date, duration: number) => Date;
+                            refreshTask: (id: string) => void;
+                        };
                         const children = gExtended.getChildren(_id);
                         
                         if (children && children.length > 0) {
