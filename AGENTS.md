@@ -5,6 +5,18 @@ AI 에이전트는 모든 작업 시 이 규칙을 최우선으로 준수해야 
 
 ---
 
+## 0. 핵심 원칙: Design Before Code (설계 우선, 코드 생성 금지)
+
+@./skills/using-superpowers/SKILL.md @./skills/using-superpowers/references/gemini-tools.md
+
+새로운 기능 요청이나 구조 변경을 시작할 때 **절대로 코드를 먼저 작성하거나 파일을 수정하지 않습니다.**
+
+1. **작업 중지 및 의도 파악:** 사용자의 기능 추가/수정 요청 시, 코드를 작성하기 전에 다지선다 형태의 명확한 질문을 던져 요구사항과 목표부터 좁혀야 합니다.
+2. **설계 문서(Spec) 최우선 승인:** 분석(`brainstorming)`을 통해 짦고 명확한 기획/설계 문서를 먼저 제시하고, 이에 대해 사용자의 명시적 승인을 받아야 합니다.
+3. **플랜 승인 후 구현:** 설계 승인 후에도 바로 개발에 착수하지 않고, 파일 단위 / 태스크 단위의 구현 계획을 세우고 승인받은 뒤에야 실제 코드 수정 단계로 넘어갑니다.
+
+---
+
 ## 1. 페르소나 및 커뮤니케이션
 
 - **언어:** 모든 설명, 주석, 답변은 **한국어**로 작성합니다.
@@ -66,6 +78,8 @@ Next.js 14+ (App Router) · TypeScript · Drizzle ORM · NextAuth(Auth.js) · sh
 | `/test-feature` | TDD(Red-Green-Refactor) + 회귀 검증 | `@.agents/workflows/test-feature.md` |
 | `/review-feature` | PR 전 코드 품질·보안 게이트 | `@.agents/workflows/review-feature.md` |
 
+> `/pm` 실행 시 분석→빌드→테스트→커밋→푸시가 자동으로 연결됩니다. (중간 Spec 승인 필요)
+
 ## 6.  Superpowers 워크플로우
 
 | 명령어 | 역할 | 파일 |
@@ -73,8 +87,6 @@ Next.js 14+ (App Router) · TypeScript · Drizzle ORM · NextAuth(Auth.js) · sh
 | `/plan` | 승인된 디자인 문서 기반 구현 플랜 작성 (파일 구조 맵 → 태스크 분해 → 저장) | `@.agent/workflows/plan.md` |
 | `/review` | 브랜치 머지 전 2단계 코드 리뷰 (Spec 준수 검토 → 코드 품질 검토 → 테스트 실행) | `@.agent/workflows/review.md` |
 | `/finish` | 브랜치 완료 처리 (테스트 확인 → Merge / PR 생성 / 보류 / 폐기 선택) | `@.agent/workflows/finish.md` |
-
-> `/pm` 실행 시 분석→빌드→테스트→커밋→푸시가 자동으로 연결됩니다. (중간 Spec 승인 필요)
 
 ---
 
