@@ -74,9 +74,8 @@ Next.js 14+ (App Router) · TypeScript · Drizzle ORM · NextAuth(Auth.js) · sh
 ## 6. Git 및 커밋 규칙
 
 - **Conventional Commits:** `feat` · `fix` · `ui` · `db` · `refactor` · `docs` · `test` · `chore` 타입을 사용합니다.
-- **Auto Commit:** 단위 작업 완료 시 `git status ; git diff`를 확인하고 사용자 승인 후 커밋합니다.
+- **Auto Commit:** 단위 작업 완료 시 `git status && git diff`를 확인하고 사용자 승인 후 커밋합니다.
 - **커밋 메시지:** 한국어로 작성합니다.
-- **명령어 구분자:** Windows 환경을 고려하여 `;`를 사용합니다. (`&&` 금지)
 
 상세 규칙: `@.agents/rules/git-commit.md`
 

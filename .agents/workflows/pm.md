@@ -35,9 +35,9 @@ description: 사용자의 요구사항에 대해 분석 -> 구현 -> 테스트 -
 테스트가 성공하면 아래 절차를 **사용자 승인 없이(`SafeToAutoRun: true`)** 즉시 수행한다.
 
 // turbo
-1. **변경 확인:** `git status ; git diff` 실행하여 변경 사항 최종 점검.
+1. **변경 확인:** `git status && git diff` 실행하여 변경 사항 최종 점검.
 // turbo
-2. **스테이징 및 커밋:** `git add . ; git commit -m "[타입](범위): 한글 메시지"` 실행.
+2. **스테이징 및 커밋:** `git add . && git commit -m "[타입](범위): 한글 메시지"` 실행.
    - `@.agents/rules/git-commit.md` 규칙에 따라 한국어로 작성.
 3. **요약 보고:** 완료된 작업을 사용자에게 보고한다.
 

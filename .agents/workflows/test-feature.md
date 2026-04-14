@@ -52,7 +52,7 @@ pnpm build         # 빌드 안정성 확인
 - **`Ignored build scripts`**: `pnpm` 보안 정책으로 특정 빌드가 차단된 경우. `pnpm approve-builds`를 실행하여 `better-sqlite3` 등의 빌드 스크립트를 승인한다.
 - **테스트 로드 실패**: `node_modules` 오염 가능성. 아래 명령어로 초기화한다.
   ```powershell
-  rm -rf node_modules ; pnpm store prune ; pnpm install
+  rm -rf node_modules && pnpm store prune && pnpm install
   ```
 
 ### 6. 완료 보고
