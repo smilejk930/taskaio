@@ -231,20 +231,17 @@ export default function GanttChart({
 
                 // ── 기본 설정 ──────────────────────────────────────────────────────────
                 ganttInstance.config.date_format = '%Y-%m-%d %H:%i'
-                ganttInstance.config.drag_project = true
-                ganttInstance.config.work_time = true  // 워킹데이 기준 기간 계산 활성화
+                ganttInstance.config.drag_project = false
+                ganttInstance.config.work_time = false  // 토일 포함 모든 날짜를 기간으로 계산
                 ganttInstance.config.show_progress = true
                 ganttInstance.config.round_dnd_dates = true
                 ganttInstance.config.time_step = 1440
                 ganttInstance.config.duration_unit = "day"
                 ganttInstance.config.xml_date = "%Y-%m-%d %H:%i";
-                
-                // ── 주말(토/일) 숨김 처리 ─────────────────────────────────────
-                const g = ganttInstance as unknown as { ignore_time: (date: Date) => boolean };
-                g.ignore_time = (date: Date) => {
-                    const day = date.getDay();
-                    return day === 0 || day === 6; // 일요일(0) 또는 토요일(6)일 때 숨김(true 반환)
-                };
+
+                // 부모-자식 간의 원치 않는 일정 전파 차단
+                (ganttInstance.config as any).auto_scheduling_descendants = false;
+                (ganttInstance.config as any).auto_scheduling_move_projects = false;
                 
                 // 횡 스크롤 활성화를 위한 핵심 설정
                 ganttInstance.config.autosize = false; 
@@ -626,6 +623,7 @@ export default function GanttChart({
 
                     let tooltipHtml = `<div style="font-size:14px;font-weight:600;margin-bottom:6px;color:#1e293b;word-break:break-word;overflow-wrap:break-word;white-space:normal;">${_task.text}</div>`;
                     tooltipHtml += `<div style="font-size:12px;color:#64748b;margin-bottom:10px;line-height:1.5;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;">${desc}</div>`;
+                    tooltipHtml += `<div style="font-size:13px;color:#475569;margin-bottom:8px;"><span style="font-weight:600;">담당자:</span> ${_task.assignee_name || '미지정'}</div>`;
 
                     if (!_task.unscheduled) {
                         tooltipHtml += `<div style="font-size:13px;color:#475569;"><span style="font-weight:600;">기 간:</span> ${formatYMD(start)} ~ ${formatYMD(new Date(end.getTime() - 1000))}</div>`;
@@ -657,11 +655,55 @@ export default function GanttChart({
                     return `<div style="padding:14px;min-width:280px;max-width:500px;max-height:500px;overflow-y:auto;background:#ffffff;scrollbar-width:thin;box-sizing:border-box;">${tooltipHtml}</div>`;
                 }
 
+                const modifiedTaskIdsDuringDrag = new Set<string>();
+
                 eventIdsRef.current.push(ganttInstance.attachEvent("onBeforeTaskDrag", (id: unknown) => {
                     const _id = id as string;
                     isDragging.current = true;
-                    const task = ganttInstance.getTask(_id) as unknown as GanttTask;
-                    if (task) task._original_duration = task.duration;
+                    modifiedTaskIdsDuringDrag.clear();
+                    modifiedTaskIdsDuringDrag.add(_id);
+                    
+                    // 조상(Ancestors) 수집 함수
+                    const collectAncestors = (taskId: string) => {
+                        const t = ganttInstance.getTask(taskId) as unknown as GanttTask;
+                        if (t && t.parent) {
+                            const pId = t.parent.toString();
+                            if (!modifiedTaskIdsDuringDrag.has(pId)) {
+                                modifiedTaskIdsDuringDrag.add(pId);
+                                const pTask = ganttInstance.getTask(pId) as unknown as GanttTask;
+                                if (pTask) {
+                                    pTask._original_duration = pTask.duration;
+                                    if (pTask.start_date) pTask._original_start = new Date(pTask.start_date.getTime());
+                                    pTask._original_end = pTask.end_date ? new Date(pTask.end_date.getTime()) : null;
+                                }
+                                collectAncestors(pId);
+                            }
+                        }
+                    };
+
+                    // 자손(Descendants) 수집 및 원본 저장 함수
+                    const recursiveSaveOriginal = (taskId: string) => {
+                        const t = ganttInstance.getTask(taskId) as unknown as GanttTask;
+                        if (t) {
+                            // duration 보존을 위해 현재 상태 저장
+                            t._original_duration = t.duration;
+                            if (t.start_date) {
+                                t._original_start = new Date(t.start_date.getTime());
+                            }
+                            t._original_end = t.end_date ? new Date(t.end_date.getTime()) : null;
+                            
+                            const children = (ganttInstance as any).getChildren(taskId);
+                            children.forEach((childId: string | number) => {
+                                const sChildId = childId.toString();
+                                // 드래그 중인 자식들도 모두 수정 후보로 등록
+                                modifiedTaskIdsDuringDrag.add(sChildId);
+                                recursiveSaveOriginal(sChildId);
+                            });
+                        }
+                    };
+
+                    recursiveSaveOriginal(_id);
+                    collectAncestors(_id);
                     return true;
                 }));
 
@@ -672,29 +714,94 @@ export default function GanttChart({
                     return false;
                 }));
 
-                eventIdsRef.current.push(ganttInstance.attachEvent("onAfterTaskDrag", (id: unknown) => {
-                    const _id = id as string;
+                eventIdsRef.current.push(ganttInstance.attachEvent("onAfterTaskDrag", () => {
                     isDragging.current = false;
-                    // 드래그 종료 시 최종 데이터 저장 보장 (중복 체크 포함)
-                    const task = ganttInstance.getTask(_id) as unknown as GanttTask;
-                    if (task) {
-                        const updateKey = `${task.id}-${task.start_date?.getTime()}-${(task.end_date as Date)?.getTime()}-${task.progress}`;
-                        if (lastUpdateKeyRef.current !== updateKey) {
-                            lastUpdateKeyRef.current = updateKey;
-                            callbacksRef.current.onTaskUpdated?.(task);
+                    // 드래그 종료 시 모아진 변경 대상 태스크들 중 실질적으로 변한 것들만 저장
+                    Array.from(modifiedTaskIdsDuringDrag).forEach((taskId) => {
+                        const task = ganttInstance.getTask(taskId) as unknown as GanttTask;
+                        if (task) {
+                            const currentKey = `${task.id}-${task.start_date?.getTime()}-${task.end_date?.getTime()}-${task.progress}`;
+                            const originalKey = `${task.id}-${task._original_start?.getTime()}-${task._original_end?.getTime()}-${task.progress}`;
+                            
+                            if (currentKey !== originalKey) {
+                                callbacksRef.current.onTaskUpdated?.(task);
+                            }
                         }
-                    }
+                    });
+                    modifiedTaskIdsDuringDrag.clear();
                 }));
 
                 eventIdsRef.current.push(ganttInstance.attachEvent("onTaskDrag", (id: unknown, mode: unknown, task: unknown) => {
                     const _id = id as string;
                     const _mode = mode as string;
                     const _task = task as GanttTask;
+                    
                     if (_mode === "progress") {
-                        // 진행률을 0.1(10%) 단위로 반올림하여 스냅 적용
                         _task.progress = Math.round(_task.progress * 10) / 10;
                         ganttInstance.refreshTask(_id);
+                        return true;
                     }
+
+                    // 부모(1뎁스)의 드래그 또는 리사이징 시 자식(2뎁스)들 연동 처리
+                    if ((_mode === "resize" || _mode === "move") && _task.start_date && _task.end_date) {
+                        const gExtended = ganttInstance as any;
+                        const children = gExtended.getChildren(_id);
+                        
+                        if (children && children.length > 0) {
+                            children.forEach((childId: string | number) => {
+                                const child = gExtended.getTask(childId) as GanttTask;
+                                if (!child || !child.start_date || !child.end_date) return;
+
+                                let changed = false;
+                                const pStart = _task.start_date!.getTime();
+                                const pEnd = _task.end_date!.getTime();
+
+                                // 1. [기본 위치 복원] 자식의 원래 일정이 현재 부모의 범위 내에 있다면 원래 위치로 강제 고정
+                                // DHTMLX의 자동 이동(Offset)을 무효화하기 위해 원래 값을 항상 체크합니다.
+                                if (child._original_start && child._original_end) {
+                                    const oStart = child._original_start.getTime();
+                                    const oEnd = child._original_end.getTime();
+
+                                    // 원래 위치가 현재 부모 범위 안에 들어오는 경우 -> 원래 위치 고수
+                                    if (oStart >= pStart && oEnd <= pEnd) {
+                                        if (child.start_date.getTime() !== oStart || child.end_date!.getTime() !== oEnd) {
+                                            child.start_date = new Date(oStart);
+                                            child.end_date = new Date(oEnd);
+                                            changed = true;
+                                        }
+                                    }
+                                }
+
+                                // 2. [Clipping 로직] 부모 경계가 자식 일정을 침범하는 경우만 경계에 맞춤
+                                // 시작일 침범 시 (자식 시작일이 부모 시작일보다 빨라진 경우)
+                                if (child.start_date.getTime() < pStart) {
+                                    child.start_date = new Date(pStart);
+                                    // 종료일이 시작일보다 빨라지면 최소 기간(1일) 보장
+                                    if (child.start_date.getTime() >= child.end_date!.getTime()) {
+                                        child.end_date = gExtended.calculateEndDate(child.start_date, 1);
+                                    }
+                                    changed = true;
+                                }
+
+                                // 종료일 침범 시 (자식 종료일이 부모 종료일보다 늦어진 경우)
+                                if (child.end_date!.getTime() > pEnd) {
+                                    child.end_date = new Date(pEnd);
+                                    // 시작일이 종료일보다 늦어지면 최소 기간(1일) 보장
+                                    if (child.start_date.getTime() >= child.end_date!.getTime()) {
+                                        child.start_date = new Date(child.end_date!.getTime() - (24 * 60 * 60 * 1000));
+                                    }
+                                    changed = true;
+                                }
+
+                                if (changed) {
+                                    child.duration = gExtended.calculateDuration(child.start_date, child.end_date);
+                                    gExtended.refreshTask(child.id.toString());
+                                    modifiedTaskIdsDuringDrag.add(child.id.toString());
+                                }
+                            });
+                        }
+                    }
+
                     return true;
                 }));
 

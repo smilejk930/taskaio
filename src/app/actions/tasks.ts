@@ -39,17 +39,28 @@ export async function updateTask(id: string, updates: TaskUpdatePayload, bypassA
     const task = await tasksRepo.updateTask(id, repoUpdates)
 
     // 시작일이 변경되었고 하위 업무가 있는 경우 날짜 이동 (Cascading)
+    // 핵심: Resize(시작일만 변동)와 Move(시작일+종료일 동일 변동)를 구분
+    // Move일 때만 하위 업무를 연쇄 이동시키고, Resize 시에는 이동하지 않음
     if (updates.startDate && existingTask.startDate) {
         const oldStart = new Date(existingTask.startDate).getTime()
         const newStart = new Date(updates.startDate).getTime()
-        const offsetMs = newStart - oldStart
+        const startOffsetMs = newStart - oldStart
 
-        if (offsetMs !== 0) {
-            await tasksRepo.shiftChildTasks(id, offsetMs)
+        // 종료일 변동폭 계산 (Move 판별용)
+        let endOffsetMs = 0
+        if (updates.endDate && existingTask.endDate) {
+            endOffsetMs = new Date(updates.endDate).getTime() - new Date(existingTask.endDate).getTime()
+        }
+
+        // 시작일과 종료일이 동일한 양만큼 변동된 경우에만 전체 이동(Move)으로 판단
+        const isMove = startOffsetMs !== 0 && updates.endDate && existingTask.endDate && startOffsetMs === endOffsetMs
+
+        if (isMove) {
+            await tasksRepo.shiftChildTasks(id, startOffsetMs)
             
             // 본인의 이후 업무 연쇄 이동
             if (shiftSubsequentTasks && currentUserId && existingTask.projectId) {
-               await tasksRepo.shiftUserSubsequentTasks(existingTask.projectId, currentUserId, new Date(existingTask.startDate), offsetMs, id);
+               await tasksRepo.shiftUserSubsequentTasks(existingTask.projectId, currentUserId, new Date(existingTask.startDate), startOffsetMs, id);
             }
         }
     }

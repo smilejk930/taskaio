@@ -71,6 +71,8 @@ export interface GanttTask {
     description?: string | null
     row_height?: number
     _original_duration?: number
+    _original_start?: Date
+    _original_end?: Date | null
 }
 
 export interface GanttLink {
