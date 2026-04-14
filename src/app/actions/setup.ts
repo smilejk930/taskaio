@@ -120,7 +120,7 @@ export async function setupConfig(input: SetupInput) {
       let requireManualEnv = false;
       try {
         fs.writeFileSync(envPath, envContent, 'utf8')
-      } catch (e) {
+      } catch {
         console.warn('⚠️ 읽기 전용 파일 시스템이거나 .env 파일에 쓸 수 없습니다. (Vercel 배포 등에서는 정상입니다.)')
         requireManualEnv = true;
       }
