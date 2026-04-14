@@ -1,8 +1,10 @@
 ---
 trigger: always_on
-glob:
 description: Superpowers methodology rules — enforces design-before-code, TDD, systematic debugging, and verification-before-completion on every task. Based on https://github.com/obra/superpowers.
 ---
+
+
+@./skills/using-superpowers/SKILL.md @./skills/using-superpowers/references/gemini-tools.md
 
 ## 1. Design Before Code (Mandatory)
 
