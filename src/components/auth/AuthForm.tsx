@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { login, signup } from '@/app/actions/auth'
 import { signupSchema, loginSchema } from '@/lib/validations/auth'
 import { toast } from 'sonner'
-import { Loader2, Check, X } from 'lucide-react'
+import { Loader2, Check, X, Eye, EyeOff } from 'lucide-react'
 import { z } from 'zod'
 
 interface AuthFormProps {
@@ -26,6 +26,7 @@ type SafeFieldErrors<T> = Partial<Record<keyof T, { message?: string }>>
 
 export function AuthForm({ mode }: AuthFormProps) {
     const [isLoading, setIsLoading] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
     const router = useRouter()
 
     const {
@@ -33,6 +34,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         handleSubmit,
         formState: { errors },
         watch,
+        setFocus,
     } = useForm<SignupInput | LoginInput>({
         resolver: zodResolver(mode === 'signup' ? signupSchema : loginSchema),
         defaultValues: {
@@ -58,6 +60,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
             if (result?.error) {
                 toast.error(result.error)
+                setFocus('password')
             } else {
                 toast.success(mode === 'login' ? '로그인되었습니다.' : '회원가입이 완료되었습니다.')
                 router.push('/projects')
@@ -65,6 +68,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             }
         } catch {
             toast.error('오류가 발생했습니다. 다시 시도해주세요.')
+            setFocus('password')
         } finally {
             setIsLoading(false)
         }
