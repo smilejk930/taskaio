@@ -27,6 +27,7 @@ type SafeFieldErrors<T> = Partial<Record<keyof T, { message?: string }>>
 export function AuthForm({ mode }: AuthFormProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const router = useRouter()
 
     const {
@@ -158,12 +159,33 @@ export function AuthForm({ mode }: AuthFormProps) {
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="password">비밀번호</Label>
                             </div>
-                            <Input
-                                id="password"
-                                type="password"
-                                disabled={isLoading}
-                                {...register('password')}
-                            />
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    className="pr-10"
+                                    disabled={isLoading}
+                                    {...register('password')}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    disabled={isLoading}
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                        <Eye className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                    <span className="sr-only">
+                                        {showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+                                    </span>
+                                </Button>
+                            </div>
                             {errors.password && (
                                 <p className="text-xs text-red-500 font-medium">{errors.password.message}</p>
                             )}
@@ -189,12 +211,33 @@ export function AuthForm({ mode }: AuthFormProps) {
                         {mode === 'signup' && (
                             <div className="grid gap-2">
                                 <Label htmlFor="confirmPassword">비밀번호 확인</Label>
-                                <Input
-                                    id="confirmPassword"
-                                    type="password"
-                                    disabled={isLoading}
-                                    {...register('confirmPassword' as keyof (SignupInput & LoginInput))}
-                                />
+                                <div className="relative">
+                                    <Input
+                                        id="confirmPassword"
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        className="pr-10"
+                                        disabled={isLoading}
+                                        {...register('confirmPassword' as keyof (SignupInput & LoginInput))}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        disabled={isLoading}
+                                        tabIndex={-1}
+                                    >
+                                        {showConfirmPassword ? (
+                                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                                        ) : (
+                                            <Eye className="h-4 w-4 text-muted-foreground" />
+                                        )}
+                                        <span className="sr-only">
+                                            {showConfirmPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+                                        </span>
+                                    </Button>
+                                </div>
                                 {mode === 'signup' && (errors as unknown as SafeFieldErrors<SignupInput>).confirmPassword && (
                                     <p className="text-xs text-red-500 font-medium">{(errors as unknown as SafeFieldErrors<SignupInput>).confirmPassword?.message}</p>
                                 )}
