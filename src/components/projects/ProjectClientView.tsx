@@ -113,16 +113,6 @@ export default function ProjectClientView({
     const router = useRouter()
     const currentMemberRole = members.find(m => m.id === currentUser?.id)?.role
 
-    // ── 실시간 데이터 폴링 (30초 주기) ─────────────────────────────────
-    React.useEffect(() => {
-        const intervalId = setInterval(() => {
-            startTransition(() => {
-                router.refresh()
-            })
-        }, 30000)
-
-        return () => clearInterval(intervalId)
-    }, [router])
 
     // 탭 변경 핸들러: URL 업데이트 및 데이터 갱신
     const handleTabChange = (value: string) => {
@@ -146,6 +136,22 @@ export default function ProjectClientView({
 
     const [selectedHoliday, setSelectedHoliday] = useState<(HolidayFormData & { id?: string }) | null>(null)
     const [isHolidayDialogOpen, setIsHolidayDialogOpen] = useState(false)
+
+    // ── 실시간 데이터 폴링 (30초 주기) ─────────────────────────────────
+    React.useEffect(() => {
+        // 모달이나 다이얼로그가 열려있을 때는 폴링 중지
+        if (isTaskDialogOpen || isEditProjectOpen || isHolidayDialogOpen) {
+            return;
+        }
+
+        const intervalId = setInterval(() => {
+            startTransition(() => {
+                router.refresh()
+            })
+        }, 30000)
+
+        return () => clearInterval(intervalId)
+    }, [router, isTaskDialogOpen, isEditProjectOpen, isHolidayDialogOpen])
 
     // ── 업무 다이얼로그 핸들러 ──────────────────────────────────────────────
     const openTaskDialog = (taskOrId?: string | ProjectTask | (Partial<TaskFormData> & { id?: string })) => {
