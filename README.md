@@ -119,7 +119,7 @@ docker build -t taskaio:latest .
 
 postgres와 같은 경우 Database URL은 다음과 같이 설정합니다.
 ```
-postgresql://usr_taskaio:aio0930@%@taskaio-db:5432/db_taskaio
+postgresql://usr_taskaio:[password]@taskaio-db:5432/db_taskaio
 ```
 
 ### 💾 데이터 영속성 (Persistence)
