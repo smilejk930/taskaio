@@ -71,7 +71,7 @@ gstack 설치: `git clone --single-branch --depth 1 https://github.com/garrytan/
 | Database | Drizzle ORM (`DB_TYPE`: `supabase` \| `postgres` \| `sqlite`) |
 | 간트차트 | dhtmlx-gantt |
 | 상태 관리 | Zustand |
-| 데이터 패칭 | React Query (30초 폴링, Realtime 미사용) |
+| 데이터 패칭 | Server Components + Server Actions + `router.refresh()` (주기적 폴링 및 Realtime 미사용) |
 | 인증 | NextAuth v5 (JWT, credential 기반) |
 | 패키지 매니저 | pnpm |
 | 테스트 | Vitest + React Testing Library |
@@ -101,7 +101,7 @@ src/
 │   ├── api/auth/         ← NextAuth 라우트
 │   └── projects/[id]/    ← 프로젝트 상세/간트/팀원 페이지
 ├── components/{feature}/ ← 기능별 UI 컴포넌트
-├── hooks/                ← use-{resource}.ts (React Query 기반)
+├── hooks/                ← use-{resource}.ts (Server Actions 결과를 useState로 관리)
 ├── lib/db/
 │   ├── index.ts          ← DB_TYPE 기반 어댑터 팩토리
 │   ├── schema/           ← Drizzle 스키마 (pg.ts)
@@ -188,8 +188,8 @@ toast.success('업무가 수정되었습니다')
 // 권한 검증: 프로젝트 멤버가 아닌 경우 접근 차단
 await authCheck(input.projectId)
 
-// 30초마다 폴링하여 최신 업무 목록 갱신
-const { data: tasks } = useQuery({ staleTime: 30_000 })
+// 서버 데이터 변경이 전파되도록 Server Action 호출 후 서버 컴포넌트 재조회
+router.refresh()
 
 // ❌ 금지 — 영문 주석 또는 코드와 동일한 내용 반복
 // update task  ← 금지

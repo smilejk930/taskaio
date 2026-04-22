@@ -137,21 +137,10 @@ export default function ProjectClientView({
     const [selectedHoliday, setSelectedHoliday] = useState<(HolidayFormData & { id?: string }) | null>(null)
     const [isHolidayDialogOpen, setIsHolidayDialogOpen] = useState(false)
 
-    // ── 실시간 데이터 폴링 (30초 주기) ─────────────────────────────────
-    React.useEffect(() => {
-        // 모달이나 다이얼로그가 열려있을 때는 폴링 중지
-        if (isTaskDialogOpen || isEditProjectOpen || isHolidayDialogOpen) {
-            return;
-        }
-
-        const intervalId = setInterval(() => {
-            startTransition(() => {
-                router.refresh()
-            })
-        }, 30000)
-
-        return () => clearInterval(intervalId)
-    }, [router, isTaskDialogOpen, isEditProjectOpen, isHolidayDialogOpen])
+    // 주의: 이전에는 30초 주기로 router.refresh()를 호출해 전체 데이터를 재조회했으나,
+    // 간트차트의 스크롤/확대/선택 등 내부 상태가 초기화되어 사용자 작업을 방해했다.
+    // 사용자 자신의 변경은 생성/수정/삭제 핸들러에서 즉시 router.refresh()로 반영되므로
+    // 주기적 폴링은 제거한다. 다른 사용자 변경을 보려면 탭 전환 또는 새로고침으로 충분하다.
 
     // ── 업무 다이얼로그 핸들러 ──────────────────────────────────────────────
     const openTaskDialog = (taskOrId?: string | ProjectTask | (Partial<TaskFormData> & { id?: string })) => {
