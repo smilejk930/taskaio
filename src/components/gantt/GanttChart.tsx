@@ -1066,10 +1066,11 @@ export default function GanttChart({
                     return totalLines;
                 };
 
-                // 업무명(250px)과 업무 설명(300px) 각각의 예상 줄 수 계산
-                // 250px/300px 기준 약 50-80단위 (영문 1, 한글 2) 내외이나, 업무명은 인덴트 및 아이콘으로 인해 더 좁음
-                const textLines = calculateLines(text, 30);
-                const descLines = calculateLines(description, 65);
+                // 업무명(200px 트리 컬럼)과 업무 설명(220px, 12px 폰트) 각각의 예상 줄 수 계산
+                // 단위: 영문 1, 한글 2. 업무명은 트리 들여쓰기/펼침 아이콘/폴더 아이콘으로 가용 폭이 더 좁음
+                // 컬럼 폭이 변경되면 maxUnits를 함께 갱신해야 행 높이가 잘리지 않음
+                const textLines = calculateLines(text, 22);
+                const descLines = calculateLines(description, 32);
 
                 // 둘 중 더 많은 줄 수 선택하여 행 높이 결정
                 const maxLines = Math.max(textLines, descLines);
