@@ -13,6 +13,7 @@ import { MemberColorPicker } from './MemberColorPicker'
 interface Member {
     id: string
     display_name: string | null
+    username: string | null
     email: string | null
     role?: 'owner' | 'manager' | 'member' | null
     colorCode?: string | null
@@ -28,7 +29,7 @@ interface TeamManagementViewProps {
 
 export default function TeamManagementView({ projectId, members, currentMemberRole, currentUserId, isSystemAdmin }: TeamManagementViewProps) {
     const [searchQuery, setSearchQuery] = useState('')
-    const [searchResults, setSearchResults] = useState<{ id: string, display_name: string | null, email: string | null }[]>([])
+    const [searchResults, setSearchResults] = useState<{ id: string, display_name: string | null, username: string | null, email: string | null }[]>([])
     const [isSearching, setIsSearching] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
 
@@ -149,12 +150,12 @@ export default function TeamManagementView({ projectId, members, currentMemberRo
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><UserPlus className="w-5 h-5" /> 팀원 초대</CardTitle>
-                        <CardDescription>이름이나 이메일로 가입된 사용자를 검색하여 프로젝트에 초대합니다.</CardDescription>
+                        <CardDescription>이름, 아이디, 이메일로 가입된 사용자를 검색하여 프로젝트에 초대합니다.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSearch} className="flex gap-3 mb-6">
                             <Input
-                                placeholder="이름 또는 이메일 검색..."
+                                placeholder="이름, 아이디, 이메일 검색..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="flex-1"
@@ -172,7 +173,11 @@ export default function TeamManagementView({ projectId, members, currentMemberRo
                                         <li key={user.id} className="flex justify-between items-center p-3 hover:bg-muted/60 transition-colors">
                                             <div className="flex flex-col">
                                                 <span className="font-medium text-sm">{user.display_name}</span>
-                                                <span className="text-xs text-muted-foreground">{user.email}</span>
+                                                {/* 식별자: 아이디(@username) + 이메일 함께 노출 */}
+                                                <span className="text-xs text-muted-foreground">
+                                                    {user.username && <>@{user.username} · </>}
+                                                    {user.email}
+                                                </span>
                                             </div>
                                             <Button size="sm" onClick={() => handleAddMember(user.id)} disabled={isSaving}>
                                                 추가
@@ -201,6 +206,7 @@ export default function TeamManagementView({ projectId, members, currentMemberRo
                                 <tr>
                                     <th className="text-left py-3 px-4 font-medium text-muted-foreground">이름</th>
                                     <th className="text-left py-3 px-4 font-medium text-muted-foreground w-20">색상</th>
+                                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">아이디</th>
                                     <th className="text-left py-3 px-4 font-medium text-muted-foreground">이메일</th>
                                     <th className="text-left py-3 px-4 font-medium text-muted-foreground w-32">역할</th>
                                     {canManage && <th className="text-center py-3 px-4 font-medium text-muted-foreground w-24">관리</th>}
@@ -228,6 +234,7 @@ export default function TeamManagementView({ projectId, members, currentMemberRo
                                                     disabled={!isSystemAdmin && !isSelf} // 본인 또는 시스템관리자만 가능
                                                 />
                                             </td>
+                                            <td className="py-3 px-4 text-muted-foreground">{member.username || '-'}</td>
                                             <td className="py-3 px-4 text-muted-foreground">{member.email || '-'}</td>
                                             <td className="py-3 px-4">
                                                 <Select

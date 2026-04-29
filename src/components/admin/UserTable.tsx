@@ -26,6 +26,7 @@ import { toast } from 'sonner'
 
 type AdminUser = {
     id: string
+    username: string | null
     email: string | null
     name: string | null
     displayName: string | null
@@ -64,7 +65,8 @@ export function UserTable({ users, currentUserId }: UserTableProps) {
                     <TableRow>
                         <TableHead className="w-[80px]">형태</TableHead>
                         <TableHead>이름</TableHead>
-                        <TableHead>아이디 (이메일)</TableHead>
+                        <TableHead>아이디</TableHead>
+                        <TableHead>이메일</TableHead>
                         <TableHead>권한</TableHead>
                         <TableHead className="text-right">작업</TableHead>
                     </TableRow>
@@ -72,7 +74,7 @@ export function UserTable({ users, currentUserId }: UserTableProps) {
                 <TableBody>
                     {users.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
+                            <TableCell colSpan={6} className="h-24 text-center">
                                 등록된 사용자가 없습니다.
                             </TableCell>
                         </TableRow>
@@ -94,7 +96,8 @@ export function UserTable({ users, currentUserId }: UserTableProps) {
                                         <Badge variant="outline" className="ml-2 text-[10px] py-0">본인</Badge>
                                     )}
                                 </TableCell>
-                                <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                                <TableCell className="text-muted-foreground">{user.username || '-'}</TableCell>
+                                <TableCell className="text-muted-foreground">{user.email || '-'}</TableCell>
                                 <TableCell>
                                     <Badge variant={user.isAdmin ? "default" : "secondary"}>
                                         {user.isAdmin ? "시스템 관리자" : "일반 사용자"}

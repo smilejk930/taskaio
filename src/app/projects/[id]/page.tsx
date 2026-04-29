@@ -83,6 +83,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
     const formattedMembers: Member[] = members.map(m => ({
         id: m.userId,
         display_name: m.displayName,
+        username: m.username,
         email: m.email,
         role: m.role as 'owner' | 'manager' | 'member' | null,
         colorCode: m.colorCode

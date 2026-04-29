@@ -19,6 +19,7 @@ import { toast } from 'sonner'
 interface UserMenuProps {
     user: {
         id: string
+        username?: string | null
         email?: string | null
         display_name?: string | null
         avatar_url?: string | null
@@ -36,9 +37,12 @@ export function UserMenu({ user }: UserMenuProps) {
         router.push('/login')
     }
 
+    // 아바타 이니셜: 표시명 → 아이디 → 이메일 순으로 fallback
     const initials = user.display_name
         ? user.display_name.substring(0, 2).toUpperCase()
-        : user.email?.substring(0, 2).toUpperCase() || 'U'
+        : user.username?.substring(0, 2).toUpperCase()
+            || user.email?.substring(0, 2).toUpperCase()
+            || 'U'
 
     return (
         <DropdownMenu>
@@ -54,9 +58,17 @@ export function UserMenu({ user }: UserMenuProps) {
                 <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                         <p className="text-sm font-medium leading-none">{user.display_name || '사용자'}</p>
-                        <p className="text-xs leading-none text-muted-foreground">
-                            {user.email}
-                        </p>
+                        {/* 식별자 보조 표시: 아이디(우선), 이메일(보조) */}
+                        {user.username && (
+                            <p className="text-xs leading-none text-muted-foreground">
+                                @{user.username}
+                            </p>
+                        )}
+                        {user.email && (
+                            <p className="text-xs leading-none text-muted-foreground">
+                                {user.email}
+                            </p>
+                        )}
                     </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />

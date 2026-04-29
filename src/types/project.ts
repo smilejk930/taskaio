@@ -35,6 +35,7 @@ export type LinkUpdate = DBLinkUpdate
 export interface Member {
     id: string
     display_name: string | null
+    username: string | null
     email: string | null
     role?: 'owner' | 'manager' | 'member' | null
     colorCode?: string | null

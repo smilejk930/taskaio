@@ -28,6 +28,7 @@ interface UserDialogProps {
     onOpenChange: (open: boolean) => void
     user?: {
         id: string
+        username: string | null
         email: string | null
         name: string | null
         displayName: string | null
@@ -40,7 +41,9 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
     const [loading, setLoading] = useState(false)
     const isEdit = !!user
 
+    // 아이디(username)와 이메일은 식별자 — 등록 시에만 입력, 수정 시에는 비활성
     const [form, setForm] = useState({
+        username: '',
         email: '',
         name: '',
         password: '',
@@ -50,6 +53,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
     useEffect(() => {
         if (user && open) {
             setForm({
+                username: user.username || '',
                 email: user.email || '',
                 name: user.displayName || user.name || '',
                 password: '', // 비밀번호는 보안상 표시하지 않음
@@ -57,6 +61,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
             })
         } else if (open) {
             setForm({
+                username: '',
                 email: '',
                 name: '',
                 password: '',
@@ -70,7 +75,11 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
         setLoading(true)
 
         const formData = new FormData()
-        formData.append('email', form.email)
+        // 등록 모드에서만 아이디/이메일을 서버로 전달 (수정 모드는 서버에서 무시)
+        if (!isEdit) {
+            formData.append('username', form.username)
+            formData.append('email', form.email)
+        }
         formData.append('name', form.name)
         formData.append('password', form.password)
         formData.append('isAdmin', form.isAdmin)
@@ -98,16 +107,33 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
                         <DialogDescription>
                             {isEdit
                                 ? '사용자의 이름, 비밀번호, 권한을 수정할 수 있습니다.'
-                                : '시스템에 새로운 사용자를 등록합니다. 아이디는 이메일 형식으로 입력해주세요.'}
+                                : '시스템에 새로운 사용자를 등록합니다. 아이디는 영문 소문자/숫자 조합 4~20자입니다.'}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="email" className="text-right">
+                            <Label htmlFor="username" className="text-right">
                                 아이디
                             </Label>
                             <Input
+                                id="username"
+                                value={form.username}
+                                onChange={(e) => setForm({ ...form, username: e.target.value })}
+                                className="col-span-3"
+                                placeholder="user01"
+                                autoCapitalize="none"
+                                autoComplete="off"
+                                disabled={isEdit}
+                                required
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="email" className="text-right">
+                                이메일
+                            </Label>
+                            <Input
                                 id="email"
+                                type="email"
                                 value={form.email}
                                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                                 className="col-span-3"

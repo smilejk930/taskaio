@@ -1,12 +1,16 @@
 import { db, schema } from "../index"
 import { eq, and, or, like, asc } from "drizzle-orm"
 
+/**
+ * 사용자 검색: 이름(displayName), 아이디(username), 이메일에서 부분 일치 검색
+ */
 export async function searchUsers(query: string) {
     if (!query) return []
     const users = await db.select({
         id: schema.users.id,
         display_name: schema.profiles.displayName,
         avatar_url: schema.profiles.avatarUrl,
+        username: schema.users.username,
         email: schema.users.email
     })
     .from(schema.users)
@@ -15,6 +19,7 @@ export async function searchUsers(query: string) {
         and(
             eq(schema.users.isDeleted, false),
             or(
+                like(schema.users.username, `%${query}%`),
                 like(schema.users.email, `%${query}%`),
                 like(schema.profiles.displayName, `%${query}%`)
             )
@@ -82,6 +87,7 @@ export async function getMembersByProjectId(projectId: string) {
         role: schema.projectMembers.role,
         colorCode: schema.projectMembers.colorCode,
         displayName: schema.profiles.displayName,
+        username: schema.users.username,
         email: schema.users.email,
         avatarUrl: schema.profiles.avatarUrl,
         isDeleted: schema.users.isDeleted,

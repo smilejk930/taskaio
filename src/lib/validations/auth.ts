@@ -22,8 +22,21 @@ export const passwordSchema = z.string()
     }
   })
 
+/**
+ * 로그인 아이디(username) 규칙
+ * - 영문 소문자로 시작
+ * - 영문 소문자(a-z) + 숫자(0-9) 조합
+ * - 4~20자
+ */
+export const usernameSchema = z.string()
+  .regex(
+    /^[a-z][a-z0-9]{3,19}$/,
+    '아이디는 영문 소문자로 시작하고 영문 소문자/숫자 조합 4~20자여야 합니다.'
+  )
+
 export const signupSchema = z.object({
   displayName: z.string().min(1, '이름은 필수입니다.'),
+  username: usernameSchema,
   email: z.string().email('올바른 이메일 형식이 아닙니다.'),
   password: passwordSchema,
   confirmPassword: z.string().min(1, '비밀번호 확인을 입력해주세요.'),
@@ -33,7 +46,7 @@ export const signupSchema = z.object({
 })
 
 export const loginSchema = z.object({
-  email: z.string().email('올바른 이메일 형식이 아닙니다.'),
+  username: z.string().min(1, '아이디를 입력해주세요.'),
   password: z.string().min(1, '비밀번호를 입력해주세요.'),
 })
 

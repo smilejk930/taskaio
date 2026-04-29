@@ -15,6 +15,7 @@ interface ProfileFormProps {
     id: string
     display_name?: string | null
     avatar_url?: string | null
+    username?: string
     email?: string
   }
 }
@@ -58,6 +59,12 @@ export function ProfileForm({ user }: ProfileFormProps) {
               url={avatarUrl}
               onUpload={(url) => setAvatarUrl(url)}
             />
+          </div>
+
+          {/* 아이디(username)와 이메일은 식별자이므로 읽기 전용으로 표시 */}
+          <div className="grid gap-2">
+            <Label htmlFor="username">아이디 (읽기 전용)</Label>
+            <Input id="username" value={user.username || ''} readOnly disabled className="bg-muted/50" />
           </div>
 
           <div className="grid gap-2">

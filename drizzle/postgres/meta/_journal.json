@@ -15,6 +15,13 @@
       "when": 1775528318491,
       "tag": "0001_worried_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777463747208,
+      "tag": "0002_moaning_stature",
+      "breakpoints": true
     }
   ]
 }

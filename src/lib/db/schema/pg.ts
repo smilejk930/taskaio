@@ -13,6 +13,8 @@ export const users = pgTable("users", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
+  // 로그인 식별자(아이디). 영문 소문자/숫자 조합. 이메일과 별개로 사용된다.
+  username: text("username").notNull().unique(),
   name: text("name"),
   email: text("email").unique(),
   emailVerified: timestamp("emailVerified", { mode: "date" }),

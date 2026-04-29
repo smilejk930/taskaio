@@ -38,6 +38,7 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
       dbType: 'postgres',
       databaseUrl: '',
       adminName: '',
+      adminUsername: '',
       adminEmail: '',
       adminPassword: '',
       adminPasswordConfirm: '',
@@ -145,7 +146,7 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
       } else {
         // 신규 설치 모드: 관리자 정보 입력을 위해 2단계로 이동 (DB 생성 안 됨)
         setStep2Submitted(false)
-        form.clearErrors(['adminName', 'adminEmail', 'adminPassword'])
+        form.clearErrors(['adminName', 'adminUsername', 'adminEmail', 'adminPassword'])
         setStep(2)
         toast.success('데이터베이스 연결 확인 완료')
       }
@@ -168,7 +169,7 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
     if (!error) return false
     
     // Step 2 필드들은 Step 2 제출 시도(step2Submitted)나 건드림(isDirty) 여부 확인
-    if (['adminName', 'adminEmail', 'adminPassword', 'adminPasswordConfirm'].includes(name)) {
+    if (['adminName', 'adminUsername', 'adminEmail', 'adminPassword', 'adminPasswordConfirm'].includes(name)) {
       return step === 2 && (step2Submitted || form.formState.dirtyFields[name])
     }
     
@@ -505,14 +506,31 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
 
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold flex items-center gap-2">
-                    이메일 주소 (ID) <span className="text-destructive">*</span>
+                    아이디 (로그인 ID) <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    {...form.register('adminUsername')}
+                    type="text"
+                    className="h-11 bg-slate-50/50"
+                    placeholder="admin01 (영문 소문자/숫자 4~20자)"
+                    autoCapitalize="none"
+                    autoComplete="username"
+                  />
+                  {shouldShowError('adminUsername') && (
+                    <p className="text-xs text-destructive">{form.formState.errors.adminUsername?.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    이메일 주소 <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     {...form.register('adminEmail')}
                     type="email"
                     className="h-11 bg-slate-50/50"
                     placeholder="admin@example.com"
-                    autoComplete="username"
+                    autoComplete="email"
                   />
                   {shouldShowError('adminEmail') && (
                     <p className="text-xs text-destructive">{form.formState.errors.adminEmail?.message}</p>

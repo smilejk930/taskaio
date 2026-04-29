@@ -3,10 +3,12 @@ import { eq, asc } from "drizzle-orm"
 
 /**
  * 전제 사용자 목록을 프로필 정보와 함께 조회합니다.
+ * - 정렬 기준은 로그인 아이디(username) 오름차순
  */
 export async function getAllUsersWithProfiles() {
     return await db.select({
         id: schema.users.id,
+        username: schema.users.username,
         email: schema.users.email,
         name: schema.users.name,
         displayName: schema.profiles.displayName,
@@ -16,7 +18,7 @@ export async function getAllUsersWithProfiles() {
     .from(schema.users)
     .leftJoin(schema.profiles, eq(schema.users.id, schema.profiles.id))
     .where(eq(schema.users.isDeleted, false))
-    .orderBy(asc(schema.users.email));
+    .orderBy(asc(schema.users.username));
 }
 
 /**
@@ -25,6 +27,7 @@ export async function getAllUsersWithProfiles() {
 export async function getAdminUserById(id: string) {
     const [result] = await db.select({
         id: schema.users.id,
+        username: schema.users.username,
         email: schema.users.email,
         name: schema.users.name,
         displayName: schema.profiles.displayName,
@@ -34,14 +37,17 @@ export async function getAdminUserById(id: string) {
     .from(schema.users)
     .leftJoin(schema.profiles, eq(schema.users.id, schema.profiles.id))
     .where(eq(schema.users.id, id));
-    
+
     return result;
 }
 
 /**
  * 신규 사용자와 프로필을 생성합니다.
+ * - username: 로그인 아이디(unique)
+ * - email: 사용자 이메일(unique, 알림/식별 용도)
  */
 export async function createAdminUser(data: {
+    username: string;
     email: string;
     name: string;
     passwordHash: string;
@@ -49,6 +55,7 @@ export async function createAdminUser(data: {
 }) {
     return await db.transaction(async (tx) => {
         const [newUser] = await tx.insert(schema.users).values({
+            username: data.username,
             email: data.email,
             name: data.name,
             password: data.passwordHash,
@@ -66,6 +73,7 @@ export async function createAdminUser(data: {
 
 /**
  * 사용자 정보를 업데이트합니다. (일반 사용자 프로필 수정 및 관리자 기능 공용)
+ * - 아이디(username)와 이메일은 식별자이므로 업데이트 대상이 아님
  */
 export async function updateAdminUser(id: string, data: {
     name?: string;
@@ -78,7 +86,7 @@ export async function updateAdminUser(id: string, data: {
         const userUpdate: { name?: string; password?: string } = {};
         if (data.name) userUpdate.name = data.name;
         if (data.passwordHash) userUpdate.password = data.passwordHash;
-        
+
         if (Object.keys(userUpdate).length > 0) {
             await tx.update(schema.users)
                 .set(userUpdate)
@@ -104,7 +112,7 @@ export async function updateAdminUser(id: string, data: {
  */
 export async function deleteUser(id: string) {
     return await db.update(schema.users)
-        .set({ 
+        .set({
             isDeleted: true,
             deletedAt: new Date().toISOString()
         })

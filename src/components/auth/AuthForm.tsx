@@ -30,6 +30,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const router = useRouter()
 
+    // 모드별 기본값 분리: 로그인은 username만, 회원가입은 username/email/displayName/confirmPassword 포함
     const {
         register,
         handleSubmit,
@@ -38,11 +39,9 @@ export function AuthForm({ mode }: AuthFormProps) {
         setFocus,
     } = useForm<SignupInput | LoginInput>({
         resolver: zodResolver(mode === 'signup' ? signupSchema : loginSchema),
-        defaultValues: {
-            email: '',
-            password: '',
-            ...(mode === 'signup' ? { displayName: '', confirmPassword: '' } : {}),
-        },
+        defaultValues: mode === 'signup'
+            ? { username: '', email: '', password: '', displayName: '', confirmPassword: '' }
+            : { username: '', password: '' },
     })
 
     const password = watch('password') || ''
@@ -55,8 +54,8 @@ export function AuthForm({ mode }: AuthFormProps) {
                 formData.append(key, value)
             })
 
-            const result = mode === 'login' 
-                ? await login(formData) 
+            const result = mode === 'login'
+                ? await login(formData)
                 : await signup(formData)
 
             if (result?.error) {
@@ -78,8 +77,8 @@ export function AuthForm({ mode }: AuthFormProps) {
     // 비밀번호 규칙 체크 (UI 표시용)
     const passwordChecks = [
         { label: '8자 이상', checked: password.length >= 8 },
-        { 
-            label: '3종 조합 (대문자, 소문자, 숫자, 특수문자)', 
+        {
+            label: '3종 조합 (대문자, 소문자, 숫자, 특수문자)',
             checked: (() => {
                 let count = 0
                 if (/[a-z]/.test(password)) count++
@@ -90,6 +89,9 @@ export function AuthForm({ mode }: AuthFormProps) {
             })()
         }
     ]
+
+    // 회원가입에서만 노출되는 필드의 에러 접근을 위한 헬퍼
+    const signupErrors = errors as unknown as SafeFieldErrors<SignupInput>
 
     return (
         <div className="flex flex-col items-center gap-6">
@@ -118,7 +120,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                     </CardTitle>
                     <CardDescription>
                         {mode === 'login'
-                            ? '이메일과 비밀번호를 입력하여 접속해주세요'
+                            ? '아이디와 비밀번호를 입력하여 접속해주세요'
                             : 'taskAIO에 오신 것을 환영합니다'}
                     </CardDescription>
                 </CardHeader>
@@ -134,27 +136,45 @@ export function AuthForm({ mode }: AuthFormProps) {
                                     disabled={isLoading}
                                     {...register('displayName' as keyof (SignupInput & LoginInput))}
                                 />
-                                {mode === 'signup' && (errors as unknown as SafeFieldErrors<SignupInput>).displayName && (
-                                    <p className="text-xs text-red-500 font-medium">{(errors as unknown as SafeFieldErrors<SignupInput>).displayName?.message}</p>
+                                {signupErrors.displayName && (
+                                    <p className="text-xs text-red-500 font-medium">{signupErrors.displayName?.message}</p>
                                 )}
                             </div>
                         )}
                         <div className="grid gap-2">
-                            <Label htmlFor="email">이메일</Label>
+                            <Label htmlFor="username">아이디</Label>
                             <Input
-                                id="email"
-                                placeholder="name@example.com"
-                                type="email"
+                                id="username"
+                                placeholder={mode === 'signup' ? '예: user01 (영문 소문자/숫자 4~20자)' : '아이디'}
+                                type="text"
                                 autoCapitalize="none"
-                                autoComplete="email"
+                                autoComplete="username"
                                 autoCorrect="off"
                                 disabled={isLoading}
-                                {...register('email')}
+                                {...register('username')}
                             />
-                            {errors.email && (
-                                <p className="text-xs text-red-500 font-medium">{errors.email.message}</p>
+                            {errors.username && (
+                                <p className="text-xs text-red-500 font-medium">{errors.username.message}</p>
                             )}
                         </div>
+                        {mode === 'signup' && (
+                            <div className="grid gap-2">
+                                <Label htmlFor="email">이메일</Label>
+                                <Input
+                                    id="email"
+                                    placeholder="name@example.com"
+                                    type="email"
+                                    autoCapitalize="none"
+                                    autoComplete="email"
+                                    autoCorrect="off"
+                                    disabled={isLoading}
+                                    {...register('email' as keyof (SignupInput & LoginInput))}
+                                />
+                                {signupErrors.email && (
+                                    <p className="text-xs text-red-500 font-medium">{signupErrors.email?.message}</p>
+                                )}
+                            </div>
+                        )}
                         <div className="grid gap-2">
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="password">비밀번호</Label>
@@ -189,7 +209,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                             {errors.password && (
                                 <p className="text-xs text-red-500 font-medium">{errors.password.message}</p>
                             )}
-                            
+
                             {/* 비밀번호 규칙 가이드 (회원가입 모드에서만 표시) */}
                             {mode === 'signup' && password.length > 0 && (
                                 <div className="mt-1 space-y-1">
@@ -238,8 +258,8 @@ export function AuthForm({ mode }: AuthFormProps) {
                                         </span>
                                     </Button>
                                 </div>
-                                {mode === 'signup' && (errors as unknown as SafeFieldErrors<SignupInput>).confirmPassword && (
-                                    <p className="text-xs text-red-500 font-medium">{(errors as unknown as SafeFieldErrors<SignupInput>).confirmPassword?.message}</p>
+                                {signupErrors.confirmPassword && (
+                                    <p className="text-xs text-red-500 font-medium">{signupErrors.confirmPassword?.message}</p>
                                 )}
                             </div>
                         )}

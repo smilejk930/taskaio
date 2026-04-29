@@ -75,7 +75,7 @@ export async function setupConfig(input: SetupInput) {
     throw new Error('이미 설치가 완료된 상태입니다.')
   }
 
-  const { mode, dbType, databaseUrl: rawDatabaseUrl, adminName, adminEmail, adminPassword } = setupSchema.parse(input)
+  const { mode, dbType, databaseUrl: rawDatabaseUrl, adminName, adminUsername, adminEmail, adminPassword } = setupSchema.parse(input)
   const databaseUrl = encodeDatabaseUrl(rawDatabaseUrl)
 
   try {
@@ -164,7 +164,8 @@ export async function setupConfig(input: SetupInput) {
 
       // 4. 신규 설치 모드에서만 마이그레이션 + 관리자 계정 생성 실행
       if (mode === 'new') {
-        if (!adminName || !adminEmail || !adminPassword) {
+        // 관리자 아이디(username) 포함 모든 필수 정보 검증
+        if (!adminName || !adminUsername || !adminEmail || !adminPassword) {
             throw new Error('관리자 정보가 누락되었습니다.')
         }
 
@@ -195,7 +196,9 @@ export async function setupConfig(input: SetupInput) {
           // 5. 초기 관리자 생성
           const hashedPassword = await bcrypt.hash(adminPassword!, 10)
 
+          // 초기 관리자 INSERT — 아이디(username)와 이메일을 모두 저장
           const [user] = await migratorDb.insert(schema.users).values({
+            username: adminUsername!,
             name: adminName!,
             email: adminEmail!,
             password: hashedPassword,
