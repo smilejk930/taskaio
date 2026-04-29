@@ -43,3 +43,6 @@ next-env.d.ts
 # docker
 taskaio-latest.tar
 .gstack/
+
+# git worktrees
+.worktrees/
