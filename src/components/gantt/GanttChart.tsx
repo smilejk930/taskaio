@@ -274,7 +274,7 @@ export default function GanttChart({
                         name: "assignee",
                         label: "담당자",
                         align: "center",
-                        width: 70,
+                        width: 60,
                         template: (task: GanttTask) => {
                             const name = task.assignee_name || '미지정';
                             return `<span style="font-size:13px;color:#475569;">${name}</span>`;
@@ -284,8 +284,8 @@ export default function GanttChart({
                         name: "text",
                         label: "업무명",
                         tree: true,
-                        width: 250,
-                        min_width: 150,
+                        width: 200,
+                        min_width: 120,
                         template: (task: GanttTask) => {
                             return `<div style="display:flex;align-items:center;height:100%;white-space:pre-wrap;line-height:1.4;word-break:break-all;padding:4px 0;">${task.text}</div>`;
                         }
@@ -293,8 +293,8 @@ export default function GanttChart({
                     {
                         name: "description",
                         label: "업무 설명",
-                        width: 300,
-                        min_width: 150,
+                        width: 220,
+                        min_width: 120,
                         template: (task: GanttTask) => {
                             return `<div style="font-size:12px;color:#64748b;white-space:pre-wrap;line-height:1.4;word-break:break-all;display:flex;align-items:center;height:100%;padding:4px 0;">${task.description || '-'}</div>`;
                         }
@@ -337,13 +337,13 @@ export default function GanttChart({
                         name: "progress",
                         label: "진행률",
                         align: "center",
-                        width: 60,
+                        width: 50,
                         template: (task: GanttTask) => `<span style="color:#64748b;font-size:12px;">${Math.round(task.progress * 100)}%</span>`
                     },
                     {
                         name: "add",
                         label: "",
-                        width: 40,
+                        width: 32,
                         template: (task: GanttTask) => {
                             const gExtended = ganttInstance as unknown as { calculateTaskLevel: (t: GanttTask) => number };
                             if (gExtended.calculateTaskLevel(task) >= 1) return "";
@@ -675,6 +675,8 @@ export default function GanttChart({
                                     pTask._original_duration = pTask.duration;
                                     if (pTask.start_date) pTask._original_start = new Date(pTask.start_date.getTime());
                                     pTask._original_end = pTask.end_date ? new Date(pTask.end_date.getTime()) : null;
+                                    // 진행률 드래그 변경 감지를 위해 원본 진행률 저장
+                                    pTask._original_progress = pTask.progress;
                                 }
                                 collectAncestors(pId);
                             }
@@ -691,6 +693,8 @@ export default function GanttChart({
                                 t._original_start = new Date(t.start_date.getTime());
                             }
                             t._original_end = t.end_date ? new Date(t.end_date.getTime()) : null;
+                            // 진행률 드래그 변경 감지를 위해 원본 진행률 저장
+                            t._original_progress = t.progress;
                             
                             const children = (ganttInstance as unknown as { getChildren: (id: string) => (string | number)[] }).getChildren(taskId);
                             children.forEach((childId: string | number) => {
@@ -724,8 +728,10 @@ export default function GanttChart({
                     droppedTaskIds.forEach((taskId) => {
                         const task = ganttInstance.getTask(taskId) as unknown as GanttTask;
                         if (task && task._original_start && task._original_end) {
+                            // 변경 감지 키에 progress의 원본/현재값을 비교 대상으로 포함시켜
+                            // 진행률만 드래그한 경우(시작/종료일 동일)에도 onTaskUpdated가 호출되도록 함
                             const currentKey = `${task.id}-${task.start_date?.getTime()}-${task.end_date?.getTime()}-${task.progress}`;
-                            const originalKey = `${task.id}-${task._original_start?.getTime()}-${task._original_end?.getTime()}-${task.progress}`;
+                            const originalKey = `${task.id}-${task._original_start?.getTime()}-${task._original_end?.getTime()}-${task._original_progress ?? task.progress}`;
 
                             // 부모가 변했는지 확인
                             if (currentKey !== originalKey) {
@@ -776,7 +782,20 @@ export default function GanttChart({
                     const _task = task as GanttTask;
 
                     if (_mode === "progress") {
+                        // 0~1 범위의 진행률을 0.1 단위로 반올림하여 표시 정밀도 통일
                         _task.progress = Math.round(_task.progress * 10) / 10;
+
+                        // 진행률에 따라 상태 자동 매핑: 0%→할 일, 100%→완료, 그 외→진행 중
+                        // 단, 'review' 등 사용자가 의도적으로 지정한 상태는 보존
+                        const progressPercent = Math.round(_task.progress * 100);
+                        if (progressPercent === 0) {
+                            _task.status = 'todo';
+                        } else if (progressPercent === 100) {
+                            _task.status = 'done';
+                        } else if (_task.status === 'todo' || _task.status === 'done') {
+                            _task.status = 'in_progress';
+                        }
+
                         ganttInstance.refreshTask(_id);
                         return true;
                     }

@@ -110,12 +110,12 @@ export async function shiftChildTasks(parentId: string, offsetMs: number) {
 
   for (const child of children) {
     const updates: Partial<typeof schema.tasks.$inferInsert> = {}
-    
+
     if (child.startDate) {
       const oldStart = new Date(child.startDate)
       updates.startDate = new Date(oldStart.getTime() + offsetMs).toISOString().split('T')[0]
     }
-    
+
     if (child.endDate) {
       const oldEnd = new Date(child.endDate)
       updates.endDate = new Date(oldEnd.getTime() + offsetMs).toISOString().split('T')[0]
@@ -125,28 +125,34 @@ export async function shiftChildTasks(parentId: string, offsetMs: number) {
       await db.update(schema.tasks)
         .set({ ...updates, updatedAt: new Date().toISOString() })
         .where(eq(schema.tasks.id, child.id))
-      
+
       // 재귀적으로 하위의 하위 업무도 이동
       await shiftChildTasks(child.id, offsetMs)
     }
   }
 }
 
-export async function shiftUserSubsequentTasks(projectId: string, userId: string, referenceStartDate: Date, offsetMs: number, excludeTaskId: string) {
+export async function shiftUserSubsequentTasks(
+  projectId: string,
+  userId: string,
+  referenceStartDate: Date,
+  offsetMs: number,
+  excludeTaskId: string,
+  alreadyShiftedAncestorIds: Set<string> = new Set()
+) {
   // 기준 시작일자 이후에 시작하며, 로그인한 사용자가 담당자인 업무들 타겟팅
-  // (deleted 되지 않았고, 본인 업무 제외)
+  // (deleted 되지 않았고, 편집 대상 업무 제외)
   const referenceDateStr = referenceStartDate.toISOString().split('T')[0];
-  
-  // gt() 대신 날짜 문자열 기반의 gte/gt 확인 (여기서는 원본 업무와 동일한 날짜의 '이후 생성/수정' 판별보다는,
-  // 원본 업무 시작일자 '이후' (gt) 에 있는 것들만 옮기는 것이 일반적입니다. 하지만 명세에 따라 gte도 사용 가능합니다.
-  // "해당 업무 시작일자 이후(늦은 날짜)"를 명확히 하기 위해 gt()를 사용하는 편이 안전합니다.
-  // gte()를 사용하면 동일한 시작일을 가진 다른 작업이 의도치 않게 모두 밀릴 수 있습니다.
   const { gt, and, eq, ne } = await import('drizzle-orm');
 
-  const targets = await db.select({
+  // 1. 일괄 이동 후보 조회
+  // gt() 사용 이유: "해당 업무 시작일자 이후(늦은 날짜)"만 명확히 골라내기 위함.
+  // gte()를 사용하면 동일 시작일의 다른 업무가 의도치 않게 함께 밀릴 수 있다.
+  const candidates = await db.select({
     id: schema.tasks.id,
     startDate: schema.tasks.startDate,
     endDate: schema.tasks.endDate,
+    parentId: schema.tasks.parentId,
   }).from(schema.tasks).where(and(
     eq(schema.tasks.projectId, projectId),
     eq(schema.tasks.assigneeId, userId),
@@ -155,16 +161,43 @@ export async function shiftUserSubsequentTasks(projectId: string, userId: string
     eq(schema.tasks.isDeleted, false)
   ))
 
-  if (targets.length === 0) return;
+  if (candidates.length === 0) return;
 
-  for (const t of targets) {
+  // 2. 조상 체인 추적용 프로젝트 트리 조회 (중복 이동 방지에 사용)
+  const projectTasks = await db.select({
+    id: schema.tasks.id,
+    parentId: schema.tasks.parentId,
+  }).from(schema.tasks).where(and(
+    eq(schema.tasks.projectId, projectId),
+    eq(schema.tasks.isDeleted, false)
+  ))
+  const parentMap = new Map<string, string | null>()
+  for (const t of projectTasks) parentMap.set(t.id, t.parentId)
+
+  // 3. 조상 중에 다른 후보 또는 이미 처리된 조상(편집 대상의 isMove 처리 등)이 있으면
+  //    직접 이동에서 제외한다. 그 경우 부모 처리 시 shiftChildTasks 재귀로 이동되므로
+  //    여기서 또 이동시키면 동일 업무가 두 번 이동(double shift)되는 버그 발생.
+  const candidateIds = new Set(candidates.map(c => c.id))
+  const hasShiftedAncestor = (id: string): boolean => {
+    let cur = parentMap.get(id) ?? null
+    while (cur) {
+      if (alreadyShiftedAncestorIds.has(cur) || candidateIds.has(cur)) return true
+      cur = parentMap.get(cur) ?? null
+    }
+    return false
+  }
+
+  const rootTargets = candidates.filter(c => !hasShiftedAncestor(c.id))
+
+  // 4. 직접 이동 + 자식 재귀 이동
+  for (const t of rootTargets) {
     const updates: Partial<typeof schema.tasks.$inferInsert> = {}
-    
+
     if (t.startDate) {
       const oldStart = new Date(t.startDate)
       updates.startDate = new Date(oldStart.getTime() + offsetMs).toISOString().split('T')[0]
     }
-    
+
     if (t.endDate) {
       const oldEnd = new Date(t.endDate)
       updates.endDate = new Date(oldEnd.getTime() + offsetMs).toISOString().split('T')[0]
@@ -174,9 +207,8 @@ export async function shiftUserSubsequentTasks(projectId: string, userId: string
       await db.update(schema.tasks)
         .set({ ...updates, updatedAt: new Date().toISOString() })
         .where(eq(schema.tasks.id, t.id))
-      
-      // 하위 업무 연쇄 이동 로직이 이미 존재하므로, 일괄 이동된 업무의 하위 업무들도 이동시킴.
-      // (만약 하위 업무가 다른 담당자라면 자동으로 따라가게 됨)
+
+      // 자식들도 동일 오프셋으로 이동 (다른 담당자 자식까지 부모를 따라 함께 이동)
       await shiftChildTasks(t.id, offsetMs)
     }
   }
