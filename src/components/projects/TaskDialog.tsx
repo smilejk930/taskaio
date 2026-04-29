@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -174,8 +175,10 @@ export default function TaskDialog({
         const newErrors: Partial<Record<keyof TaskFormData, string>> = {}
         if (!form.title.trim()) newErrors.title = '업무명을 입력해주세요.'
 
-        // 날짜가 둘 다 있는 경우에만 순서 검증
-        if (form.start_date && form.end_date && form.end_date < form.start_date) {
+        // 일괄 이동 옵션이 켜진 경우 종료일은 제출 시점에 원본 duration 기준으로 자동 재계산되므로,
+        // 현재 form.end_date(옛 종료일)와 새 시작일을 비교하는 검증은 의미가 없어 건너뛴다.
+        // 그렇지 않으면 옛 종료일이 새 시작일보다 앞서 있을 때 숨겨진 에러로 저장이 막혀 버튼이 먹통이 된다.
+        if (!form.shift_subsequent && form.start_date && form.end_date && form.end_date < form.start_date) {
             newErrors.end_date = '종료일은 시작일 이후여야 합니다.'
         }
         setErrors(newErrors)
@@ -240,7 +243,9 @@ export default function TaskDialog({
             <DialogContent className="sm:max-w-[550px]">
                 <DialogHeader>
                     <DialogTitle>{isEdit ? '업무 상세 정보' : '새 업무 등록'}</DialogTitle>
-
+                    <DialogDescription>
+                        {isEdit ? '업무 정보를 수정합니다.' : '새로운 업무를 등록합니다.'}
+                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="grid gap-3 px-1 py-3 overflow-y-auto max-h-[80vh] pr-2">
@@ -340,7 +345,7 @@ export default function TaskDialog({
                                 htmlFor="shift_subsequent"
                                 className="text-sm font-medium text-slate-700 cursor-pointer select-none"
                             >
-                                선택한 업무 시작일의 변동 폭만큼 내 본인 담당의 이후 업무들도 일괄 이동
+                                선택한 업무 시작일의 변동 폭만큼 이후 나의 업무들도 일괄 이동
                             </Label>
                         </div>
                     )}
