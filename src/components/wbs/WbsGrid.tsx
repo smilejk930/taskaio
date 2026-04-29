@@ -343,9 +343,6 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
             }
         }
 
-        const confirmSave = confirm(`${targetsToCreate.length + targetsToUpdate.length}개의 업무를 저장하시겠습니까?`)
-        if (!confirmSave) return
-
         let successCount = 0
         const total = targetsToCreate.length + targetsToUpdate.length
 
