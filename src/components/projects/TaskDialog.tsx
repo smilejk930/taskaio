@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
     Dialog,
     DialogContent,
@@ -84,6 +84,11 @@ export default function TaskDialog({
     const [form, setForm] = useState<TaskFormData>({ ...EMPTY_FORM, project_id: projectId })
     const [errors, setErrors] = useState<Partial<Record<keyof TaskFormData, string>>>({})
 
+    // 다이얼로그 오픈 시점의 원본 시작일/종료일을 보관한다.
+    // shift_subsequent(이후 업무 일괄 이동) 옵션이 켜진 상태로 저장될 때,
+    // 새 종료일 = 새 시작일 + (원본 종료일 − 원본 시작일)로 자동 계산하기 위해 사용한다.
+    const originalDatesRef = useRef<{ start: string | null; end: string | null }>({ start: null, end: null })
+
     useEffect(() => {
         if (open) {
             const baseForm = initialData ? { ...EMPTY_FORM, ...initialData, project_id: projectId } : { ...EMPTY_FORM, project_id: projectId }
@@ -104,13 +109,22 @@ export default function TaskDialog({
                 }
             }
 
+            const normalizedStart = formatDate(baseForm.start_date)
+            const normalizedEnd = formatDate(baseForm.end_date)
+
+            // 원본 일정(YYYY-MM-DD)을 ref에 저장 — 사용자가 시작일을 바꿔도 duration 계산 기준은 변하지 않는다
+            originalDatesRef.current = {
+                start: typeof normalizedStart === 'string' ? normalizedStart : null,
+                end: typeof normalizedEnd === 'string' ? normalizedEnd : null,
+            }
+
             setForm({
                 ...baseForm,
                 title: baseForm.title || '',
                 description: baseForm.description || '',
                 color: initialColor,
-                start_date: formatDate(baseForm.start_date),
-                end_date: formatDate(baseForm.end_date),
+                start_date: normalizedStart,
+                end_date: normalizedEnd,
             } as TaskFormData)
             setErrors({})
         }
@@ -168,9 +182,44 @@ export default function TaskDialog({
         return Object.keys(newErrors).length === 0
     }
 
+    // 원본 시작일/종료일과 새 시작일을 받아 자동 계산된 종료일을 반환한다.
+    // 원본 일정 중 하나라도 비어 있거나 새 시작일이 비어 있으면 계산하지 않고 기존 form.end_date를 유지한다.
+    const computeShiftedEndDate = (): string | null => {
+        const { start: origStart, end: origEnd } = originalDatesRef.current
+        const newStart = form.start_date
+
+        // 원본 duration을 알 수 없거나 새 시작일이 없으면 자동 계산 불가
+        if (!origStart || !origEnd || !newStart) return form.end_date ?? null
+
+        const origStartTs = new Date(origStart).getTime()
+        const origEndTs = new Date(origEnd).getTime()
+        const newStartTs = new Date(newStart).getTime()
+
+        if (Number.isNaN(origStartTs) || Number.isNaN(origEndTs) || Number.isNaN(newStartTs)) {
+            return form.end_date ?? null
+        }
+
+        // 원본 duration(밀리초)을 새 시작일에 더해 새 종료일 산출
+        const durationMs = origEndTs - origStartTs
+        const shiftedEnd = new Date(newStartTs + durationMs)
+
+        // YYYY-MM-DD 형식으로 변환 (시간대 보정: 로컬 기준 날짜 추출)
+        const yyyy = shiftedEnd.getFullYear()
+        const mm = String(shiftedEnd.getMonth() + 1).padStart(2, '0')
+        const dd = String(shiftedEnd.getDate()).padStart(2, '0')
+        return `${yyyy}-${mm}-${dd}`
+    }
+
     const handleSubmit = async () => {
         if (!validate()) return
-        const success = await onSubmit(form)
+
+        // 이후 업무 일괄 이동 옵션이 켜진 경우, 사용자가 직접 입력하지 않은 종료일을 자동 계산해 저장한다.
+        // 원본 (종료일 − 시작일) 차이를 새 시작일에 더해 매번 종료일을 손으로 맞춰야 했던 불편을 제거한다.
+        const submitForm: TaskFormData = form.shift_subsequent
+            ? { ...form, end_date: computeShiftedEndDate() }
+            : form
+
+        const success = await onSubmit(submitForm)
         if (success) {
             onOpenChange(false)
         }
@@ -276,7 +325,28 @@ export default function TaskDialog({
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* 이후 일정 일괄 이동 옵션 (수정 시에만 노출, 시작일/종료일 입력 위에 위치) */}
+                    {/* 체크박스가 켜져 있으면 종료일 입력은 숨기고, 저장 시 원본 duration 기준으로 종료일을 자동 계산한다 */}
+                    {isEdit && (
+                        <div className="flex items-center space-x-2 bg-blue-50/50 p-3 rounded-md border border-blue-100/50">
+                            <input
+                                type="checkbox"
+                                id="shift_subsequent"
+                                checked={form.shift_subsequent || false}
+                                onChange={(e) => setField('shift_subsequent', e.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
+                            />
+                            <Label
+                                htmlFor="shift_subsequent"
+                                className="text-sm font-medium text-slate-700 cursor-pointer select-none"
+                            >
+                                선택한 업무 시작일의 변동 폭만큼 내 본인 담당의 이후 업무들도 일괄 이동
+                            </Label>
+                        </div>
+                    )}
+
+                    {/* 시작일/종료일 입력 — 일괄 이동 옵션이 켜졌을 땐 종료일을 숨기고 시작일만 단독 표시 */}
+                    <div className={cn('grid gap-3', form.shift_subsequent ? 'grid-cols-1' : 'grid-cols-2')}>
                         {/* 시작일 */}
                         <div className="space-y-1">
                             <Label htmlFor="task-start" className="text-sm font-semibold text-muted-foreground">
@@ -291,20 +361,22 @@ export default function TaskDialog({
                             />
                             {errors.start_date && <p className="text-xs text-destructive">{errors.start_date}</p>}
                         </div>
-                        {/* 종료일 */}
-                        <div className="space-y-1">
-                            <Label htmlFor="task-end" className="text-sm font-semibold text-muted-foreground">
-                                종료일 (선택)
-                            </Label>
-                            <Input
-                                id="task-end"
-                                type="date"
-                                value={form.end_date || ''}
-                                onChange={(e) => setField('end_date', e.target.value)}
-                                className={cn("h-9", errors.end_date ? 'border-destructive' : '')}
-                            />
-                            {errors.end_date && <p className="text-xs text-destructive">{errors.end_date}</p>}
-                        </div>
+                        {/* 종료일 — 일괄 이동 옵션이 꺼진 경우에만 노출 */}
+                        {!form.shift_subsequent && (
+                            <div className="space-y-1">
+                                <Label htmlFor="task-end" className="text-sm font-semibold text-muted-foreground">
+                                    종료일 (선택)
+                                </Label>
+                                <Input
+                                    id="task-end"
+                                    type="date"
+                                    value={form.end_date || ''}
+                                    onChange={(e) => setField('end_date', e.target.value)}
+                                    className={cn("h-9", errors.end_date ? 'border-destructive' : '')}
+                                />
+                                {errors.end_date && <p className="text-xs text-destructive">{errors.end_date}</p>}
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid grid-cols-3 gap-3">
@@ -341,24 +413,6 @@ export default function TaskDialog({
                         </div>
                     </div>
 
-                    {/* 이후 일정 일괄 이동 (수정 시에만 노출) */}
-                    {isEdit && (
-                        <div className="flex items-center space-x-2 bg-blue-50/50 p-3 rounded-md border border-blue-100/50">
-                            <input
-                                type="checkbox"
-                                id="shift_subsequent"
-                                checked={form.shift_subsequent || false}
-                                onChange={(e) => setField('shift_subsequent', e.target.checked)}
-                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
-                            />
-                            <Label 
-                                htmlFor="shift_subsequent" 
-                                className="text-sm font-medium text-slate-700 cursor-pointer select-none"
-                            >
-                                선택한 업무 시작일의 변동 폭만큼 내 본인 담당의 이후 업무들도 일괄 이동
-                            </Label>
-                        </div>
-                    )}
                 </div>
 
                 <DialogFooter className="flex justify-between sm:justify-between border-t pt-4">
