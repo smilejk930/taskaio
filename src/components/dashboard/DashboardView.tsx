@@ -1,3 +1,5 @@
+'use client'
+
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -15,12 +17,22 @@ interface DashboardViewProps {
 export default function DashboardView({ tasks, members, onTaskClick }: DashboardViewProps) {
     const today = startOfToday()
 
-    const progress = tasks.length > 0
-        ? Math.round(tasks.reduce((acc, t) => acc + (t.progress || 0), 0) / tasks.length)
+    // 팀원 필터: 'all'이면 전체 업무, 그 외에는 해당 팀원이 담당인 업무만
+    // setSelectedMemberId는 다음 작업에서 라디오 UI에 연결되므로 현재는 미사용 경고를 일시적으로 비활성화한다
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [selectedMemberId, setSelectedMemberId] = React.useState<string>('all')
+
+    // 선택된 팀원 기준으로 업무 목록을 필터링 — 모든 카드/섹션 집계는 이 배열을 사용한다
+    const filteredTasks = selectedMemberId === 'all'
+        ? tasks
+        : tasks.filter(t => t.assignee_id === selectedMemberId)
+
+    const progress = filteredTasks.length > 0
+        ? Math.round(filteredTasks.reduce((acc, t) => acc + (t.progress || 0), 0) / filteredTasks.length)
         : 0
 
     // 마감 임박 업무 (3일 이내, 미완료)
-    const upcomingTasks = tasks.filter(t => {
+    const upcomingTasks = filteredTasks.filter(t => {
         if (t.status === 'done' || !t.end_date) return false
         const endDate = parseISO(t.end_date)
         const daysLeft = differenceInDays(endDate, today)
@@ -28,14 +40,14 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
     }).sort((a, b) => (a.end_date || '').localeCompare(b.end_date || ''))
 
     // 지연된 업무 (마감일 지남, 미완료)
-    const delayedTasks = tasks.filter(t => {
+    const delayedTasks = filteredTasks.filter(t => {
         if (t.status === 'done' || !t.end_date) return false
         const endDate = parseISO(t.end_date)
         return differenceInDays(endDate, today) < 0
     }).sort((a, b) => (a.end_date || '').localeCompare(b.end_date || ''))
 
     // 미완료 업무 중 urgent / high 우선순위만 필터 (하위 업무 포함)
-    const urgentTasks = tasks.filter(t =>
+    const urgentTasks = filteredTasks.filter(t =>
         t.status !== 'done' &&
         (t.priority === 'urgent' || t.priority === 'high')
     ).sort((a, b) => {
@@ -53,9 +65,9 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
                         <CardTitle className="text-sm font-medium text-muted-foreground">전체 업무</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{tasks.length}</div>
+                        <div className="text-2xl font-bold">{filteredTasks.length}</div>
                         <p className="text-xs text-muted-foreground mt-1">
-                            완료 {tasks.filter(t => t.status === 'done').length} / 진행 중 {tasks.filter(t => t.status === 'in_progress').length}
+                            완료 {filteredTasks.filter(t => t.status === 'done').length} / 진행 중 {filteredTasks.filter(t => t.status === 'in_progress').length}
                         </p>
                     </CardContent>
                 </Card>
