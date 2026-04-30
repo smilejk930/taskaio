@@ -104,12 +104,12 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
 
                 <Card className="bg-card shadow-sm border-none ring-1 ring-slate-200 dark:ring-slate-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">긴급/높음</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground">우선 처리</CardTitle>
                         <Badge variant="destructive" className="text-xs">{urgentTasks.length}</Badge>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-red-600 dark:text-red-400">{urgentTasks.length}건</div>
-                        <p className="text-xs text-muted-foreground mt-1">우선 처리 업무</p>
+                        <p className="text-xs text-muted-foreground mt-1">긴급·높음</p>
                     </CardContent>
                 </Card>
 
@@ -131,7 +131,7 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">{delayedTasks.length}건</div>
-                        <p className="text-xs text-muted-foreground mt-1">마감일 도과 업무</p>
+                        <p className="text-xs text-muted-foreground mt-1">마감일 초과 업무</p>
                     </CardContent>
                 </Card>
             </div>

@@ -353,7 +353,7 @@ JSX의 최상위 `<div className="p-6 space-y-6 overflow-auto bg-background/50 h
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">{delayedTasks.length}건</div>
-                        <p className="text-xs text-muted-foreground mt-1">마감일 도과 업무</p>
+                        <p className="text-xs text-muted-foreground mt-1">마감일 초과 업무</p>
                     </CardContent>
                 </Card>
             </div>
