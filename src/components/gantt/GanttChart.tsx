@@ -263,52 +263,55 @@ export default function GanttChart({
 
                 ganttInstance.config.grid_resizer = true;
                 ganttInstance.config.key_navigation = false;
-                ganttInstance.config.row_height = 40;
+                // 일정 현황 화면을 더 컴팩트하게(80% 줌과 유사한 비율) 보이도록 행 높이 축소
+                ganttInstance.config.row_height = 32;
                 ganttInstance.config.variable_tree_nodes = true;
                 ganttInstance.config.show_unscheduled = true; // 날짜 없는 업무 그리드엔 표시
                 ganttInstance.config.allow_unscheduled_tasks = true; // 드래그 등으로 날짜 제거 허용
 
                 // ── 컬럼 설정 ──────────────────────────────────────────────────────────
+                // 한 화면에 더 많은 정보가 보이도록 좌측 그리드 컬럼 너비를 약 80% 수준으로 축소.
+                // 폰트/패딩도 함께 축소해 가독성과 비율을 함께 맞춘다.
                 ganttInstance.config.columns = [
                     {
                         name: "assignee",
                         label: "담당자",
                         align: "center",
-                        width: 60,
+                        width: 48,
                         template: (task: GanttTask) => {
                             const name = task.assignee_name || '미지정';
-                            return `<span style="font-size:13px;color:#475569;">${name}</span>`;
+                            return `<span style="font-size:11px;color:#475569;">${name}</span>`;
                         }
                     },
                     {
                         name: "text",
                         label: "업무명",
                         tree: true,
-                        width: 200,
-                        min_width: 120,
+                        width: 160,
+                        min_width: 100,
                         template: (task: GanttTask) => {
-                            return `<div style="display:flex;align-items:center;height:100%;white-space:pre-wrap;line-height:1.4;word-break:break-all;padding:4px 0;">${task.text}</div>`;
+                            return `<div style="display:flex;align-items:center;height:100%;white-space:pre-wrap;line-height:1.35;word-break:break-all;padding:2px 0;font-size:12px;">${task.text}</div>`;
                         }
                     },
                     {
                         name: "description",
                         label: "업무 설명",
-                        width: 220,
-                        min_width: 120,
+                        width: 176,
+                        min_width: 100,
                         template: (task: GanttTask) => {
-                            return `<div style="font-size:12px;color:#64748b;white-space:pre-wrap;line-height:1.4;word-break:break-all;display:flex;align-items:center;height:100%;padding:4px 0;">${task.description || '-'}</div>`;
+                            return `<div style="font-size:10px;color:#64748b;white-space:pre-wrap;line-height:1.35;word-break:break-all;display:flex;align-items:center;height:100%;padding:2px 0;">${task.description || '-'}</div>`;
                         }
                     },
                     {
                         name: "status",
                         label: "상태",
                         align: "center",
-                        width: 75,
+                        width: 60,
                         template: (task: GanttTask) => {
                             const option = STATUS_OPTIONS.find(o => o.key === task.status);
                             const label = option ? option.label : (task.status || '할 일');
                             const statusKey = task.status || 'todo';
-                            let styles = "display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500;line-height:1.4;";
+                            let styles = "display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:500;line-height:1.4;";
                             if (statusKey === 'todo') styles += "background:#f1f5f9;color:#475569;";
                             else if (statusKey === 'in_progress') styles += "background:#dbeafe;color:#1e40af;";
                             else if (statusKey === 'review') styles += "background:#fef9c3;color:#854d0e;";
@@ -320,12 +323,12 @@ export default function GanttChart({
                         name: "priority",
                         label: "우선순위",
                         align: "center",
-                        width: 75,
+                        width: 60,
                         template: (task: GanttTask) => {
                             const option = PRIORITY_OPTIONS.find(o => o.key === task.priority);
                             const label = option ? option.label : (task.priority || '보통');
                             const priorityKey = task.priority || 'medium';
-                            let styles = "display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500;line-height:1.4;";
+                            let styles = "display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:500;line-height:1.4;";
                             if (priorityKey === 'urgent') styles += "background:#fee2e2;color:#991b1b;";
                             else if (priorityKey === 'high') styles += "background:#1e293b;color:#f8fafc;";
                             else if (priorityKey === 'medium') styles += "background:#f1f5f9;color:#475569;";
@@ -337,8 +340,8 @@ export default function GanttChart({
                         name: "progress",
                         label: "진행률",
                         align: "center",
-                        width: 50,
-                        template: (task: GanttTask) => `<span style="color:#64748b;font-size:12px;">${Math.round(task.progress * 100)}%</span>`
+                        width: 40,
+                        template: (task: GanttTask) => `<span style="color:#64748b;font-size:10px;">${Math.round(task.progress * 100)}%</span>`
                     },
                     {
                         name: "add",
@@ -961,21 +964,22 @@ export default function GanttChart({
                         }
                     }
                 ]
-                g.config.min_column_width = 70;
+                // 컴팩트 모드: 한 화면에 더 많은 일자가 보이도록 일자 셀 최소 너비를 80% 축소
+                g.config.min_column_width = 56;
                 break
             case 'week':
                 g.config.scales = [
                     { unit: 'month', step: 1, format: (date: Date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월` },
                     { unit: 'week', step: 1, format: (date: Date) => `${Math.ceil(date.getDate() / 7)} 주차` },
                 ]
-                g.config.min_column_width = 90;
+                g.config.min_column_width = 72;
                 break
             case 'month':
                 g.config.scales = [
                     { unit: 'year', step: 1, format: (date: Date) => `${date.getFullYear()}년` },
                     { unit: 'month', step: 1, format: (date: Date) => `${date.getMonth() + 1}월` }
                 ]
-                g.config.min_column_width = 120;
+                g.config.min_column_width = 96;
                 break
         }
         g.render()
@@ -1066,17 +1070,19 @@ export default function GanttChart({
                     return totalLines;
                 };
 
-                // 업무명(200px 트리 컬럼)과 업무 설명(220px, 12px 폰트) 각각의 예상 줄 수 계산
+                // 업무명(160px 트리 컬럼, 12px 폰트)과 업무 설명(176px, 10px 폰트) 각각의 예상 줄 수 계산
                 // 단위: 영문 1, 한글 2. 업무명은 트리 들여쓰기/펼침 아이콘/폴더 아이콘으로 가용 폭이 더 좁음
-                // 컬럼 폭이 변경되면 maxUnits를 함께 갱신해야 행 높이가 잘리지 않음
-                const textLines = calculateLines(text, 22);
+                // 컬럼 폭/폰트가 변경되면 maxUnits를 함께 갱신해야 행 높이가 잘리지 않음
+                // 업무명: 컬럼 200→160(0.8배)이지만 폰트가 13→12로 살짝 줄어 가용 단위 22→20
+                // 업무 설명: 컬럼 220→176(0.8배)이나 폰트 12→10로 더 작아져 가용 단위 32→32 유지
+                const textLines = calculateLines(text, 20);
                 const descLines = calculateLines(description, 32);
 
                 // 둘 중 더 많은 줄 수 선택하여 행 높이 결정
                 const maxLines = Math.max(textLines, descLines);
 
-                // 최소 40px, 줄당 약 21px + 여유 패딩(14px)
-                const rowHeight = Math.max(40, maxLines * 21 + 14);
+                // 컴팩트 모드: 최소 32px, 줄당 약 17px + 여유 패딩(11px)
+                const rowHeight = Math.max(32, maxLines * 17 + 11);
 
                 return {
                     ...t,
@@ -1101,6 +1107,10 @@ export default function GanttChart({
                 .gantt_task_progress { background-color: rgba(0, 0, 0, 0.2) !important; border-radius: 6px !important; }
                 .gantt_task_content { color: #1e293b !important; font-weight: 500; }
                 .gantt_grid_scale, .gantt_task_scale { background-color: #f8fafc; }
+                /* 컴팩트 모드: 그리드/타임라인 헤더 셀 폰트를 80% 수준으로 축소 (기본 13px → 11px) */
+                .gantt_grid_head_cell, .gantt_scale_cell { font-size: 11px !important; }
+                /* 그리드 본문 셀의 기본 폰트도 12px로 살짝 축소 (각 컬럼 template의 인라인 스타일이 우선 적용됨) */
+                .gantt_grid_data .gantt_cell { font-size: 12px; }
                 .weekend_scale, .weekend_cell { background-color: rgba(239, 68, 68, 0.1) !important; color: #ef4444 !important; }
                 .today_scale, .today_cell { background-color: rgba(37, 99, 235, 0.15) !important; color: #2563eb !important; font-weight: 800 !important; }
                 
