@@ -189,26 +189,22 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
                             {upcomingTasks.length === 0 ? (
                                 <p className="text-sm text-muted-foreground text-center py-4">마감 임박 업무가 없습니다.</p>
                             ) : (
+                                // 마감 임박 목록은 마감일 기준이므로 사용자 지정 우선순위 배지는 노출하지 않는다
                                 upcomingTasks.map(t => (
                                     <div
                                         key={t.id}
-                                        className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors group"
+                                        className="space-y-1 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 cursor-pointer transition-colors group"
                                         onClick={() => onTaskClick?.(t.id)}
                                     >
-                                        <div className="space-y-1">
-                                            <p className="text-sm font-medium group-hover:text-blue-600 transition-colors">{t.title}</p>
-                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                <span>담당: {members.find(m => m.id === t.assignee_id)?.display_name || '미지정'}</span>
-                                                <span>•</span>
-                                                <span>마감: {format(parseISO(t.end_date!), 'yyyy-MM-dd')}</span>
-                                                <span className="text-orange-500 font-medium">({differenceInDays(parseISO(t.end_date!), today)}일 남음)</span>
-                                                <span>•</span>
-                                                <span>진행: {t.progress}%</span>
-                                            </div>
+                                        <p className="text-sm font-medium group-hover:text-blue-600 transition-colors">{t.title}</p>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <span>담당: {members.find(m => m.id === t.assignee_id)?.display_name || '미지정'}</span>
+                                            <span>•</span>
+                                            <span>마감: {format(parseISO(t.end_date!), 'yyyy-MM-dd')}</span>
+                                            <span className="text-orange-500 font-medium">({differenceInDays(parseISO(t.end_date!), today)}일 남음)</span>
+                                            <span>•</span>
+                                            <span>진행: {t.progress}%</span>
                                         </div>
-                                        <Badge variant={t.priority === 'urgent' ? 'destructive' : 'default'} className="text-xs">
-                                            {t.priority === 'urgent' ? '긴급' : '높음'}
-                                        </Badge>
                                     </div>
                                 ))
                             )}
