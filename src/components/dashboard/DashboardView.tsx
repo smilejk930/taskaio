@@ -116,7 +116,7 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
                 <Card className="bg-card shadow-sm border-none ring-1 ring-slate-200 dark:ring-slate-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">마감 임박</CardTitle>
-                        <Badge variant="outline" className="text-xs">{upcomingTasks.length}</Badge>
+                        <Badge variant="destructive" className="text-xs">{upcomingTasks.length}</Badge>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{upcomingTasks.length}건</div>
