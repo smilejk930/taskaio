@@ -27,7 +27,8 @@ export default async function ProjectsPage() {
                         </Button>
                     </Link>
                     <CreateProjectDialog>
-                        <Button size="sm" className="gap-2">
+                        {/* 헤더 네비게이션 버튼과 동일한 ghost 스타일로 통일 */}
+                        <Button variant="ghost" size="sm" className="gap-2">
                             <Plus className="w-4 h-4" />
                             신규 프로젝트
                         </Button>

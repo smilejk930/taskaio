@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { LayoutDashboard, LogOut, Settings, User, CalendarDays } from 'lucide-react'
+import { LogOut, Settings, User } from 'lucide-react'
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -37,11 +37,11 @@ export function UserMenu({ user }: UserMenuProps) {
         router.push('/login')
     }
 
-    // 아바타 이니셜: 표시명 → 아이디 → 이메일 순으로 fallback
+    // 아바타 이니셜: 표시명 → 아이디 → 이메일 순으로 fallback (첫 글자 1자만 사용)
     const initials = user.display_name
-        ? user.display_name.substring(0, 2).toUpperCase()
-        : user.username?.substring(0, 2).toUpperCase()
-            || user.email?.substring(0, 2).toUpperCase()
+        ? user.display_name.substring(0, 1).toUpperCase()
+        : user.username?.substring(0, 1).toUpperCase()
+            || user.email?.substring(0, 1).toUpperCase()
             || 'U'
 
     return (
@@ -72,14 +72,6 @@ export function UserMenu({ user }: UserMenuProps) {
                     </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/projects')}>
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    <span>프로젝트 목록</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/holidays')}>
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    <span>일정 관리</span>
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/profile')}>
                     <User className="mr-2 h-4 w-4" />
                     <span>프로필 설정</span>

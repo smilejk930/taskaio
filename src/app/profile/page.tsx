@@ -5,6 +5,7 @@ import { ProfileForm } from '@/components/profile/ProfileForm'
 import { PasswordChangeForm } from '@/components/profile/PasswordChangeForm'
 import { DeleteAccountForm } from '@/components/profile/DeleteAccountForm'
 import { AppLogo } from '@/components/common/AppLogo'
+import { HeaderNavLinks } from '@/components/common/HeaderNavLinks'
 
 export const metadata = {
   title: '프로필 설정',
@@ -24,7 +25,11 @@ export default async function ProfilePage() {
           <AppLogo showText={false} />
           <span className="text-base font-bold">프로필 설정</span>
         </div>
-        <UserMenu user={user} />
+        {/* 아바타 메뉴 왼쪽에 프로젝트 목록·일정 관리 진입 버튼 노출 */}
+        <div className="flex items-center gap-2">
+          <HeaderNavLinks />
+          <UserMenu user={user} />
+        </div>
       </header>
 
       <main className="container mx-auto p-6 space-y-8 max-w-3xl">

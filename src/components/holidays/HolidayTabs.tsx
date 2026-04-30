@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { useSearchParams } from 'next/navigation'
 import { UserMenu } from '@/components/auth/UserMenu'
+import { HeaderNavLinks } from '@/components/common/HeaderNavLinks'
 import { Holiday, HolidayFormData, HolidayProfile, useHolidays } from '@/hooks/use-holidays'
 import HolidayDialog from '@/components/holidays/HolidayDialog'
 import HolidayClientView from '@/components/holidays/HolidayClientView'
@@ -83,7 +84,11 @@ export default function HolidayTabs({
                     <AppLogo showText={false} />
                     <span className="text-base font-bold">일정 관리</span>
                 </div>
-                {currentUser && <UserMenu user={currentUser} />}
+                {/* 아바타 메뉴 왼쪽에 프로젝트 목록·일정 관리 진입 버튼 노출 */}
+                <div className="flex items-center gap-2">
+                    <HeaderNavLinks />
+                    {currentUser && <UserMenu user={currentUser} />}
+                </div>
             </header>
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 flex flex-col h-full overflow-hidden">

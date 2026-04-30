@@ -4,6 +4,7 @@ import { UserMenu } from '@/components/auth/UserMenu'
 import { ThemeSettings } from '@/components/settings/ThemeSettings'
 import { AccountDeletion } from '@/components/settings/AccountDeletion'
 import { AppLogo } from '@/components/common/AppLogo'
+import { HeaderNavLinks } from '@/components/common/HeaderNavLinks'
 
 export const metadata = {
   title: '앱 설정',
@@ -23,7 +24,11 @@ export default async function SettingsPage() {
           <AppLogo showText={false} />
           <span className="text-base font-bold">환경 설정</span>
         </div>
-        <UserMenu user={user} />
+        {/* 아바타 메뉴 왼쪽에 프로젝트 목록·일정 관리 진입 버튼 노출 */}
+        <div className="flex items-center gap-2">
+          <HeaderNavLinks />
+          <UserMenu user={user} />
+        </div>
       </header>
 
       <main className="container mx-auto p-6 space-y-8 max-w-3xl">

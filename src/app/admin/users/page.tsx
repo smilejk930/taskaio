@@ -5,6 +5,7 @@ import { getAdminUsersAction } from '@/app/actions/admin-users'
 import { UserTable } from '@/components/admin/UserTable'
 import { AppLogo } from '@/components/common/AppLogo'
 import { UserMenu } from '@/components/auth/UserMenu'
+import { HeaderNavLinks } from '@/components/common/HeaderNavLinks'
 import { Button } from '@/components/ui/button'
 import { Plus, Users } from 'lucide-react'
 import { UserDialogWrapper } from './UserDialogWrapper'
@@ -25,9 +26,12 @@ export default async function AdminUsersPage() {
             {/* 상단 헤더 */}
             <header className="border-b px-6 py-3 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 h-14">
                 <AppLogo />
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                    {/* 아바타 메뉴 왼쪽에 프로젝트 목록·일정 관리 진입 버튼 노출 */}
+                    <HeaderNavLinks />
                     <UserDialogWrapper>
-                        <Button size="sm" className="gap-2">
+                        {/* 헤더 네비게이션 버튼과 동일한 ghost 스타일로 통일 */}
+                        <Button variant="ghost" size="sm" className="gap-2">
                             <Plus className="w-4 h-4" />
                             신규 사용자
                         </Button>

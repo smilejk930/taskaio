@@ -24,6 +24,7 @@ import TeamManagementView from '@/components/projects/members/TeamManagementView
 import { TaskSearchFilter } from '@/components/projects/TaskSearchFilter'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { AppLogo } from '@/components/common/AppLogo'
+import { HeaderNavLinks } from '@/components/common/HeaderNavLinks'
 // import { updateTask, createTask, deleteTask } from '@/app/actions/tasks' // useTasks 훅을 통해 처리하므로 제거
 import { updateProject, deleteProject } from '@/app/actions/projects'
 import { createLink, deleteLink } from '@/app/actions/links'
@@ -445,7 +446,9 @@ export default function ProjectClientView({
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                    {/* 아바타 메뉴 왼쪽에 프로젝트 목록·일정 관리 진입 버튼 노출 */}
+                    <HeaderNavLinks />
                     {currentUser && <UserMenu user={currentUser} />}
                 </div>
             </header>
