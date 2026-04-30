@@ -185,6 +185,12 @@ docker compose restart
 
 ---
 
+## 의존성 설치
+
+```bash
+pnpm install --frozen-lockfile
+```
+
 ## 📝 라이선스
 이 프로젝트는 [Apache License 2.0](LICENSE)에 따라 라이선스가 부여됩니다.
 Copyright 2026 SMILEJK930
