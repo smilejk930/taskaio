@@ -74,7 +74,8 @@ export default function GanttChart({
             const cur = new Date(start);
             while (cur <= end) {
                 const dateStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
-                const type = ['public_holiday', 'workshop'].includes(h.type) ? 'public' : 'leave';
+                // 전사 공통 일정(공휴일·워크샵·감리)은 'public'으로 처리하여 모든 멤버 행에 표시
+                const type = ['public_holiday', 'workshop', 'supervision'].includes(h.type) ? 'public' : 'leave';
 
                 const existing = map.get(dateStr) || { type, names: [] };
 
@@ -518,7 +519,7 @@ export default function GanttChart({
                 eventIdsRef.current.push(ganttInstance.attachEvent("onScaleClick", (e: unknown, date: unknown) => {
                     const _e = e as MouseEvent;
                     const _date = date as Date;
-                    // day_scale_cell 클래스를 가진(일자 헤더) 경우에만 휴일 등록 실행
+                    // day_scale_cell 클래스를 가진(일자 헤더) 경우에만 일정 등록 실행
                     if ((_e.target as HTMLElement).closest(".day_scale_cell")) {
                         callbacksRef.current.onDateClick?.(_date);
                     }
@@ -541,7 +542,7 @@ export default function GanttChart({
 
                     const tooltip = holidayTooltipRef.current;
                     let html = `<div style="padding:14px;min-width:200px;background:#ffffff;box-sizing:border-box;border-radius:8px;">`;
-                    html += `<div style="color:#ef4444;font-size:13px;font-weight:700;margin-bottom:8px;">[휴일/연차 정보]</div>`;
+                    html += `<div style="color:#ef4444;font-size:13px;font-weight:700;margin-bottom:8px;">[일정 정보]</div>`;
                     names.split(', ').forEach(name => {
                         html += `<div style="font-size:12px;color:#334155;margin-bottom:4px;display:flex;align-items:center;"><span style="margin-right:4px;">•</span> ${name}</div>`;
                     });
@@ -643,7 +644,7 @@ export default function GanttChart({
 
                             if (overlappingHolidays.length > 0) {
                                 tooltipHtml += `<div style="margin-top:12px;padding-top:10px;border-top:1px dashed #cbd5e1;">`;
-                                tooltipHtml += `<div style="color:#ef4444;font-size:13px;font-weight:700;margin-bottom:6px;">[해당 기간 휴일/연차]</div>`;
+                                tooltipHtml += `<div style="color:#ef4444;font-size:13px;font-weight:700;margin-bottom:6px;">[해당 기간 일정]</div>`;
                                 overlappingHolidays.forEach(h => {
                                     const hName = ['member_leave', 'business_trip'].includes(h.type) && h.member_name
                                         ? `${h.member_name}(${h.name})`

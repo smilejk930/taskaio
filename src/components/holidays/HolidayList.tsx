@@ -82,6 +82,7 @@ export default function HolidayList({
             public_holiday: '공휴일',
             member_leave: '팀원 휴가',
             business_trip: '출장',
+            supervision: '감리',
             workshop: '워크샵',
             other: '기타',
         }
@@ -96,8 +97,8 @@ export default function HolidayList({
         return (
             <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground">
                 <p className="text-4xl mb-3">🗓️</p>
-                <p className="text-sm">등록된 휴일이 없습니다.</p>
-                <p className="text-xs mt-1">위의 [휴일 등록] 버튼으로 공휴일 또는 팀원 휴가를 추가하세요.</p>
+                <p className="text-sm">등록된 일정이 없습니다.</p>
+                <p className="text-xs mt-1">위의 [일정 등록] 버튼으로 일정을 추가하세요.</p>
             </div>
         )
     }
@@ -156,6 +157,8 @@ export default function HolidayList({
                                         <Badge variant="outline">👤 팀원 휴가</Badge>
                                     ) : holiday.type === 'business_trip' ? (
                                         <Badge variant="outline" className="border-purple-200 text-purple-700 bg-purple-50">🏢 출장</Badge>
+                                    ) : holiday.type === 'supervision' ? (
+                                        <Badge variant="outline" className="border-teal-200 text-teal-700 bg-teal-50">📐 감리</Badge>
                                     ) : holiday.type === 'workshop' ? (
                                         <Badge variant="outline" className="border-green-200 text-green-700 bg-green-50">🎤 워크샵</Badge>
                                     ) : (
@@ -226,9 +229,9 @@ export default function HolidayList({
             <AlertDialog open={Boolean(deleteTargetId)} onOpenChange={(open) => { if (!open) setDeleteTargetId(null) }}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>휴일을 삭제하시겠습니까?</AlertDialogTitle>
+                        <AlertDialogTitle>일정을 삭제하시겠습니까?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            이 작업은 되돌릴 수 없습니다. 간트 차트에서도 휴일 표시가 사라집니다.
+                            이 작업은 되돌릴 수 없습니다. 간트 차트에서도 일정 표시가 사라집니다.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

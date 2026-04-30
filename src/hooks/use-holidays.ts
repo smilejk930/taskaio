@@ -22,7 +22,7 @@ export interface Holiday {
     name: string
     start_date: string
     end_date: string
-    type: 'public_holiday' | 'member_leave' | 'business_trip' | 'workshop' | 'other'
+    type: 'public_holiday' | 'member_leave' | 'business_trip' | 'workshop' | 'supervision' | 'other'
     member_id: string | null
     note: string | null
     created_at: string | null
@@ -34,7 +34,7 @@ export interface HolidayFormData {
     name: string
     start_date: string
     end_date: string
-    type: 'public_holiday' | 'member_leave' | 'business_trip' | 'workshop' | 'other'
+    type: 'public_holiday' | 'member_leave' | 'business_trip' | 'workshop' | 'supervision' | 'other'
     member_id: string | null
     note: string
 }
@@ -83,18 +83,18 @@ export function useHolidays(initialHolidays: Holiday[], profiles: HolidayProfile
             setHolidays(prev => 
                 prev.map(h => h.id === tempId ? mappedCreated : h)
             )
-            toast.success('휴일이 등록되었습니다.')
+            toast.success('일정이 등록되었습니다.')
             return true
         } catch (error: unknown) {
             // 실패 시 롤백
             setHolidays(prev => prev.filter(h => h.id !== tempId))
             const message = error instanceof Error ? error.message : '알 수 없는 오류'
-            toast.error('휴일 등록 실패', { description: message })
+            toast.error('일정 등록 실패', { description: message })
             return false
         }
     }, [profiles])
 
-    // 휴일 수정
+    // 일정 수정
     const handleUpdate = useCallback(async (id: string, formData: HolidayFormData) => {
         // 이전 상태 저장 (롤백용)
         let previousHolidays: Holiday[] = []
@@ -127,13 +127,13 @@ export function useHolidays(initialHolidays: Holiday[], profiles: HolidayProfile
                     profiles: profileResult 
                 } as unknown as Holiday : h)
             )
-            toast.success('휴일이 수정되었습니다.')
+            toast.success('일정이 수정되었습니다.')
             return true
         } catch (error: unknown) {
             // 실패 시 롤백
             setHolidays(previousHolidays)
             const message = error instanceof Error ? error.message : '알 수 없는 오류'
-            toast.error('휴일 수정 실패', { description: message })
+            toast.error('일정 수정 실패', { description: message })
             return false
         }
     }, [profiles])
@@ -148,13 +148,13 @@ export function useHolidays(initialHolidays: Holiday[], profiles: HolidayProfile
 
         try {
             await deleteHoliday(id)
-            toast.success('휴일이 삭제되었습니다.')
+            toast.success('일정이 삭제되었습니다.')
             return true
         } catch (error: unknown) {
             // 실패 시 롤백
             setHolidays(previousHolidays)
             const message = error instanceof Error ? error.message : '알 수 없는 오류'
-            toast.error('휴일 삭제 실패', { description: message })
+            toast.error('일정 삭제 실패', { description: message })
             return false
         }
     }, [])
@@ -178,11 +178,11 @@ export function useHolidays(initialHolidays: Holiday[], profiles: HolidayProfile
             })) as unknown as Holiday[]
 
             setHolidays(prev => [...prev, ...mappedList])
-            toast.success(`${items.length}개의 공휴일이 등록되었습니다.`)
+            toast.success(`${items.length}개의 일정이 등록되었습니다.`)
             return true
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : '알 수 없는 오류'
-            toast.error('휴일 일괄 등록 실패', { description: message })
+            toast.error('일정 일괄 등록 실패', { description: message })
             return false
         }
     }, [])

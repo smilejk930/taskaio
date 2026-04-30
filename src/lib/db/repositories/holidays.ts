@@ -6,11 +6,13 @@ export async function getAllHolidays() {
 }
 
 export async function getHolidaysByMemberIds(memberIds: string[]) {
+    // 전사 공통 일정(공휴일·워크샵·감리)은 대상 팀원과 무관하게 모두 노출, 그 외 개인 일정은 멤버 필터 적용
     const conditions = [
         eq(schema.holidays.type, 'public_holiday'),
-        eq(schema.holidays.type, 'workshop')
+        eq(schema.holidays.type, 'workshop'),
+        eq(schema.holidays.type, 'supervision')
     ]
-    
+
     if (memberIds.length > 0) {
         conditions.push(inArray(schema.holidays.memberId, memberIds))
     }

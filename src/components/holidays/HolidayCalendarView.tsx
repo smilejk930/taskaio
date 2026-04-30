@@ -49,6 +49,7 @@ const HOLIDAY_COLORS: Record<string, string> = {
     public_holiday: 'bg-red-100 text-red-700 border-red-200',
     member_leave: 'bg-blue-100 text-blue-700 border-blue-200',
     business_trip: 'bg-purple-100 text-purple-700 border-purple-200',
+    supervision: 'bg-teal-100 text-teal-700 border-teal-200',
     workshop: 'bg-green-100 text-green-700 border-green-200',
     other: 'bg-orange-100 text-orange-700 border-orange-200',
 }
@@ -57,6 +58,7 @@ const HOLIDAY_LABELS: Record<string, string> = {
     public_holiday: '공휴일',
     member_leave: '휴가',
     business_trip: '출장',
+    supervision: '감리',
     workshop: '워크샵',
     other: '기타',
 }

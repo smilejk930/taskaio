@@ -171,10 +171,10 @@ export default function HolidayImportDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <Upload className="w-5 h-5" />
-                        공휴일 일괄 등록 (JSON)
+                        일정 일괄 등록 (JSON)
                     </DialogTitle>
                     <DialogDescription>
-                        제공된 형식의 JSON 파일을 업로드하여 여러 공휴일을 한 번에 등록합니다.
+                        제공된 형식의 JSON 파일을 업로드하여 여러 일정을 한 번에 등록합니다.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -249,7 +249,7 @@ export default function HolidayImportDialog({
                                     <Table>
                                         <TableHeader className="sticky top-0 bg-background z-10 shadow-sm">
                                             <TableRow>
-                                                <TableHead className="w-[200px]">휴일이름</TableHead>
+                                                <TableHead className="w-[200px]">일정이름</TableHead>
                                                 <TableHead>시작일</TableHead>
                                                 <TableHead>종료일</TableHead>
                                                 <TableHead className="w-[100px] text-right">상태</TableHead>

@@ -78,7 +78,7 @@ export function UserMenu({ user }: UserMenuProps) {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/holidays')}>
                     <CalendarDays className="mr-2 h-4 w-4" />
-                    <span>휴일 관리</span>
+                    <span>일정 관리</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/profile')}>
                     <User className="mr-2 h-4 w-4" />

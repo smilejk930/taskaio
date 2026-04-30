@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import {
     Dialog,
     DialogContent,
-    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -79,13 +78,13 @@ export default function HolidayDialog({
     const validate = (): boolean => {
         const newErrors: Partial<Record<keyof HolidayFormData, string>> = {}
 
-        if (!form.name.trim()) newErrors.name = '이름을 입력해주세요.'
+        if (!form.name.trim()) newErrors.name = '일정명을 입력해주세요.'
         if (!form.start_date) newErrors.start_date = '시작일을 선택해주세요.'
         if (!form.end_date) newErrors.end_date = '종료일을 선택해주세요.'
         if (form.start_date && form.end_date && form.end_date < form.start_date) {
             newErrors.end_date = '종료일은 시작일 이후여야 합니다.'
         }
-        // 공휴일과 워크샵, 기타를 제외한 개인 일정(휴가, 출장)일 때 팀원 선택 필수
+        // 개인 일정(휴가, 출장)일 때만 대상 팀원 필수. 공휴일·워크샵·감리·기타는 전사 공통이라 미지정 허용
         if (['member_leave', 'business_trip'].includes(form.type) && !form.member_id) {
             newErrors.member_id = '해당 일정은 대상 팀원을 지정해야 합니다.'
         }
@@ -116,10 +115,7 @@ export default function HolidayDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                    <DialogTitle>{isEdit ? '휴일 수정' : '새 휴일 등록'}</DialogTitle>
-                    <DialogDescription>
-                        공휴일 또는 팀원 개별 휴가를 등록합니다.
-                    </DialogDescription>
+                    <DialogTitle>{isEdit ? '일정 수정' : '새 일정 등록'}</DialogTitle>
                 </DialogHeader>
 
                 <div className="space-y-4 py-2">
@@ -130,8 +126,10 @@ export default function HolidayDialog({
                             value={form.type}
                             onValueChange={(v) => {
                                 setField('type', v as HolidayFormData['type'])
-                                // 공휴일일 때는 member_id 초기화
-                                if (v === 'public_holiday') setField('member_id', null)
+                                // 전사 공통 일정(공휴일·워크샵·감리)은 대상 팀원이 없으므로 member_id 초기화
+                                if (['public_holiday', 'workshop', 'supervision'].includes(v)) {
+                                    setField('member_id', null)
+                                }
                             }}
                         >
                             <SelectTrigger id="holiday-type">
@@ -140,6 +138,7 @@ export default function HolidayDialog({
                             <SelectContent>
                                 <SelectItem value="member_leave">👤 팀원 휴가</SelectItem>
                                 <SelectItem value="business_trip">🏢 출장</SelectItem>
+                                <SelectItem value="supervision">📐 감리</SelectItem>
                                 <SelectItem value="workshop">🎤 워크샵</SelectItem>
                                 <SelectItem value="public_holiday">🗓️ 공휴일</SelectItem>
                                 <SelectItem value="other">📌 기타</SelectItem>
@@ -147,8 +146,8 @@ export default function HolidayDialog({
                         </Select>
                     </div>
 
-                    {/* 팀원 선택 (공휴일 외 모든 유형에서 선택 가능, 휴가/출장의 경우 필수) */}
-                    {form.type !== 'public_holiday' && (
+                    {/* 팀원 선택: 전사 공통 일정(공휴일·워크샵·감리)은 노출하지 않고, 개인 일정(휴가·출장)에서만 노출하며 필수 */}
+                    {!['public_holiday', 'workshop', 'supervision'].includes(form.type) && (
                         <div className="space-y-2">
                             <Label htmlFor="holiday-member">
                                 대상 팀원 <span className="text-destructive">*</span>
@@ -163,7 +162,7 @@ export default function HolidayDialog({
                                 <SelectContent>
                                     {profiles.map(p => (
                                         <SelectItem key={p.id} value={p.id}>
-                                            {p.display_name ?? '이름 없음'}
+                                            {p.display_name ?? '일정명 없음'}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -174,14 +173,14 @@ export default function HolidayDialog({
                         </div>
                     )}
 
-                    {/* 이름 */}
+                    {/* 일정명 */}
                     <div className="space-y-2">
-                        <Label htmlFor="holiday-name">이름</Label>
+                        <Label htmlFor="holiday-name">일정명</Label>
                         <Input
                             id="holiday-name"
                             value={form.name}
                             onChange={(e) => setField('name', e.target.value)}
-                            placeholder="예) 설날, 추석, 팀 워크숍"
+                            placeholder="예) 설날, 추석, 팀 워크숍, 감리 등"
                             className={errors.name ? 'border-destructive' : ''}
                         />
                         {errors.name && (

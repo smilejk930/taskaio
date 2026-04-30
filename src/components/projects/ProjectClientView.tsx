@@ -668,7 +668,7 @@ export default function ProjectClientView({
                 isLoading={isTaskLoading}
             />
 
-            {/* 휴일 등록/수정 다이얼로그 */}
+            {/* 일정 등록/수정 다이얼로그 */}
             <HolidayDialog
                 open={isHolidayDialogOpen}
                 onOpenChange={setIsHolidayDialogOpen}

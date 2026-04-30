@@ -46,7 +46,7 @@ export interface Holiday {
     name: string
     start_date: string
     end_date: string
-    type: 'public_holiday' | 'member_leave' | 'business_trip' | 'workshop' | 'other' | string
+    type: 'public_holiday' | 'member_leave' | 'business_trip' | 'workshop' | 'supervision' | 'other' | string
     member_id?: string | null
     member_name?: string
     note?: string | null

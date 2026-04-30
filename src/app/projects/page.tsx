@@ -23,7 +23,7 @@ export default async function ProjectsPage() {
                     <Link href="/holidays">
                         <Button variant="ghost" size="sm" className="gap-2">
                             <CalendarDays className="w-4 h-4" />
-                            휴일 관리
+                            일정 관리
                         </Button>
                     </Link>
                     <CreateProjectDialog>

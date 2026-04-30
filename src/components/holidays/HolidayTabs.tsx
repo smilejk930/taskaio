@@ -81,7 +81,7 @@ export default function HolidayTabs({
             <header className="border-b px-6 py-3 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
                 <div className="flex items-center gap-2">
                     <AppLogo showText={false} />
-                    <span className="text-base font-bold">휴일 관리</span>
+                    <span className="text-base font-bold">일정 관리</span>
                 </div>
                 {currentUser && <UserMenu user={currentUser} />}
             </header>
@@ -102,11 +102,11 @@ export default function HolidayTabs({
                     <div className="flex gap-2">
                         <Button onClick={() => setIsImportOpen(true)} size="sm" variant="outline" className="hidden sm:flex">
                             <Upload className="h-4 w-4 mr-1" />
-                            공휴일 일괄 등록
+                            일정 일괄 등록
                         </Button>
                         <Button onClick={() => openCreateDialog()} size="sm">
                             <Plus className="h-4 w-4 mr-1" />
-                            휴일 등록
+                            일정 등록
                         </Button>
                     </div>
                 </div>

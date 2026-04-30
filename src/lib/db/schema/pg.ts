@@ -112,7 +112,8 @@ export const holidays = pgTable("holidays", {
   name: text("name").notNull(),
   startDate: text("start_date").notNull(),
   endDate: text("end_date").notNull(),
-  type: text("type", { enum: ["public_holiday", "member_leave", "business_trip", "workshop", "other"] }).notNull(),
+  // 일정 유형: 공휴일·워크샵·감리는 전사 공통 일정(대상 팀원 없음), 휴가·출장은 개인 일정(대상 팀원 필수)
+  type: text("type", { enum: ["public_holiday", "member_leave", "business_trip", "workshop", "supervision", "other"] }).notNull(),
   memberId: text("member_id").references(() => profiles.id, { onDelete: "cascade" }),
   note: text("note"),
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow(),
