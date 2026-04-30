@@ -103,7 +103,7 @@ export default function ProjectClientView({
     const [selectedTask, setSelectedTask] = useState<Partial<TaskFormData> & { id?: string } | null>(null)
     const wbsGridRef = useRef<WbsGridHandle>(null)
 
-    const { filters, setFilters, resetFilters, filteredTasks } = useTaskFilters(
+    const { filters, setFilters, resetFilters, filteredTasks, defaults: filterDefaults } = useTaskFilters(
         tasks,
         currentUser?.id ? [currentUser.id] : []
     )
@@ -514,6 +514,7 @@ export default function ProjectClientView({
                                                     setFilters={setFilters}
                                                     members={members}
                                                     onReset={resetFilters}
+                                                    defaults={filterDefaults}
                                                 />
                                             </div>
                                         </div>
@@ -546,6 +547,7 @@ export default function ProjectClientView({
                                         setFilters={setFilters}
                                         members={members}
                                         onReset={resetFilters}
+                                        defaults={filterDefaults}
                                     />
                                     <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
                                         <GanttChart

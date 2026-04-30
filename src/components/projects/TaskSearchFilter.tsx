@@ -39,6 +39,11 @@ interface TaskSearchFilterProps {
     setFilters: React.Dispatch<React.SetStateAction<TaskFilters>>
     members: Member[]
     onReset: () => void
+    /** 「전체」 토글이 OFF로 전환될 때 복원할 기본 선택값 */
+    defaults: {
+        assigneeIds: string[]
+        statuses: string[]
+    }
 }
 
 const STATUS_OPTIONS = [
@@ -55,7 +60,7 @@ const PRIORITY_OPTIONS = [
     { value: 'low', label: '낮음', variant: 'outline' as const },
 ]
 
-export function TaskSearchFilter({ filters, setFilters, members, onReset }: TaskSearchFilterProps) {
+export function TaskSearchFilter({ filters, setFilters, members, onReset, defaults }: TaskSearchFilterProps) {
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFilters(prev => ({ ...prev, title: e.target.value }))
     }
@@ -68,6 +73,26 @@ export function TaskSearchFilter({ filters, setFilters, members, onReset }: Task
                 : [...current, value]
             return { ...prev, [key]: next }
         })
+    }
+
+    // 「전체」 토글: 배열이 비어 있으면 ON(전체 표시) 상태로 간주.
+    // ON 클릭 → 빈 배열로 만들어 필터를 해제(= 전체 표시)
+    // OFF 클릭 → defaults 값으로 복원(담당자: 본인, 상태: 완료 제외 기본 3종)
+    const isAssigneeAllOn = filters.assigneeIds.length === 0
+    const isStatusAllOn = filters.statuses.length === 0
+
+    const handleToggleAssigneeAll = () => {
+        setFilters(prev => ({
+            ...prev,
+            assigneeIds: isAssigneeAllOn ? defaults.assigneeIds : [],
+        }))
+    }
+
+    const handleToggleStatusAll = () => {
+        setFilters(prev => ({
+            ...prev,
+            statuses: isStatusAllOn ? defaults.statuses : [],
+        }))
     }
 
     return (
@@ -86,21 +111,35 @@ export function TaskSearchFilter({ filters, setFilters, members, onReset }: Task
 
                 <Separator orientation="vertical" className="hidden sm:block h-6" />
 
-                {/* 담당자 멀티 셀렉트 */}
-                <MultiSelectFilter
-                    title="담당자"
-                    options={members.map(m => ({ value: m.id, label: m.display_name ?? m.email ?? '이름 없음' }))}
-                    selectedValues={filters.assigneeIds}
-                    onSelect={(val) => toggleFilter('assigneeIds', val)}
-                />
+                {/* 담당자: 멀티셀렉트 + 「전체」 토글 (관리자가 본인/팀 전체를 한 번에 전환하기 위함) */}
+                <div className="flex items-center gap-1">
+                    <MultiSelectFilter
+                        title="담당자"
+                        options={members.map(m => ({ value: m.id, label: m.display_name ?? m.email ?? '이름 없음' }))}
+                        selectedValues={filters.assigneeIds}
+                        onSelect={(val) => toggleFilter('assigneeIds', val)}
+                    />
+                    <AllToggleButton
+                        label="담당자 전체"
+                        pressed={isAssigneeAllOn}
+                        onClick={handleToggleAssigneeAll}
+                    />
+                </div>
 
-                {/* 상태 멀티 셀렉트 */}
-                <MultiSelectFilter
-                    title="상태"
-                    options={STATUS_OPTIONS}
-                    selectedValues={filters.statuses}
-                    onSelect={(val) => toggleFilter('statuses', val)}
-                />
+                {/* 상태: 멀티셀렉트 + 「전체」 토글 (완료 포함 전체 일정 vs 진행 중심 기본값을 빠르게 전환) */}
+                <div className="flex items-center gap-1">
+                    <MultiSelectFilter
+                        title="상태"
+                        options={STATUS_OPTIONS}
+                        selectedValues={filters.statuses}
+                        onSelect={(val) => toggleFilter('statuses', val)}
+                    />
+                    <AllToggleButton
+                        label="상태 전체"
+                        pressed={isStatusAllOn}
+                        onClick={handleToggleStatusAll}
+                    />
+                </div>
 
                 {/* 우선순위 멀티 셀렉트 */}
                 <MultiSelectFilter
@@ -218,6 +257,34 @@ export function TaskSearchFilter({ filters, setFilters, members, onReset }: Task
                 )}
             </div>
         </div>
+    )
+}
+
+// ──── 「전체」 토글 버튼 ───────────────────────────────────────────────
+// pressed=true(필터 배열이 비어 있는 상태) → 강조 색(default variant)
+// pressed=false → outline variant. 한 번 클릭으로 전체 보기/기본 보기 전환.
+type AllToggleButtonProps = {
+    label: string
+    pressed: boolean
+    onClick: () => void
+}
+
+function AllToggleButton({ label, pressed, onClick }: AllToggleButtonProps) {
+    return (
+        <Button
+            type="button"
+            variant={pressed ? 'default' : 'outline'}
+            size="sm"
+            aria-pressed={pressed}
+            onClick={onClick}
+            className={cn(
+                'h-9 px-3 text-xs font-medium',
+                !pressed && 'bg-background'
+            )}
+            title={pressed ? `${label} 해제 (기본값으로 복원)` : `${label} 선택 (필터 해제)`}
+        >
+            전체
+        </Button>
     )
 }
 

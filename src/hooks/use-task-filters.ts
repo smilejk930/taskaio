@@ -14,12 +14,16 @@ export interface TaskFilters {
     showOnlyParent: boolean
 }
 
+// 상태 필터 기본값(완료 제외)을 모듈 외부에서도 참조 가능하도록 분리.
+// 「전체」 토글이 OFF로 돌아갈 때 복원할 기준값으로 사용된다.
+export const DEFAULT_STATUSES = ['todo', 'in_progress', 'review'] as const
+
 export function useTaskFilters(tasks: ProjectTask[], initialAssigneeIds: string[] = []) {
     // 첫 진입 시 기본값 (초기화 버튼의 복원 대상)
     const defaultFilters: TaskFilters = useMemo(() => ({
         title: '',
         assigneeIds: initialAssigneeIds,
-        statuses: ['todo', 'in_progress', 'review'],
+        statuses: [...DEFAULT_STATUSES],
         priorities: [],
         dateRange: {
             from: undefined,
@@ -109,10 +113,19 @@ export function useTaskFilters(tasks: ProjectTask[], initialAssigneeIds: string[
         return tasks.filter(t => visibleIds.has(t.id))
     }, [tasks, filters])
 
+    // 「전체」 토글이 OFF로 돌아갈 때 복원할 기본값. 호출부(TaskSearchFilter)에 전달.
+    const defaults = useMemo(() => ({
+        assigneeIds: initialAssigneeIds,
+        statuses: [...DEFAULT_STATUSES] as string[],
+        // initialAssigneeIds는 최초 마운트 시 고정값이므로 의존성 제외
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }), [])
+
     return {
         filters,
         setFilters,
         resetFilters,
         filteredTasks,
+        defaults,
     }
 }
