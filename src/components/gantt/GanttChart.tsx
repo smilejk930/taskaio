@@ -74,8 +74,8 @@ export default function GanttChart({
             const cur = new Date(start);
             while (cur <= end) {
                 const dateStr = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, '0')}-${String(cur.getDate()).padStart(2, '0')}`;
-                // 전사 공통 일정(공휴일·워크샵·감리)은 'public'으로 처리하여 모든 멤버 행에 표시
-                const type = ['public_holiday', 'workshop', 'supervision'].includes(h.type) ? 'public' : 'leave';
+                // 셀 배경색 분류: 공휴일만 'public'(붉은 톤), 워크샵·감리·휴가·출장은 'leave'(앰버 톤)
+                const type = h.type === 'public_holiday' ? 'public' : 'leave';
 
                 const existing = map.get(dateStr) || { type, names: [] };
 
