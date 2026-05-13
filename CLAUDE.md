@@ -41,12 +41,14 @@ Repositories own SQL and reusable business logic; they must stay compatible with
 - Dates stored as ISO strings in `text` columns for SQLite compatibility; avoid native `timestamp` semantics in shared code.
 - Role-based access: Owner / Manager / Member, enforced through `authCheck`.
 
+**Gotcha — SQLite schema file is missing.** `lib/db/index.ts` and `drizzle.config.ts` both branch on `DB_TYPE=sqlite` and expect `src/lib/db/schema/sqlite.ts`, but only `pg.ts` exists today (`schema/index.ts` re-exports `./pg` only). Running with `DB_TYPE=sqlite` or `drizzle-kit` against sqlite will fail until that file is added. Treat PG as the only working dialect for now.
+
 **State.** Server state via React Query; client/global UI state via Zustand stores in `src/store/`.
 
 **Gantt.** `dhtmlx-gantt` integration utilities live in `src/lib/gantt-utils.ts`. Drag/resize handlers should round-trip through Server Actions so DB stays the source of truth.
 
 ## Notes for changes
 
-- When adding a column or table, update **both** `schema/pg.ts` and `schema/sqlite.ts` (or document the divergence) and run `drizzle-kit push` with the matching `DB_TYPE`.
+- When adding a column or table, update `schema/pg.ts` (and `schema/sqlite.ts` once it's introduced) and run `drizzle-kit push` with the matching `DB_TYPE`.
 - New mutations belong in `app/actions/`, not in route handlers or client components.
 - Never bypass `authCheck` in Server Actions that touch project-scoped data.
