@@ -145,7 +145,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                             <Label htmlFor="username">아이디</Label>
                             <Input
                                 id="username"
-                                placeholder={mode === 'signup' ? '예: user01 (영문 소문자/숫자 4~20자)' : '아이디'}
+                                placeholder={mode === 'signup' ? '예: user01 (영소문자/숫자/._ 허용 4~20자)' : '아이디'}
                                 type="text"
                                 autoCapitalize="none"
                                 autoComplete="username"

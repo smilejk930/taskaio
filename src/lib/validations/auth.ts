@@ -25,13 +25,13 @@ export const passwordSchema = z.string()
 /**
  * 로그인 아이디(username) 규칙
  * - 영문 소문자로 시작
- * - 영문 소문자(a-z) + 숫자(0-9) 조합
+ * - 영문 소문자, 숫자, 언더바(_), 마침표(.) 허용
  * - 4~20자
  */
 export const usernameSchema = z.string()
   .regex(
-    /^[a-z][a-z0-9]{3,19}$/,
-    '아이디는 영문 소문자로 시작하고 영문 소문자/숫자 조합 4~20자여야 합니다.'
+    /^[a-z][a-z0-9._]{3,19}$/,
+    '아이디는 영문 소문자로 시작하는 4~20자의 영문 소문자, 숫자, 언더바(_), 마침표(.)만 사용 가능합니다.'
   )
 
 export const signupSchema = z.object({
