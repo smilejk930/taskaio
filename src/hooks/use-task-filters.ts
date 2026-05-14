@@ -11,6 +11,7 @@ export interface TaskFilters {
         from: Date | undefined
         to: Date | undefined
     }
+    quickWeeks: ('last' | 'this' | 'next')[]
     showOnlyParent: boolean
 }
 
@@ -29,6 +30,7 @@ export function useTaskFilters(tasks: ProjectTask[], initialAssigneeIds: string[
             from: undefined,
             to: undefined,
         },
+        quickWeeks: [],
         showOnlyParent: false,
         // initialAssigneeIds는 최초 마운트 시 값이 고정되므로 의도적으로 의존성 제외
         // eslint-disable-next-line react-hooks/exhaustive-deps

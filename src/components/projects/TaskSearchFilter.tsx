@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Calendar } from '@/components/ui/calendar'
-import { format } from 'date-fns'
+import { format, startOfWeek, endOfWeek, addWeeks, min, max } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { TaskFilters } from '@/hooks/use-task-filters'
 
@@ -72,6 +72,64 @@ export function TaskSearchFilter({ filters, setFilters, members, onReset, defaul
                 ? current.filter(v => v !== value)
                 : [...current, value]
             return { ...prev, [key]: next }
+        })
+    }
+
+    const handleQuickWeekToggle = (week: 'last' | 'this' | 'next') => {
+        setFilters(prev => {
+            const isSelected = prev.quickWeeks.includes(week)
+            const nextQuickWeeks = isSelected
+                ? prev.quickWeeks.filter(w => w !== week)
+                : [...prev.quickWeeks, week]
+
+            if (nextQuickWeeks.length === 0) {
+                return { ...prev, quickWeeks: [], dateRange: { from: undefined, to: undefined } }
+            }
+
+            const today = new Date()
+            let from: Date | undefined
+            let to: Date | undefined
+
+            // 계산 편의를 위해 각 주차별 범위를 미리 계산
+            const ranges = {
+                last: {
+                    start: startOfWeek(addWeeks(today, -1), { weekStartsOn: 1 }),
+                    end: endOfWeek(addWeeks(today, -1), { weekStartsOn: 1 })
+                },
+                this: {
+                    start: startOfWeek(today, { weekStartsOn: 1 }),
+                    end: endOfWeek(today, { weekStartsOn: 1 })
+                },
+                next: {
+                    start: startOfWeek(addWeeks(today, 1), { weekStartsOn: 1 }),
+                    end: endOfWeek(addWeeks(today, 1), { weekStartsOn: 1 })
+                }
+            }
+
+            const selectedStarts: Date[] = []
+            const selectedEnds: Date[] = []
+
+            if (nextQuickWeeks.includes('last')) {
+                selectedStarts.push(ranges.last.start)
+                selectedEnds.push(ranges.last.end)
+            }
+            if (nextQuickWeeks.includes('this')) {
+                selectedStarts.push(ranges.this.start)
+                selectedEnds.push(ranges.this.end)
+            }
+            if (nextQuickWeeks.includes('next')) {
+                selectedStarts.push(ranges.next.start)
+                selectedEnds.push(ranges.next.end)
+            }
+
+            from = min(selectedStarts)
+            to = max(selectedEnds)
+
+            return {
+                ...prev,
+                quickWeeks: nextQuickWeeks,
+                dateRange: { from, to }
+            }
         })
     }
 
@@ -150,49 +208,79 @@ export function TaskSearchFilter({ filters, setFilters, members, onReset, defaul
                 />
 
                 {/* 기간 설정 */}
-                <Popover>
-                    <PopoverTrigger asChild>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className={cn(
-                                "h-9 justify-start text-left font-normal bg-background",
-                                !filters.dateRange.from && "text-muted-foreground"
-                            )}
-                        >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {filters.dateRange.from ? (
-                                filters.dateRange.to ? (
-                                    <>
-                                        {format(filters.dateRange.from, "LLL dd, y", { locale: ko })} -{" "}
-                                        {format(filters.dateRange.to, "LLL dd, y", { locale: ko })}
-                                    </>
+                <div className="flex items-center gap-1">
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className={cn(
+                                    "h-9 justify-start text-left font-normal bg-background",
+                                    !filters.dateRange.from && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {filters.dateRange.from ? (
+                                    filters.dateRange.to ? (
+                                        <>
+                                            {format(filters.dateRange.from, "LLL dd, y", { locale: ko })} -{" "}
+                                            {format(filters.dateRange.to, "LLL dd, y", { locale: ko })}
+                                        </>
+                                    ) : (
+                                        format(filters.dateRange.from, "LLL dd, y", { locale: ko })
+                                    )
                                 ) : (
-                                    format(filters.dateRange.from, "LLL dd, y", { locale: ko })
-                                )
-                            ) : (
-                                <span>기간 선택</span>
-                            )}
+                                    <span>기간 선택</span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={filters.dateRange.from}
+                                selected={{
+                                    from: filters.dateRange.from,
+                                    to: filters.dateRange.to
+                                }}
+                                onSelect={(range) => setFilters(prev => ({
+                                    ...prev,
+                                    dateRange: { from: range?.from, to: range?.to },
+                                    quickWeeks: []
+                                }))}
+                                numberOfMonths={2}
+                                locale={ko}
+                            />
+                        </PopoverContent>
+                    </Popover>
+
+                    <div className="flex items-center gap-1 ml-1">
+                        <Button
+                            variant={filters.quickWeeks.includes('last') ? 'default' : 'outline'}
+                            size="sm"
+                            className="h-9 px-3 text-xs"
+                            onClick={() => handleQuickWeekToggle('last')}
+                        >
+                            지난주
                         </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                            initialFocus
-                            mode="range"
-                            defaultMonth={filters.dateRange.from}
-                            selected={{
-                                from: filters.dateRange.from,
-                                to: filters.dateRange.to
-                            }}
-                            onSelect={(range) => setFilters(prev => ({
-                                ...prev,
-                                dateRange: { from: range?.from, to: range?.to }
-                            }))}
-                            numberOfMonths={2}
-                            locale={ko}
-                        />
-                    </PopoverContent>
-                </Popover>
+                        <Button
+                            variant={filters.quickWeeks.includes('this') ? 'default' : 'outline'}
+                            size="sm"
+                            className="h-9 px-3 text-xs"
+                            onClick={() => handleQuickWeekToggle('this')}
+                        >
+                            이번주
+                        </Button>
+                        <Button
+                            variant={filters.quickWeeks.includes('next') ? 'default' : 'outline'}
+                            size="sm"
+                            className="h-9 px-3 text-xs"
+                            onClick={() => handleQuickWeekToggle('next')}
+                        >
+                            다음주
+                        </Button>
+                    </div>
+                </div>
 
                 <Separator orientation="vertical" className="hidden lg:block h-6" />
 
