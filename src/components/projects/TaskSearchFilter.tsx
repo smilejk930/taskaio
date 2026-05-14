@@ -87,8 +87,6 @@ export function TaskSearchFilter({ filters, setFilters, members, onReset, defaul
             }
 
             const today = new Date()
-            let from: Date | undefined
-            let to: Date | undefined
 
             // 계산 편의를 위해 각 주차별 범위를 미리 계산
             const ranges = {
@@ -122,8 +120,8 @@ export function TaskSearchFilter({ filters, setFilters, members, onReset, defaul
                 selectedEnds.push(ranges.next.end)
             }
 
-            from = min(selectedStarts)
-            to = max(selectedEnds)
+            const from = min(selectedStarts)
+            const to = max(selectedEnds)
 
             return {
                 ...prev,
