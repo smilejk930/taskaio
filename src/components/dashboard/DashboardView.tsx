@@ -4,14 +4,19 @@ import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { differenceInDays, parseISO, startOfToday, format } from 'date-fns'
-import { Info } from 'lucide-react'
+import { addWeeks, differenceInDays, endOfWeek, format, max, min, parseISO, startOfToday, startOfWeek } from 'date-fns'
+import { CalendarDays, Info } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { ProjectTask, Member } from '@/types/project'
+
+type QuickWeek = 'last' | 'this' | 'next'
+type AttentionLevel = 'high' | 'medium' | 'normal' | 'complete'
 
 interface DashboardViewProps {
     tasks: ProjectTask[]
@@ -26,13 +31,64 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
 
     // 팀원 필터: 'all'이면 전체 업무, 그 외에는 해당 팀원이 담당인 업무만
     const [selectedMemberId, setSelectedMemberId] = React.useState<string>('all')
+    const [selectedQuickWeeks, setSelectedQuickWeeks] = React.useState<QuickWeek[]>([])
+
+    const selectedDateRange = React.useMemo(() => {
+        if (selectedQuickWeeks.length === 0) return null
+
+        const ranges = {
+            last: {
+                start: startOfWeek(addWeeks(today, -1), { weekStartsOn: 1 }),
+                end: endOfWeek(addWeeks(today, -1), { weekStartsOn: 1 }),
+            },
+            this: {
+                start: startOfWeek(today, { weekStartsOn: 1 }),
+                end: endOfWeek(today, { weekStartsOn: 1 }),
+            },
+            next: {
+                start: startOfWeek(addWeeks(today, 1), { weekStartsOn: 1 }),
+                end: endOfWeek(addWeeks(today, 1), { weekStartsOn: 1 }),
+            },
+        }
+
+        const selectedRanges = selectedQuickWeeks.map(week => ranges[week])
+
+        return {
+            from: min(selectedRanges.map(range => range.start)),
+            to: max(selectedRanges.map(range => range.end)),
+        }
+    }, [selectedQuickWeeks, today])
+
+    const handleQuickWeekToggle = (week: QuickWeek) => {
+        setSelectedQuickWeeks(prev =>
+            prev.includes(week)
+                ? prev.filter(w => w !== week)
+                : [...prev, week]
+        )
+    }
+
+    const periodFilteredTasks = React.useMemo(() => {
+        if (!selectedDateRange) return tasks
+
+        const filterFromStr = format(selectedDateRange.from, 'yyyy-MM-dd')
+        const filterToStr = format(selectedDateRange.to, 'yyyy-MM-dd')
+
+        return tasks.filter(task => {
+            if (!task.start_date || !task.end_date) return false
+
+            const taskStartStr = task.start_date.split('T')[0]
+            const taskEndStr = task.end_date.split('T')[0]
+
+            return taskEndStr >= filterFromStr && taskStartStr <= filterToStr
+        })
+    }, [tasks, selectedDateRange])
 
     // 선택된 팀원 기준으로 업무 목록을 필터링 — 모든 카드/섹션 집계는 이 배열을 사용한다
     const filteredTasks = selectedMemberId === 'all'
-        ? tasks
+        ? periodFilteredTasks
         : selectedMemberId === 'unassigned'
-            ? tasks.filter(t => !t.assignee_id)
-        : tasks.filter(t => t.assignee_id === selectedMemberId)
+            ? periodFilteredTasks.filter(t => !t.assignee_id)
+        : periodFilteredTasks.filter(t => t.assignee_id === selectedMemberId)
 
     const topLevelTasks = filteredTasks.filter(t => !t.parent_id)
     const completedTasks = filteredTasks.filter(t => t.status === 'done')
@@ -120,7 +176,7 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
 
             const totalCount = allAssignedManagementTasks.length + childTasks.length
             const openCount = assignedManagementTasks.length + incompleteChildTasks.length
-            const attentionLevel = totalCount > 0 && openCount === 0
+            const attentionLevel: AttentionLevel = totalCount > 0 && openCount === 0
                 ? 'complete'
                 : delayedManagementTasks.length > 0 || delayedChildTasks.length >= 3 || dueSoonManagementTasks.length >= 3
                     ? 'high'
@@ -148,14 +204,14 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
             }
         }).filter(row => row.totalTasks > 0)
             .sort((a, b) => {
-                const attentionOrder = { high: 0, medium: 1, normal: 2, complete: 3 }
+                const attentionOrder: Record<AttentionLevel, number> = { high: 0, medium: 1, normal: 2, complete: 3 }
                 const attentionDiff = attentionOrder[a.attentionLevel] - attentionOrder[b.attentionLevel]
                 if (attentionDiff !== 0) return attentionDiff
                 return b.openTasks - a.openTasks
             })
     }, [members, today])
 
-    const dashboardAssigneeRows = React.useMemo(() => buildAssigneeRows(tasks), [buildAssigneeRows, tasks])
+    const dashboardAssigneeRows = React.useMemo(() => buildAssigneeRows(periodFilteredTasks), [buildAssigneeRows, periodFilteredTasks])
     const selectableMemberIds = React.useMemo(() => new Set([
         'all',
         ...dashboardAssigneeRows.map(row => row.id),
@@ -169,7 +225,7 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
 
     const assigneeRows = React.useMemo(() => buildAssigneeRows(filteredTasks), [buildAssigneeRows, filteredTasks])
 
-    const attentionBadge = {
+    const attentionBadge: Record<AttentionLevel, { label: string; variant: 'destructive' | 'default' | 'secondary' | 'outline' }> = {
         high: { label: '높음', variant: 'destructive' as const },
         medium: { label: '주의', variant: 'default' as const },
         normal: { label: '정상', variant: 'secondary' as const },
@@ -177,29 +233,80 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
     }
 
     const formatLoadCount = (managementCount: number, detailCount: number) => `${managementCount} (${detailCount})`
+    const getQuickWeekButtonClass = (selected: boolean) => cn(
+        'h-8 px-3 text-xs font-semibold transition-colors',
+        selected
+            ? 'border-blue-600 bg-blue-600 text-white shadow-sm hover:bg-blue-700'
+            : 'border-slate-300 bg-background text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-blue-950/40'
+    )
 
     return (
         <TooltipProvider delayDuration={150}>
         <div className="p-6 space-y-6 overflow-auto bg-background/50 h-full">
-            {/* 팀원별 필터 — '전체' 기본 선택, 가로 정렬, 좁은 화면에서 자동 줄바꿈 */}
-            <RadioGroup
-                value={selectedMemberId}
-                onValueChange={setSelectedMemberId}
-                className="flex flex-wrap items-center gap-x-5 gap-y-2"
-            >
-                <div className="flex items-center gap-2">
-                    <RadioGroupItem value="all" id="dashboard-member-all" />
-                    <Label htmlFor="dashboard-member-all" className="cursor-pointer text-sm">전체</Label>
-                </div>
-                {dashboardAssigneeRows.map(row => (
-                    <div key={row.id} className="flex items-center gap-2">
-                        <RadioGroupItem value={row.id} id={`dashboard-member-${row.id}`} />
-                        <Label htmlFor={`dashboard-member-${row.id}`} className="cursor-pointer text-sm">
-                            {row.name}
-                        </Label>
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                {/* 팀원별 필터 — '전체' 기본 선택, 가로 정렬, 좁은 화면에서 자동 줄바꿈 */}
+                <RadioGroup
+                    value={selectedMemberId}
+                    onValueChange={setSelectedMemberId}
+                    className="flex flex-wrap items-center gap-x-5 gap-y-2"
+                >
+                    <div className="flex items-center gap-2">
+                        <RadioGroupItem value="all" id="dashboard-member-all" />
+                        <Label htmlFor="dashboard-member-all" className="cursor-pointer text-sm">전체</Label>
                     </div>
-                ))}
-            </RadioGroup>
+                    {dashboardAssigneeRows.map(row => (
+                        <div key={row.id} className="flex items-center gap-2">
+                            <RadioGroupItem value={row.id} id={`dashboard-member-${row.id}`} />
+                            <Label htmlFor={`dashboard-member-${row.id}`} className="cursor-pointer text-sm">
+                                {row.name}
+                            </Label>
+                        </div>
+                    ))}
+                </RadioGroup>
+
+                <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/60 p-1.5">
+                    <div className="flex h-8 items-center gap-1.5 px-2 text-xs font-semibold text-muted-foreground">
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        <span>기간</span>
+                    </div>
+
+                    {selectedDateRange && (
+                        <Badge variant="secondary" className="h-7 px-2 text-xs font-medium">
+                            {format(selectedDateRange.from, 'MM/dd')} ~ {format(selectedDateRange.to, 'MM/dd')}
+                        </Badge>
+                    )}
+
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant={selectedQuickWeeks.includes('last') ? 'default' : 'outline'}
+                            size="sm"
+                            className={getQuickWeekButtonClass(selectedQuickWeeks.includes('last'))}
+                            aria-pressed={selectedQuickWeeks.includes('last')}
+                            onClick={() => handleQuickWeekToggle('last')}
+                        >
+                            지난주
+                        </Button>
+                        <Button
+                            variant={selectedQuickWeeks.includes('this') ? 'default' : 'outline'}
+                            size="sm"
+                            className={getQuickWeekButtonClass(selectedQuickWeeks.includes('this'))}
+                            aria-pressed={selectedQuickWeeks.includes('this')}
+                            onClick={() => handleQuickWeekToggle('this')}
+                        >
+                            이번주
+                        </Button>
+                        <Button
+                            variant={selectedQuickWeeks.includes('next') ? 'default' : 'outline'}
+                            size="sm"
+                            className={getQuickWeekButtonClass(selectedQuickWeeks.includes('next'))}
+                            aria-pressed={selectedQuickWeeks.includes('next')}
+                            onClick={() => handleQuickWeekToggle('next')}
+                        >
+                            다음주
+                        </Button>
+                    </div>
+                </div>
+            </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 <Card className="bg-card shadow-sm border-none ring-1 ring-slate-200 dark:ring-slate-800">
