@@ -405,8 +405,10 @@ export default function ProjectClientView({
     }))
 
     // ── 상태 요약 계산 (대시보드 공유) ──────────────────────────────────────────
-    const totalProgress = tasks.length > 0 
-        ? Math.round(tasks.reduce((acc, t) => acc + (t.progress || 0), 0) / tasks.length) 
+    const topLevelTasks = tasks.filter(t => !t.parent_id)
+    const totalProgressTasks = topLevelTasks.length > 0 ? topLevelTasks : tasks
+    const totalProgress = totalProgressTasks.length > 0
+        ? Math.round(totalProgressTasks.reduce((acc, t) => acc + (t.progress || 0), 0) / totalProgressTasks.length)
         : 0
 
     return (

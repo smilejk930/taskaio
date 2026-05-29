@@ -5,6 +5,16 @@ import { createTask, updateTask, deleteTask, TaskInsertPayload, TaskUpdatePayloa
 import { toast } from 'sonner'
 import { ProjectTask, TaskFormData, TaskInsert, TaskUpdate } from '@/types/project'
 
+function syncParentProgressLocal(tasks: ProjectTask[], parentId: string | null | undefined) {
+    if (!parentId) return tasks
+
+    const children = tasks.filter(t => t.parent_id === parentId)
+    if (children.length === 0) return tasks
+
+    const progress = Math.round(children.reduce((acc, t) => acc + (t.progress || 0), 0) / children.length)
+    return tasks.map(t => t.id === parentId ? { ...t, progress } : t)
+}
+
 export function useTasks(initialTasks: ProjectTask[]) {
     const [tasks, setTasks] = useState<ProjectTask[]>(initialTasks)
     const [isLoading, setIsLoading] = useState(false)
@@ -66,7 +76,7 @@ export function useTasks(initialTasks: ProjectTask[]) {
                  is_deleted: newTask.isDeleted,
             } as unknown as ProjectTask;
 
-            setTasks(prev => [...prev, mappedTask])
+            setTasks(prev => syncParentProgressLocal([...prev, mappedTask], mappedTask.parent_id))
             toast.success('업무가 등록되었습니다.')
             return mappedTask
         } catch (error: unknown) {
@@ -162,7 +172,7 @@ export function useTasks(initialTasks: ProjectTask[]) {
                         newTasks = resultTasks;
                     }
                 }
-                return newTasks;
+                return syncParentProgressLocal(newTasks, mappedUpdated.parent_id);
             });
 
 
@@ -180,7 +190,10 @@ export function useTasks(initialTasks: ProjectTask[]) {
         setIsLoading(true)
         try {
             await deleteTask(id)
-            setTasks(prev => prev.filter(t => t.id !== id))
+            setTasks(prev => {
+                const deletedTask = prev.find(t => t.id === id)
+                return syncParentProgressLocal(prev.filter(t => t.id !== id), deletedTask?.parent_id)
+            })
             toast.success('업무가 삭제되었습니다.')
             return true
         } catch (error: unknown) {
