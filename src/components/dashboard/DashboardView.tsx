@@ -30,6 +30,8 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
     // 선택된 팀원 기준으로 업무 목록을 필터링 — 모든 카드/섹션 집계는 이 배열을 사용한다
     const filteredTasks = selectedMemberId === 'all'
         ? tasks
+        : selectedMemberId === 'unassigned'
+            ? tasks.filter(t => !t.assignee_id)
         : tasks.filter(t => t.assignee_id === selectedMemberId)
 
     const topLevelTasks = filteredTasks.filter(t => !t.parent_id)
@@ -70,85 +72,102 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
     const getAssigneeName = (assigneeId: string | null) =>
         members.find(m => m.id === assigneeId)?.display_name || '미지정'
 
-    const childTasksByParentId = filteredTasks.reduce<Record<string, ProjectTask[]>>((acc, task) => {
-        if (!task.parent_id) return acc
-        acc[task.parent_id] = [...(acc[task.parent_id] ?? []), task]
-        return acc
-    }, {})
+    const buildAssigneeRows = React.useCallback((sourceTasks: ProjectTask[]) => {
+        const sourceTopLevelTasks = sourceTasks.filter(t => !t.parent_id)
+        const childTasksByParentId = sourceTasks.reduce<Record<string, ProjectTask[]>>((acc, task) => {
+            if (!task.parent_id) return acc
+            acc[task.parent_id] = [...(acc[task.parent_id] ?? []), task]
+            return acc
+        }, {})
 
-    const assigneeRows = [
-        ...members.map(member => ({
-            id: member.id,
-            name: member.display_name || member.username || member.email || '이름없음',
-        })),
-        ...(topLevelTasks.some(t => !t.assignee_id) ? [{ id: 'unassigned', name: '미지정' }] : []),
-    ].map(assignee => {
-        const allAssignedManagementTasks = topLevelTasks.filter(t =>
-            assignee.id === 'unassigned' ? !t.assignee_id : t.assignee_id === assignee.id
-        )
-        const assignedManagementTasks = allAssignedManagementTasks.filter(t => t.status !== 'done')
-        const completedManagementTasks = allAssignedManagementTasks.filter(t => t.status === 'done')
-        const dueSoonManagementTasks = assignedManagementTasks.filter(t => {
-            if (!t.end_date) return false
-            const daysLeft = differenceInDays(parseISO(t.end_date), today)
-            return daysLeft >= 0 && daysLeft <= 3
-        })
-        const delayedManagementTasks = assignedManagementTasks.filter(t => {
-            if (!t.end_date) return false
-            return differenceInDays(parseISO(t.end_date), today) < 0
-        })
-        const unscheduledManagementTasks = assignedManagementTasks.filter(t => !t.end_date)
+        return [
+            ...members.map(member => ({
+                id: member.id,
+                name: member.display_name || member.username || member.email || '이름없음',
+            })),
+            ...(sourceTopLevelTasks.some(t => !t.assignee_id) ? [{ id: 'unassigned', name: '미지정' }] : []),
+        ].map(assignee => {
+            const allAssignedManagementTasks = sourceTopLevelTasks.filter(t =>
+                assignee.id === 'unassigned' ? !t.assignee_id : t.assignee_id === assignee.id
+            )
+            const assignedManagementTasks = allAssignedManagementTasks.filter(t => t.status !== 'done')
+            const completedManagementTasks = allAssignedManagementTasks.filter(t => t.status === 'done')
+            const dueSoonManagementTasks = assignedManagementTasks.filter(t => {
+                if (!t.end_date) return false
+                const daysLeft = differenceInDays(parseISO(t.end_date), today)
+                return daysLeft >= 0 && daysLeft <= 3
+            })
+            const delayedManagementTasks = assignedManagementTasks.filter(t => {
+                if (!t.end_date) return false
+                return differenceInDays(parseISO(t.end_date), today) < 0
+            })
+            const unscheduledManagementTasks = assignedManagementTasks.filter(t => !t.end_date)
 
-        const childTasks = allAssignedManagementTasks.flatMap(t => childTasksByParentId[t.id] ?? [])
-        const incompleteChildTasks = childTasks.filter(t => t.status !== 'done')
-        const completedChildTasks = childTasks.filter(t => t.status === 'done')
-        const inProgressChildTasks = incompleteChildTasks.filter(t => t.status === 'in_progress')
-        const dueSoonChildTasks = incompleteChildTasks.filter(t => {
-            if (!t.end_date) return false
-            const daysLeft = differenceInDays(parseISO(t.end_date), today)
-            return daysLeft >= 0 && daysLeft <= 3
-        })
-        const delayedChildTasks = incompleteChildTasks.filter(t => {
-            if (!t.end_date) return false
-            return differenceInDays(parseISO(t.end_date), today) < 0
-        })
-        const unscheduledChildTasks = incompleteChildTasks.filter(t => !t.end_date)
+            const childTasks = allAssignedManagementTasks.flatMap(t => childTasksByParentId[t.id] ?? [])
+            const incompleteChildTasks = childTasks.filter(t => t.status !== 'done')
+            const completedChildTasks = childTasks.filter(t => t.status === 'done')
+            const inProgressChildTasks = incompleteChildTasks.filter(t => t.status === 'in_progress')
+            const dueSoonChildTasks = incompleteChildTasks.filter(t => {
+                if (!t.end_date) return false
+                const daysLeft = differenceInDays(parseISO(t.end_date), today)
+                return daysLeft >= 0 && daysLeft <= 3
+            })
+            const delayedChildTasks = incompleteChildTasks.filter(t => {
+                if (!t.end_date) return false
+                return differenceInDays(parseISO(t.end_date), today) < 0
+            })
+            const unscheduledChildTasks = incompleteChildTasks.filter(t => !t.end_date)
 
-        const totalCount = allAssignedManagementTasks.length + childTasks.length
-        const openCount = assignedManagementTasks.length + incompleteChildTasks.length
-        const attentionLevel = totalCount > 0 && openCount === 0
-            ? 'complete'
-            : delayedManagementTasks.length > 0 || delayedChildTasks.length >= 3 || dueSoonManagementTasks.length >= 3
-                ? 'high'
-                : delayedChildTasks.length > 0 || dueSoonManagementTasks.length > 0 || dueSoonChildTasks.length > 0 || unscheduledManagementTasks.length > 0 || unscheduledChildTasks.length > 0
-                    ? 'medium'
-                    : 'normal'
+            const totalCount = allAssignedManagementTasks.length + childTasks.length
+            const openCount = assignedManagementTasks.length + incompleteChildTasks.length
+            const attentionLevel = totalCount > 0 && openCount === 0
+                ? 'complete'
+                : delayedManagementTasks.length > 0 || delayedChildTasks.length >= 3 || dueSoonManagementTasks.length >= 3
+                    ? 'high'
+                    : delayedChildTasks.length > 0 || dueSoonManagementTasks.length > 0 || dueSoonChildTasks.length > 0 || unscheduledManagementTasks.length > 0 || unscheduledChildTasks.length > 0
+                        ? 'medium'
+                        : 'normal'
 
-        return {
-            ...assignee,
-            totalTasks: allAssignedManagementTasks.length,
-            completedTasks: completedManagementTasks.length,
-            openTasks: assignedManagementTasks.length,
-            inProgressTasks: assignedManagementTasks.filter(t => t.status === 'in_progress').length,
-            dueSoonTasks: dueSoonManagementTasks.length,
-            delayedTasks: delayedManagementTasks.length,
-            unscheduledTasks: unscheduledManagementTasks.length,
-            childOpenTasks: incompleteChildTasks.length,
-            childInProgressTasks: inProgressChildTasks.length,
-            childDueSoonTasks: dueSoonChildTasks.length,
-            childDelayedTasks: delayedChildTasks.length,
-            childUnscheduledTasks: unscheduledChildTasks.length,
-            childTotalTasks: childTasks.length,
-            childCompletedTasks: completedChildTasks.length,
-            attentionLevel,
+            return {
+                ...assignee,
+                totalTasks: allAssignedManagementTasks.length,
+                completedTasks: completedManagementTasks.length,
+                openTasks: assignedManagementTasks.length,
+                inProgressTasks: assignedManagementTasks.filter(t => t.status === 'in_progress').length,
+                dueSoonTasks: dueSoonManagementTasks.length,
+                delayedTasks: delayedManagementTasks.length,
+                unscheduledTasks: unscheduledManagementTasks.length,
+                childOpenTasks: incompleteChildTasks.length,
+                childInProgressTasks: inProgressChildTasks.length,
+                childDueSoonTasks: dueSoonChildTasks.length,
+                childDelayedTasks: delayedChildTasks.length,
+                childUnscheduledTasks: unscheduledChildTasks.length,
+                childTotalTasks: childTasks.length,
+                childCompletedTasks: completedChildTasks.length,
+                attentionLevel,
+            }
+        }).filter(row => row.totalTasks > 0)
+            .sort((a, b) => {
+                const attentionOrder = { high: 0, medium: 1, normal: 2, complete: 3 }
+                const attentionDiff = attentionOrder[a.attentionLevel] - attentionOrder[b.attentionLevel]
+                if (attentionDiff !== 0) return attentionDiff
+                return b.openTasks - a.openTasks
+            })
+    }, [members, today])
+
+    const dashboardAssigneeRows = React.useMemo(() => buildAssigneeRows(tasks), [buildAssigneeRows, tasks])
+    const selectableMemberIds = React.useMemo(() => new Set([
+        'all',
+        ...dashboardAssigneeRows.map(row => row.id),
+    ]), [dashboardAssigneeRows])
+
+    React.useEffect(() => {
+        if (!selectableMemberIds.has(selectedMemberId)) {
+            setSelectedMemberId('all')
         }
-    }).filter(row => row.totalTasks > 0)
-        .sort((a, b) => {
-            const attentionOrder = { high: 0, medium: 1, normal: 2, complete: 3 }
-            const attentionDiff = attentionOrder[a.attentionLevel] - attentionOrder[b.attentionLevel]
-            if (attentionDiff !== 0) return attentionDiff
-            return b.openTasks - a.openTasks
-        })
+    }, [selectableMemberIds, selectedMemberId])
+
+    const assigneeRows = React.useMemo(() => buildAssigneeRows(filteredTasks), [buildAssigneeRows, filteredTasks])
 
     const attentionBadge = {
         high: { label: '높음', variant: 'destructive' as const },
@@ -172,11 +191,11 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
                     <RadioGroupItem value="all" id="dashboard-member-all" />
                     <Label htmlFor="dashboard-member-all" className="cursor-pointer text-sm">전체</Label>
                 </div>
-                {members.map(m => (
-                    <div key={m.id} className="flex items-center gap-2">
-                        <RadioGroupItem value={m.id} id={`dashboard-member-${m.id}`} />
-                        <Label htmlFor={`dashboard-member-${m.id}`} className="cursor-pointer text-sm">
-                            {m.display_name || m.username || '이름없음'}
+                {dashboardAssigneeRows.map(row => (
+                    <div key={row.id} className="flex items-center gap-2">
+                        <RadioGroupItem value={row.id} id={`dashboard-member-${row.id}`} />
+                        <Label htmlFor={`dashboard-member-${row.id}`} className="cursor-pointer text-sm">
+                            {row.name}
                         </Label>
                     </div>
                 ))}
