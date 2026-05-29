@@ -2,7 +2,6 @@
 
 import React, { useState, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import { Badge } from '@/components/ui/badge'
 import { multiLevelSort } from '@/lib/task-utils'
 
 import { GanttSkeleton, DashboardSkeleton, WbsSkeleton, MembersSkeleton } from '@/components/projects/ProjectSkeletons'
@@ -423,17 +422,10 @@ export default function ProjectClientView({
         type: link.type
     }))
 
-    // ── 상태 요약 계산 (대시보드 공유) ──────────────────────────────────────────
-    const topLevelTasks = tasks.filter(t => !t.parent_id)
-    const totalProgressTasks = topLevelTasks.length > 0 ? topLevelTasks : tasks
-    const totalProgress = totalProgressTasks.length > 0
-        ? Math.round(totalProgressTasks.reduce((acc, t) => acc + (t.progress || 0), 0) / totalProgressTasks.length)
-        : 0
-
     return (
         <div className="flex flex-col h-screen">
             <header className="border-b px-6 py-3 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
-                {/* [아이콘] [프로젝트명 + 설명] [설정] [완료율] */}
+                {/* [아이콘] [프로젝트명 + 설명] [설정] */}
                 <div className="flex items-center gap-2 min-w-0">
                     <AppLogo showText={false} />
                     <div className="min-w-0">
@@ -444,26 +436,10 @@ export default function ProjectClientView({
                                     <Settings className="h-3.5 w-3.5" />
                                 </Button>
                             )}
-                            <Badge variant="outline" className="shrink-0">{totalProgress}% 완료</Badge>
                         </div>
                         {project.description && (
                             <p className="text-xs text-muted-foreground truncate mt-0.5">{project.description}</p>
                         )}
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-6 text-sm">
-                    <div className="text-center">
-                        <p className="text-2xl font-bold text-foreground">{tasks.length}</p>
-                        <p className="text-xs text-muted-foreground">전체 업무</p>
-                    </div>
-                    <div className="text-center">
-                        <p className="text-2xl font-bold text-blue-600">{tasks.filter(t => t.status === 'in_progress').length}</p>
-                        <p className="text-xs text-muted-foreground">진행중</p>
-                    </div>
-                    <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">{tasks.filter(t => t.status === 'done').length}</p>
-                        <p className="text-xs text-muted-foreground">완료</p>
                     </div>
                 </div>
 
