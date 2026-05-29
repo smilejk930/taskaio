@@ -131,6 +131,23 @@ export default function ProjectClientView({
         })
     }
 
+    const handleDashboardTaskClick = (taskId: string) => {
+        setFilters(prev => ({
+            ...prev,
+            assigneeIds: [],
+        }))
+        setActiveTab('wbs')
+
+        setTimeout(() => {
+            const el = document.getElementById(`task-row-${taskId}`)
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                el.classList.add('bg-primary/10')
+                setTimeout(() => el.classList.remove('bg-primary/10'), 2000)
+            }
+        }, 100)
+    }
+
     const [isEditProjectOpen, setIsEditProjectOpen] = useState(false)
     const [editProjectName, setEditProjectName] = useState(project.name)
     const [editProjectDesc, setEditProjectDesc] = useState(project.description || '')
@@ -493,17 +510,7 @@ export default function ProjectClientView({
 	                                <DashboardView 
 	                                    tasks={tasks} 
 	                                    members={members}
-	                                    onTaskClick={(taskId) => {
-                                        setActiveTab('wbs')
-                                        setTimeout(() => {
-                                            const el = document.getElementById(`task-row-${taskId}`)
-                                            if (el) {
-                                                el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                                                el.classList.add('bg-primary/10')
-                                                setTimeout(() => el.classList.remove('bg-primary/10'), 2000)
-                                            }
-                                        }, 100)
-                                    }}
+	                                    onTaskClick={handleDashboardTaskClick}
                                 />
                             )}
                         </TabsContent>
