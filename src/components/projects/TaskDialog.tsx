@@ -132,6 +132,13 @@ export default function TaskDialog({
     }, [open, initialData, projectId, members])
 
     const isEdit = Boolean(initialData?.id)
+    const isDetailTask = Boolean(initialData ? initialData.parent_id : form.parent_id)
+    const taskTypeLabel = isDetailTask ? '세부업무' : '관리 업무'
+    const dialogTitle = `${taskTypeLabel} ${isEdit ? '수정' : '등록'}`
+    const dialogDescription = isEdit
+        ? `${taskTypeLabel} 정보를 수정합니다.`
+        : `새로운 ${taskTypeLabel}를 등록합니다.`
+    const submitLabel = isEdit ? `${taskTypeLabel} 수정` : `${taskTypeLabel} 등록`
 
     const setField = <K extends keyof TaskFormData>(key: K, value: TaskFormData[K]) => {
         setForm(prev => {
@@ -242,9 +249,9 @@ export default function TaskDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[550px]">
                 <DialogHeader>
-                    <DialogTitle>{isEdit ? '업무 상세 정보' : '새 업무 등록'}</DialogTitle>
+                    <DialogTitle>{dialogTitle}</DialogTitle>
                     <DialogDescription>
-                        {isEdit ? '업무 정보를 수정합니다.' : '새로운 업무를 등록합니다.'}
+                        {dialogDescription}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -433,7 +440,7 @@ export default function TaskDialog({
                             취소
                         </Button>
                         <Button onClick={handleSubmit} disabled={isLoading}>
-                            {isLoading ? '저장 중...' : isEdit ? '수정 완료' : '업무 등록'}
+                            {isLoading ? '저장 중...' : submitLabel}
                         </Button>
                     </div>
                 </DialogFooter>

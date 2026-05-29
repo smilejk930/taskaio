@@ -333,7 +333,7 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
                                     </button>
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-56 text-left leading-relaxed">
-                                    1Depth 상위 업무입니다.
+                                    1Depth 관리 업무입니다.
                                 </TooltipContent>
                             </Tooltip>
                         </CardTitle>

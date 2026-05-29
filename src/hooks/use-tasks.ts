@@ -142,7 +142,7 @@ export function useTasks(initialTasks: ProjectTask[]) {
                 const oldTask = prev.find(t => t.id === id);
                 let newTasks = prev.map(t => t.id === id ? { ...t, ...mappedUpdated } : t);
                 
-                // Cascading Update 로컬 반영: 상위 업무 이동 시 하위 업무들도 오프셋만큼 이동
+                // Cascading Update 로컬 반영: 관리 업무 이동 시 세부 업무들도 오프셋만큼 이동
                 if (payloadBase.start_date && oldTask?.start_date) {
                     const oldStart = new Date(oldTask.start_date).getTime();
                     const newStart = new Date(payloadBase.start_date).getTime();

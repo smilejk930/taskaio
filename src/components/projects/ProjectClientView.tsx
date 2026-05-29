@@ -104,16 +104,17 @@ export default function ProjectClientView({
     const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false)
     const [selectedTask, setSelectedTask] = useState<Partial<TaskFormData> & { id?: string } | null>(null)
     const wbsGridRef = useRef<WbsGridHandle>(null)
+    const currentMemberRole = members.find(m => m.id === currentUser?.id)?.role
 
     const { filters, setFilters, resetFilters, filteredTasks, defaults: filterDefaults } = useTaskFilters(
         tasks,
-        currentUser?.id ? [currentUser.id] : []
+        currentUser?.id ? [currentUser.id] : [],
+        currentMemberRole === 'manager' ? 'manager' : 'default'
     )
 
     const processingRef = useRef<Set<string>>(new Set());
 
     const router = useRouter()
-    const currentMemberRole = members.find(m => m.id === currentUser?.id)?.role
 
 
     // 탭 변경 핸들러: URL 업데이트 및 데이터 갱신

@@ -58,6 +58,18 @@ const formatHolidayDetailHtml = (holiday: Holiday) => {
     ].join('')
 }
 
+const updateGanttAddButtonTitles = (root: HTMLElement | null) => {
+    const scope: ParentNode = root ?? document
+    const headerAddButton = scope.querySelector('.gantt_grid_head_add')
+    headerAddButton?.setAttribute('title', '관리 업무 등록')
+    headerAddButton?.setAttribute('aria-label', '관리 업무 등록')
+
+    scope.querySelectorAll('.gantt_grid_data .gantt_add').forEach(button => {
+        button.setAttribute('title', '세부업무 등록')
+        button.setAttribute('aria-label', '세부업무 등록')
+    })
+}
+
 interface GanttChartProps {
     tasks: GanttTask[]
     links: GanttLink[]
@@ -241,6 +253,42 @@ export default function GanttChart({
 
                 /* 2뎁스 이상(하위 업무)에서는 등록 버튼(+) 숨김 */
                 .child-task-row .gantt_add { display: none !important; }
+
+                /* 일정 현황 관리 업무 등록 헤더 버튼 강조 */
+                .gantt_grid_head_cell.gantt_grid_head_add {
+                    opacity: 1 !important;
+                    background: #2563eb !important;
+                    border-radius: 6px !important;
+                    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25), 0 1px 4px rgba(37,99,235,0.35) !important;
+                }
+                .gantt_grid_head_cell.gantt_grid_head_add:hover {
+                    background: #1d4ed8 !important;
+                    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3), 0 2px 8px rgba(37,99,235,0.45) !important;
+                }
+                .gantt_grid_head_add:before {
+                    color: #ffffff !important;
+                    font-size: 18px !important;
+                }
+                .gantt_grid_data .gantt_add {
+                    width: 22px !important;
+                    height: 22px !important;
+                    margin: 5px auto !important;
+                    border-radius: 9999px !important;
+                    background: #eff6ff !important;
+                    border: 1px solid #bfdbfe !important;
+                    opacity: 0.9 !important;
+                    box-sizing: border-box !important;
+                }
+                .gantt_grid_data .gantt_add:hover {
+                    background: #dbeafe !important;
+                    border-color: #60a5fa !important;
+                    opacity: 1 !important;
+                }
+                .gantt_grid_data .gantt_add:before {
+                    color: #2563eb !important;
+                    font-size: 13px !important;
+                    height: 100% !important;
+                }
             `;
             document.head.appendChild(style);
         }
@@ -384,7 +432,7 @@ export default function GanttChart({
                         template: (task: GanttTask) => {
                             const gExtended = ganttInstance as unknown as { calculateTaskLevel: (t: GanttTask) => number };
                             if (gExtended.calculateTaskLevel(task) >= 1) return "";
-                            return "<div class='gantt_add'></div>";
+                            return "<div class='gantt_add' title='세부업무 등록' aria-label='세부업무 등록'></div>";
                         }
                     }
                 ]
@@ -456,7 +504,7 @@ export default function GanttChart({
 
                 // 로케일 및 버튼 설정
                 const labels = ganttInstance.locale.labels as Record<string, string>;
-                labels.new_task = "새 업무"
+                labels.new_task = "관리 업무 등록"
                 labels.gantt_save_btn = "저장"
                 labels.gantt_cancel_btn = "취소"
                 labels.gantt_delete_btn = "삭제"
@@ -533,6 +581,11 @@ export default function GanttChart({
                             };
                         });
                     }, 50);
+                }));
+
+                eventIdsRef.current.push(ganttInstance.attachEvent("onGanttRender", () => {
+                    updateGanttAddButtonTitles(container);
+                    return true;
                 }));
 
                 eventIdsRef.current.push(ganttInstance.attachEvent("onKeyDown", (e: unknown) => {
@@ -952,6 +1005,7 @@ export default function GanttChart({
                 }
 
                 ganttInstance.init(container)
+                updateGanttAddButtonTitles(container)
                 setIsGanttLoaded(true)
             } catch (err) {
                 console.error('Failed to load dhtmlx-gantt:', err)
@@ -1135,6 +1189,7 @@ export default function GanttChart({
 
             // 기존 Marker 기반 휴일 표시 로직 제거 (timeline_cell_class로 이관)
             g.render()
+            window.setTimeout(() => updateGanttAddButtonTitles(ganttContainer.current), 0)
     }, [isGanttLoaded, tasks, links, holidays, holidayInfoMap, scales])
 
     return (

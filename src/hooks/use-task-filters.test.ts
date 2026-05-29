@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react'
-import { expect, test, describe } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import { useTaskFilters } from './use-task-filters'
 import { ProjectTask } from '@/types/project'
 
@@ -17,7 +17,19 @@ const mockTasks: ProjectTask[] = [
     } as ProjectTask,
 ]
 
+const toYmd = (date: Date | undefined) => {
+    if (!date) return undefined
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
+
 describe('useTaskFilters', () => {
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
     test('동일한 날짜(하루)를 시작/종료일로 필터링할 때 해당 날짜의 업무가 포함되어야 함', () => {
         const { result } = renderHook(() => useTaskFilters(mockTasks))
 
@@ -84,5 +96,28 @@ describe('useTaskFilters', () => {
         })
 
         expect(result.current.filteredTasks).toHaveLength(1)
+    })
+
+    test('관리자 최초 접근 및 초기화 시 전체 담당자, 3주 기간, 관리 업무만 필터를 적용함', () => {
+        vi.useFakeTimers()
+        vi.setSystemTime(new Date(2026, 4, 29))
+
+        const { result } = renderHook(() => useTaskFilters(mockTasks, ['user-1'], 'manager'))
+
+        expect(result.current.filters.assigneeIds).toEqual([])
+        expect(result.current.filters.quickWeeks).toEqual(['last', 'this', 'next'])
+        expect(result.current.filters.showOnlyParent).toBe(true)
+        expect(toYmd(result.current.filters.dateRange.from)).toBe('2026-05-18')
+        expect(toYmd(result.current.filters.dateRange.to)).toBe('2026-06-07')
+
+        act(() => {
+            result.current.resetFilters()
+        })
+
+        expect(result.current.filters.assigneeIds).toEqual([])
+        expect(result.current.filters.quickWeeks).toEqual(['last', 'this', 'next'])
+        expect(result.current.filters.showOnlyParent).toBe(true)
+        expect(toYmd(result.current.filters.dateRange.from)).toBe('2026-05-18')
+        expect(toYmd(result.current.filters.dateRange.to)).toBe('2026-06-07')
     })
 })

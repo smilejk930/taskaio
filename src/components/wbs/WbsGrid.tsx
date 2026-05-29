@@ -733,7 +733,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7 text-muted-foreground/60 hover:text-blue-600 hover:bg-blue-50"
-                                title="하위 업무 등록"
+                                title="세부업무 등록"
                                 onClick={(e) => {
                                     e.stopPropagation()
                                     handleAddNewRow(task.id)
@@ -777,10 +777,11 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                         size="sm"
                         variant="default"
                         className="gap-2 shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+                        title="관리 업무 등록"
                         onClick={() => handleAddNewRow()}
                     >
                         <Plus className="h-4 w-4" />
-                        업무 등록
+                        관리 업무 등록
                     </Button>
                 </div>
 

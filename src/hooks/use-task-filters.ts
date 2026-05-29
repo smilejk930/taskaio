@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { format } from 'date-fns'
+import { addWeeks, endOfWeek, format, max, min, startOfWeek } from 'date-fns'
 import { ProjectTask } from '@/types/project'
 
 export interface TaskFilters {
@@ -19,22 +19,64 @@ export interface TaskFilters {
 // 「전체」 토글이 OFF로 돌아갈 때 복원할 기준값으로 사용된다.
 export const DEFAULT_STATUSES = ['todo', 'in_progress', 'review'] as const
 
-export function useTaskFilters(tasks: ProjectTask[], initialAssigneeIds: string[] = []) {
-    // 첫 진입 시 기본값 (초기화 버튼의 복원 대상)
-    const defaultFilters: TaskFilters = useMemo(() => ({
-        title: '',
-        assigneeIds: initialAssigneeIds,
-        statuses: [...DEFAULT_STATUSES],
-        priorities: [],
-        dateRange: {
-            from: undefined,
-            to: undefined,
+type InitialFilterMode = 'default' | 'manager'
+
+const getThreeWeekRange = () => {
+    const today = new Date()
+    const ranges = [
+        {
+            start: startOfWeek(addWeeks(today, -1), { weekStartsOn: 1 }),
+            end: endOfWeek(addWeeks(today, -1), { weekStartsOn: 1 }),
         },
-        quickWeeks: [],
-        showOnlyParent: false,
-        // initialAssigneeIds는 최초 마운트 시 값이 고정되므로 의도적으로 의존성 제외
+        {
+            start: startOfWeek(today, { weekStartsOn: 1 }),
+            end: endOfWeek(today, { weekStartsOn: 1 }),
+        },
+        {
+            start: startOfWeek(addWeeks(today, 1), { weekStartsOn: 1 }),
+            end: endOfWeek(addWeeks(today, 1), { weekStartsOn: 1 }),
+        },
+    ]
+
+    return {
+        from: min(ranges.map(range => range.start)),
+        to: max(ranges.map(range => range.end)),
+    }
+}
+
+export function useTaskFilters(
+    tasks: ProjectTask[],
+    initialAssigneeIds: string[] = [],
+    initialMode: InitialFilterMode = 'default'
+) {
+    // 첫 진입 및 초기화 버튼의 복원 대상.
+    // 관리자 모드에서는 관리자 관점의 기본 필터로 복원한다.
+    const defaultFilters: TaskFilters = useMemo(() => {
+        const baseFilters: TaskFilters = {
+            title: '',
+            assigneeIds: initialAssigneeIds,
+            statuses: [...DEFAULT_STATUSES],
+            priorities: [],
+            dateRange: {
+                from: undefined,
+                to: undefined,
+            },
+            quickWeeks: [],
+            showOnlyParent: false,
+        }
+
+        if (initialMode !== 'manager') return baseFilters
+
+        return {
+            ...baseFilters,
+            assigneeIds: [],
+            dateRange: getThreeWeekRange(),
+            quickWeeks: ['last', 'this', 'next'],
+            showOnlyParent: true,
+        }
+        // initialAssigneeIds와 initialMode는 최초 마운트 시 값이 고정되므로 의도적으로 의존성 제외
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }), [])
+    }, [])
 
     const [filters, setFilters] = useState<TaskFilters>(defaultFilters)
 
@@ -106,8 +148,8 @@ export function useTaskFilters(tasks: ProjectTask[], initialAssigneeIds: string[
             }
         })
 
-        // 3. 상위 업무만 보기 토글 적용
-        // "상위 업무만"이 체크되어 있으면 visibleIds 중에서 부모가 없는 것만 필터링
+        // 3. 관리 업무만 보기 토글 적용
+        // "관리 업무만"이 체크되어 있으면 visibleIds 중에서 부모가 없는 것만 필터링
         if (filters.showOnlyParent) {
             return tasks.filter(t => visibleIds.has(t.id) && !t.parent_id)
         }

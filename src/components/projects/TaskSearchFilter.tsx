@@ -282,7 +282,7 @@ export function TaskSearchFilter({ filters, setFilters, members, onReset, defaul
 
                 <Separator orientation="vertical" className="hidden lg:block h-6" />
 
-                {/* 상위 업무만 보기 토글 */}
+                {/* 관리 업무만 보기 토글 */}
                 <div className="flex items-center gap-2 px-2">
                     <Checkbox
                         id="parent-only-filter"
@@ -290,7 +290,7 @@ export function TaskSearchFilter({ filters, setFilters, members, onReset, defaul
                         onCheckedChange={(checked) => setFilters(prev => ({ ...prev, showOnlyParent: !!checked }))}
                     />
                     <Label htmlFor="parent-only-filter" className="text-sm font-medium cursor-pointer">
-                        상위 업무만
+                        관리 업무만
                     </Label>
                 </div>
 
