@@ -6,7 +6,11 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { differenceInDays, parseISO, startOfToday, format } from 'date-fns'
+import { Info } from 'lucide-react'
 import { ProjectTask, Member } from '@/types/project'
 
 interface DashboardViewProps {
@@ -18,6 +22,7 @@ interface DashboardViewProps {
 
 export default function DashboardView({ tasks, members, onTaskClick }: DashboardViewProps) {
     const today = startOfToday()
+    const [isAttentionDialogOpen, setIsAttentionDialogOpen] = React.useState(false)
 
     // 팀원 필터: 'all'이면 전체 업무, 그 외에는 해당 팀원이 담당인 업무만
     const [selectedMemberId, setSelectedMemberId] = React.useState<string>('all')
@@ -65,7 +70,97 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
     const getAssigneeName = (assigneeId: string | null) =>
         members.find(m => m.id === assigneeId)?.display_name || '미지정'
 
+    const childTasksByParentId = filteredTasks.reduce<Record<string, ProjectTask[]>>((acc, task) => {
+        if (!task.parent_id) return acc
+        acc[task.parent_id] = [...(acc[task.parent_id] ?? []), task]
+        return acc
+    }, {})
+
+    const assigneeRows = [
+        ...members.map(member => ({
+            id: member.id,
+            name: member.display_name || member.username || member.email || '이름없음',
+        })),
+        ...(topLevelTasks.some(t => !t.assignee_id) ? [{ id: 'unassigned', name: '미지정' }] : []),
+    ].map(assignee => {
+        const allAssignedManagementTasks = topLevelTasks.filter(t =>
+            assignee.id === 'unassigned' ? !t.assignee_id : t.assignee_id === assignee.id
+        )
+        const assignedManagementTasks = allAssignedManagementTasks.filter(t => t.status !== 'done')
+        const completedManagementTasks = allAssignedManagementTasks.filter(t => t.status === 'done')
+        const dueSoonManagementTasks = assignedManagementTasks.filter(t => {
+            if (!t.end_date) return false
+            const daysLeft = differenceInDays(parseISO(t.end_date), today)
+            return daysLeft >= 0 && daysLeft <= 3
+        })
+        const delayedManagementTasks = assignedManagementTasks.filter(t => {
+            if (!t.end_date) return false
+            return differenceInDays(parseISO(t.end_date), today) < 0
+        })
+        const unscheduledManagementTasks = assignedManagementTasks.filter(t => !t.end_date)
+
+        const childTasks = allAssignedManagementTasks.flatMap(t => childTasksByParentId[t.id] ?? [])
+        const incompleteChildTasks = childTasks.filter(t => t.status !== 'done')
+        const completedChildTasks = childTasks.filter(t => t.status === 'done')
+        const inProgressChildTasks = incompleteChildTasks.filter(t => t.status === 'in_progress')
+        const dueSoonChildTasks = incompleteChildTasks.filter(t => {
+            if (!t.end_date) return false
+            const daysLeft = differenceInDays(parseISO(t.end_date), today)
+            return daysLeft >= 0 && daysLeft <= 3
+        })
+        const delayedChildTasks = incompleteChildTasks.filter(t => {
+            if (!t.end_date) return false
+            return differenceInDays(parseISO(t.end_date), today) < 0
+        })
+        const unscheduledChildTasks = incompleteChildTasks.filter(t => !t.end_date)
+
+        const totalCount = allAssignedManagementTasks.length + childTasks.length
+        const openCount = assignedManagementTasks.length + incompleteChildTasks.length
+        const attentionLevel = totalCount > 0 && openCount === 0
+            ? 'complete'
+            : delayedManagementTasks.length > 0 || delayedChildTasks.length >= 3 || dueSoonManagementTasks.length >= 3
+                ? 'high'
+                : delayedChildTasks.length > 0 || dueSoonManagementTasks.length > 0 || dueSoonChildTasks.length > 0 || unscheduledManagementTasks.length > 0 || unscheduledChildTasks.length > 0
+                    ? 'medium'
+                    : 'normal'
+
+        return {
+            ...assignee,
+            totalTasks: allAssignedManagementTasks.length,
+            completedTasks: completedManagementTasks.length,
+            openTasks: assignedManagementTasks.length,
+            inProgressTasks: assignedManagementTasks.filter(t => t.status === 'in_progress').length,
+            dueSoonTasks: dueSoonManagementTasks.length,
+            delayedTasks: delayedManagementTasks.length,
+            unscheduledTasks: unscheduledManagementTasks.length,
+            childOpenTasks: incompleteChildTasks.length,
+            childInProgressTasks: inProgressChildTasks.length,
+            childDueSoonTasks: dueSoonChildTasks.length,
+            childDelayedTasks: delayedChildTasks.length,
+            childUnscheduledTasks: unscheduledChildTasks.length,
+            childTotalTasks: childTasks.length,
+            childCompletedTasks: completedChildTasks.length,
+            attentionLevel,
+        }
+    }).filter(row => row.totalTasks > 0)
+        .sort((a, b) => {
+            const attentionOrder = { high: 0, medium: 1, normal: 2, complete: 3 }
+            const attentionDiff = attentionOrder[a.attentionLevel] - attentionOrder[b.attentionLevel]
+            if (attentionDiff !== 0) return attentionDiff
+            return b.openTasks - a.openTasks
+        })
+
+    const attentionBadge = {
+        high: { label: '높음', variant: 'destructive' as const },
+        medium: { label: '주의', variant: 'default' as const },
+        normal: { label: '정상', variant: 'secondary' as const },
+        complete: { label: '완료', variant: 'outline' as const },
+    }
+
+    const formatLoadCount = (managementCount: number, detailCount: number) => `${managementCount} (${detailCount})`
+
     return (
+        <TooltipProvider delayDuration={150}>
         <div className="p-6 space-y-6 overflow-auto bg-background/50 h-full">
             {/* 팀원별 필터 — '전체' 기본 선택, 가로 정렬, 좁은 화면에서 자동 줄바꿈 */}
             <RadioGroup
@@ -102,7 +197,20 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
 
                 <Card className="bg-card shadow-sm border-none ring-1 ring-slate-200 dark:ring-slate-800">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-muted-foreground">관리 업무(1Depth)</CardTitle>
+                        <CardTitle className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground">
+                            관리 업무
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button type="button" className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:text-foreground">
+                                        <Info className="h-3.5 w-3.5" />
+                                        <span className="sr-only">관리 업무 설명</span>
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-56 text-left leading-relaxed">
+                                    1Depth 상위 업무입니다.
+                                </TooltipContent>
+                            </Tooltip>
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{topLevelTasks.length}</div>
@@ -155,6 +263,93 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
                     </CardContent>
                 </Card>
             </div>
+
+            <Card className="bg-card shadow-sm border-none ring-1 ring-slate-200 dark:ring-slate-800">
+                <CardHeader>
+                    <CardTitle className="inline-flex items-center gap-1 text-lg">
+                        담당자별 업무 현황
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button type="button" className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:text-foreground">
+                                    <Info className="h-3.5 w-3.5" />
+                                    <span className="sr-only">담당자별 업무 현황 설명</span>
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-72 text-left leading-relaxed">
+                                담당자별 관리 업무와 세부 업무 현황입니다. 각 수치는 관리 업무 수(세부 업무 수) 형식으로 표시됩니다.
+                            </TooltipContent>
+                        </Tooltip>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+	                    {assigneeRows.length === 0 ? (
+	                        <p className="text-sm text-muted-foreground text-center py-4">담당 업무가 없습니다.</p>
+	                    ) : (
+	                        <Table>
+		                            <TableHeader>
+		                                <TableRow>
+		                                    <TableHead>담당자</TableHead>
+		                                    <TableHead className="text-right">
+	                                            <span className="inline-flex items-center justify-end gap-1">
+	                                                전체
+	                                                <Tooltip>
+	                                                    <TooltipTrigger asChild>
+	                                                        <button type="button" className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:text-foreground">
+	                                                            <Info className="h-3.5 w-3.5" />
+	                                                            <span className="sr-only">전체 표기 설명</span>
+	                                                        </button>
+	                                                    </TooltipTrigger>
+	                                                    <TooltipContent className="max-w-64 text-left leading-relaxed">
+	                                                        관리 업무 수(세부 업무 수) 형식입니다.
+	                                                    </TooltipContent>
+	                                                </Tooltip>
+	                                            </span>
+	                                        </TableHead>
+	                                    <TableHead className="text-right">완료</TableHead>
+	                                    <TableHead className="text-right">미완료</TableHead>
+		                                    <TableHead className="text-right">진행 중</TableHead>
+	                                    <TableHead className="text-right">3일 내 마감</TableHead>
+	                                    <TableHead className="text-right">지연</TableHead>
+	                                    <TableHead className="text-right">마감일 없음</TableHead>
+	                                    <TableHead className="text-right">
+	                                        <span className="inline-flex items-center justify-end gap-1">
+	                                            주의도
+                                                <button
+                                                    type="button"
+                                                    className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+                                                    onClick={() => setIsAttentionDialogOpen(true)}
+                                                >
+                                                    <Info className="h-3.5 w-3.5" />
+                                                    <span className="sr-only">주의도 기준 보기</span>
+                                                </button>
+                                        </span>
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {assigneeRows.map(row => {
+                                    const badge = attentionBadge[row.attentionLevel]
+		                                    return (
+		                                        <TableRow key={row.id}>
+		                                            <TableCell className="font-medium">{row.name}</TableCell>
+		                                            <TableCell className="text-right">{formatLoadCount(row.totalTasks, row.childTotalTasks)}</TableCell>
+		                                            <TableCell className="text-right text-green-600 dark:text-green-400">{formatLoadCount(row.completedTasks, row.childCompletedTasks)}</TableCell>
+		                                            <TableCell className="text-right">{formatLoadCount(row.openTasks, row.childOpenTasks)}</TableCell>
+	                                            <TableCell className="text-right">{formatLoadCount(row.inProgressTasks, row.childInProgressTasks)}</TableCell>
+	                                            <TableCell className="text-right text-orange-600 dark:text-orange-400">{formatLoadCount(row.dueSoonTasks, row.childDueSoonTasks)}</TableCell>
+	                                            <TableCell className="text-right text-rose-600 dark:text-rose-400">{formatLoadCount(row.delayedTasks, row.childDelayedTasks)}</TableCell>
+	                                            <TableCell className="text-right text-slate-600 dark:text-slate-400">{formatLoadCount(row.unscheduledTasks, row.childUnscheduledTasks)}</TableCell>
+	                                            <TableCell className="text-right">
+	                                                <Badge variant={badge.variant} className="text-xs">{badge.label}</Badge>
+	                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+            </Card>
 
             <div className="grid gap-6 md:grid-cols-2">
                 {/* 마감 임박 목록 */}
@@ -227,6 +422,36 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
                     </CardContent>
                 </Card>
             </div>
+
+            <Dialog open={isAttentionDialogOpen} onOpenChange={setIsAttentionDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>주의도 기준</DialogTitle>
+                        <DialogDescription>
+                            담당자별 업무 현황의 주의도는 업무 일정 상태만 기준으로 판단합니다.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 text-sm">
+                        <div className="rounded-md border p-3">
+                            <p className="font-semibold text-green-600 dark:text-green-400">완료</p>
+                            <p className="mt-1 text-muted-foreground">관리 업무와 세부 업무가 모두 완료된 상태입니다.</p>
+                        </div>
+                        <div className="rounded-md border p-3">
+                            <p className="font-semibold text-rose-600 dark:text-rose-400">높음</p>
+                            <p className="mt-1 text-muted-foreground">관리 업무 지연 1건 이상, 세부 업무 지연 3건 이상, 또는 관리 업무 3일 내 마감 3건 이상인 상태입니다.</p>
+                        </div>
+                        <div className="rounded-md border p-3">
+                            <p className="font-semibold text-primary">주의</p>
+                            <p className="mt-1 text-muted-foreground">세부 업무 지연 1건 이상, 관리/세부 업무 3일 내 마감 1건 이상, 또는 관리/세부 업무 마감일 없음이 있는 상태입니다.</p>
+                        </div>
+                        <div className="rounded-md border p-3">
+                            <p className="font-semibold">정상</p>
+                            <p className="mt-1 text-muted-foreground">미완료 업무는 있지만 지연, 3일 내 마감, 마감일 없음 조건에 해당하지 않는 상태입니다.</p>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
+        </TooltipProvider>
     )
 }

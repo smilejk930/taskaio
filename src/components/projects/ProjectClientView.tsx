@@ -63,7 +63,7 @@ export default function ProjectClientView({
     project,
     initialTasks,
     initialLinks,
-    holidays,
+    holidays: initialHolidays,
     members,
     currentUser,
 }: ProjectClientViewProps) {
@@ -82,10 +82,11 @@ export default function ProjectClientView({
     )
 
     const {
+        holidays: projectHolidays,
         handleCreate: handleCreateHoliday,
         handleUpdate: handleUpdateHoliday,
         handleDelete: handleDeleteHoliday
-    } = useHolidays(holidays as unknown as HookHoliday[], holidayProfiles) // Holiday 객체 스키마 차이로 인한 타입 불일치를 unknown 경유로 해결 (Gemini.md rules compliant)
+    } = useHolidays(initialHolidays as unknown as HookHoliday[], holidayProfiles) // Holiday 객체 스키마 차이로 인한 타입 불일치를 unknown 경유로 해결 (Gemini.md rules compliant)
 
     const [links, setLinks] = useState<ProjectLink[]>(initialLinks)
 
@@ -489,10 +490,10 @@ export default function ProjectClientView({
                             {(isTaskLoading && tasks.length === 0 && !initialTasks.length) ? (
                                 <DashboardSkeleton />
                             ) : (
-                                <DashboardView 
-                                    tasks={tasks} 
-                                    members={members} 
-                                    onTaskClick={(taskId) => {
+	                                <DashboardView 
+	                                    tasks={tasks} 
+	                                    members={members}
+	                                    onTaskClick={(taskId) => {
                                         setActiveTab('wbs')
                                         setTimeout(() => {
                                             const el = document.getElementById(`task-row-${taskId}`)
@@ -559,7 +560,7 @@ export default function ProjectClientView({
                                             tasks={ganttTasks}
                                             links={ganttLinks}
                                             scales={scale}
-                                            holidays={holidays.map((h) => {
+                                            holidays={(projectHolidays as unknown as Holiday[]).map((h) => {
                                                 const member = h.member_id ? members.find((m) => m.id === h.member_id) : null;
                                                 return {
                                                     ...h,
