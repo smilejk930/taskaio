@@ -20,6 +20,44 @@ const PRIORITY_OPTIONS = [
     { key: 'low', label: '낮음' },
 ]
 
+const HOLIDAY_LABELS: Record<string, string> = {
+    public_holiday: '공휴일',
+    member_leave: '휴가',
+    business_trip: '출장',
+    supervision: '감리',
+    workshop: '워크샵',
+    other: '기타',
+}
+
+const escapeHtml = (value: string | null | undefined) => {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+}
+
+const formatHolidayDateHtml = (holiday: Holiday) => {
+    if (holiday.start_date === holiday.end_date) {
+        return `<div><span style="font-weight:600;">일자:</span> ${escapeHtml(holiday.start_date)}</div>`
+    }
+
+    return [
+        `<div><span style="font-weight:600;">시작일:</span> ${escapeHtml(holiday.start_date)}</div>`,
+        `<div><span style="font-weight:600;">종료일:</span> ${escapeHtml(holiday.end_date)}</div>`,
+    ].join('')
+}
+
+const formatHolidayDetailHtml = (holiday: Holiday) => {
+    return [
+        `<div><span style="font-weight:600;">유형:</span> ${escapeHtml(HOLIDAY_LABELS[holiday.type] || HOLIDAY_LABELS.other)}</div>`,
+        `<div><span style="font-weight:600;">일정명:</span> ${escapeHtml(holiday.name)}</div>`,
+        formatHolidayDateHtml(holiday),
+        `<div><span style="font-weight:600;">비고:</span> ${escapeHtml(holiday.note?.trim() || '—')}</div>`,
+    ].join('')
+}
+
 interface GanttChartProps {
     tasks: GanttTask[]
     links: GanttLink[]
@@ -63,7 +101,7 @@ export default function GanttChart({
 
     // ── 휴일 데이터 최적화 (날짜 기반 Lookup Map) ────────────────
     const holidayInfoMap = useMemo(() => {
-        const map = new Map<string, { type: 'public' | 'leave'; names: string[] }>();
+        const map = new Map<string, { type: 'public' | 'leave'; holidays: Holiday[] }>();
         if (!holidays) return map;
 
         holidays.forEach(h => {
@@ -77,20 +115,15 @@ export default function GanttChart({
                 // 셀 배경색 분류: 공휴일만 'public'(붉은 톤), 워크샵·감리·휴가·출장은 'leave'(앰버 톤)
                 const type = h.type === 'public_holiday' ? 'public' : 'leave';
 
-                const existing = map.get(dateStr) || { type, names: [] };
+                const existing = map.get(dateStr) || { type, holidays: [] };
 
                 // 공휴일(public) 우선순위 적용
                 if (type === 'public' && existing.type !== 'public') {
                     existing.type = 'public';
                 }
 
-                // 휴일 명칭 추가 (중복 방지)
-                const hName = ['member_leave', 'business_trip'].includes(h.type) && h.member_name
-                    ? `${h.member_name}(${h.name})`
-                    : h.name;
-
-                if (!existing.names.includes(hName)) {
-                    existing.names.push(hName);
+                if (!existing.holidays.some(holiday => holiday.id === h.id)) {
+                    existing.holidays.push(h);
                 }
 
                 map.set(dateStr, existing);
@@ -527,7 +560,7 @@ export default function GanttChart({
                 }));
 
                 // ── 휴일 툴팁 핸들러 ────────────────────────────────────────────────
-                const showHolidayTooltip = (e: MouseEvent, names: string) => {
+                const showHolidayTooltip = (e: MouseEvent, dateStr: string) => {
                     if (!holidayTooltipRef.current) {
                         const div = document.createElement('div');
                         div.id = 'gantt-holiday-tooltip';
@@ -540,11 +573,16 @@ export default function GanttChart({
                         holidayTooltipRef.current = div;
                     }
 
+                    const holidaysForDate = holidayInfoMapRef.current.get(dateStr)?.holidays || [];
+                    if (holidaysForDate.length === 0) return;
+
                     const tooltip = holidayTooltipRef.current;
-                    let html = `<div style="padding:14px;min-width:200px;background:#ffffff;box-sizing:border-box;border-radius:8px;">`;
+                    let html = `<div style="padding:14px;min-width:240px;max-width:360px;background:#ffffff;box-sizing:border-box;border-radius:8px;">`;
                     html += `<div style="color:#ef4444;font-size:13px;font-weight:700;margin-bottom:8px;">[일정 정보]</div>`;
-                    names.split(', ').forEach(name => {
-                        html += `<div style="font-size:12px;color:#334155;margin-bottom:4px;display:flex;align-items:center;"><span style="margin-right:4px;">•</span> ${name}</div>`;
+                    holidaysForDate.forEach((holiday, index) => {
+                        html += `<div style="font-size:12px;color:#334155;line-height:1.6;${index > 0 ? 'margin-top:10px;padding-top:10px;border-top:1px dashed #cbd5e1;' : ''}">`;
+                        html += formatHolidayDetailHtml(holiday);
+                        html += `</div>`;
                     });
                     html += `</div>`;
 
@@ -575,9 +613,9 @@ export default function GanttChart({
                     const holidayLabel = target.closest('.holiday-scale-label');
 
                     if (holidayLabel) {
-                        const names = holidayLabel.getAttribute('data-holiday-names');
-                        if (names) {
-                            showHolidayTooltip(_e, names);
+                        const dateStr = holidayLabel.getAttribute('data-holiday-date');
+                        if (dateStr) {
+                            showHolidayTooltip(_e, dateStr);
                             return true;
                         }
                     }
@@ -645,11 +683,10 @@ export default function GanttChart({
                             if (overlappingHolidays.length > 0) {
                                 tooltipHtml += `<div style="margin-top:12px;padding-top:10px;border-top:1px dashed #cbd5e1;">`;
                                 tooltipHtml += `<div style="color:#ef4444;font-size:13px;font-weight:700;margin-bottom:6px;">[해당 기간 일정]</div>`;
-                                overlappingHolidays.forEach(h => {
-                                    const hName = ['member_leave', 'business_trip'].includes(h.type) && h.member_name
-                                        ? `${h.member_name}(${h.name})`
-                                        : h.name;
-                                    tooltipHtml += `<div style="font-size:12px;color:#334155;margin-bottom:4px;display:flex;align-items:center;"><span style="margin-right:4px;">•</span> ${hName} (${h.start_date} ~ ${h.end_date})</div>`;
+                                overlappingHolidays.forEach((h, index) => {
+                                    tooltipHtml += `<div style="font-size:12px;color:#334155;line-height:1.6;${index > 0 ? 'margin-top:8px;padding-top:8px;border-top:1px dashed #e2e8f0;' : ''}">`;
+                                    tooltipHtml += formatHolidayDetailHtml(h);
+                                    tooltipHtml += `</div>`;
                                 });
                                 tooltipHtml += `</div>`;
                             }
@@ -951,8 +988,8 @@ export default function GanttChart({
                             const hInfo = holidayInfoMapRef.current.get(dateStr);
                             const label = `${date.getDate()} (${days[date.getDay()]})`;
 
-                            if (hInfo && hInfo.names.length > 0) {
-                                return `<div class="holiday-scale-label" data-holiday-names="${hInfo.names.join(', ')}" style="width:100%;height:100%;">${label}</div>`;
+                            if (hInfo && hInfo.holidays.length > 0) {
+                                return `<div class="holiday-scale-label" data-holiday-date="${dateStr}" style="width:100%;height:100%;">${label}</div>`;
                             }
                             return label;
                         }, css: (date: Date) => {

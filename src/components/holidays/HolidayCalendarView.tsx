@@ -63,6 +63,24 @@ const HOLIDAY_LABELS: Record<string, string> = {
     other: '기타',
 }
 
+const formatHolidayHoverText = (holiday: Holiday) => {
+    const lines = [
+        `유형: ${HOLIDAY_LABELS[holiday.type] || HOLIDAY_LABELS.other}`,
+        `일정명: ${holiday.name}`,
+    ]
+
+    if (holiday.start_date === holiday.end_date) {
+        lines.push(`일자: ${holiday.start_date}`)
+    } else {
+        lines.push(`시작일: ${holiday.start_date}`)
+        lines.push(`종료일: ${holiday.end_date}`)
+    }
+
+    lines.push(`비고: ${holiday.note?.trim() || '—'}`)
+
+    return lines.join('\n')
+}
+
 export default function HolidayCalendarView({
     holidays,
     profiles,
@@ -335,6 +353,7 @@ export default function HolidayCalendarView({
                                                                         "holiday-item text-xs px-2 py-1.5 border rounded-md cursor-pointer",
                                                                         HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS['other']
                                                                     )}
+                                                                    title={formatHolidayHoverText(holiday)}
                                                                 >
                                                                     <div className="font-semibold flex items-center justify-between">
                                                                         <span>{holiday.name}</span>
@@ -401,7 +420,7 @@ export default function HolidayCalendarView({
                                                         isStart ? "rounded-l-md ml-1" : "border-l-0 ml-[-2px]",
                                                         isEnd ? "rounded-r-md mr-1" : "border-r-0 mr-[-2px]"
                                                     )}
-                                                    title={`${holiday.name} (${holiday.profiles?.display_name || HOLIDAY_LABELS[holiday.type]})`}
+                                                    title={formatHolidayHoverText(holiday)}
                                                 >
                                                     {isStart ? (
                                                         <span className="font-semibold text-[11px]">
