@@ -35,7 +35,7 @@ export default async function SettingsPage() {
         </div>
       </header>
 
-      <main className="container mx-auto p-6 space-y-8 max-w-3xl">
+      <main className="container mx-auto p-6 space-y-8 max-w-4xl">
         <div className="mb-2">
           <h2 className="text-2xl font-bold tracking-tight">환경 설정</h2>
           <p className="text-muted-foreground">앱 전반의 UI 테마 및 표시 요소, 그리고 계정 관리를 설정합니다.</p>

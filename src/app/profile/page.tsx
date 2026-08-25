@@ -32,7 +32,7 @@ export default async function ProfilePage() {
         </div>
       </header>
 
-      <main className="container mx-auto p-6 space-y-8 max-w-3xl">
+      <main className="container mx-auto p-6 space-y-8 max-w-4xl">
         <div className="mb-2">
           <h2 className="text-2xl font-bold tracking-tight">프로필 설정</h2>
           <p className="text-muted-foreground">내 프로필 정보와 계정 보안을 관리하세요.</p>
