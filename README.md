@@ -1,196 +1,263 @@
 # taskaio (테스크에이아이오)
 
-**WBS 기반 지능형 일정 관리 웹 애플리케이션**
+WBS 업무 구조와 간트 차트를 한 화면에서 관리하는 프로젝트 일정 관리 웹 애플리케이션입니다.
 
-`taskaio`는 복잡한 프로젝트를 WBS(Work Breakdown Structure) 계층 구조로 관리하고, 인터랙티브한 간트 차트를 통해 직관적인 일정 조율을 지원합니다. 모든 개발 과정은 인공지능 에이전트 **Antigravity**와의 '바이브 코딩'을 통해 진행됩니다.
+관리 업무와 세부 업무를 계층으로 구성하고, 담당자·상태·우선순위·일정·진척률·선후행 관계를 관리할 수 있습니다. 프로젝트별 대시보드, 업무 목록, 간트 차트, 팀원 관리 기능을 제공합니다.
 
----
+> 현재 정상 지원 데이터베이스는 PostgreSQL과 Supabase(PostgreSQL)입니다. SQLite 분기와 의존성은 일부 존재하지만 전용 Drizzle 스키마가 구현되지 않아 사용할 수 없습니다.
 
-## 🚀 주요 기능
-- **WBS 계층 구조**: 에픽 > 스토리 > 태스크의 3단계 구조로 업무 체계화
-- **인터랙티브 간트 차트**: dhtmlx-gantt 기반의 드래그 앤 드롭 일정 조정
-- **지능형 대시보드**: 프로젝트 진척도 및 마감 임박 업무 요약 제공
-- **멀티 DB 지원**: 환경변수 설정으로 Supabase, Postgres, SQLite 선택 가능
-- **권한 관리**: 역할 기반(Owner/Manager/Member)의 세밀한 권한 제어
+## 주요 기능
 
-## 🛠 기술 스택
-- **Core**: `Next.js 14+ (App Router)`, `TypeScript`
-- **Database/ORM**: `Drizzle ORM`, `PostgreSQL` / `Supabase` / `SQLite`
-- **Auth**: `NextAuth (Auth.js)`
-- **UI/UX**: `shadcn/ui`, `Tailwind CSS`, `Lucide React`
-- **Timeline**: `dhtmlx-gantt`
-- **State/Data**: `Zustand`, `React Query`
-- **Package Manager**: `pnpm`
+- **계층형 WBS**: 관리 업무와 세부 업무를 부모-자식 구조로 등록하고 일괄 편집
+- **인터랙티브 간트 차트**: `dhtmlx-gantt` 기반 일정 드래그·리사이즈, 진척률 변경, 업무 의존성 연결
+- **연쇄 일정 조정**: 관리 업무 이동 시 하위 업무를 함께 이동하고 본인 담당 이후 업무를 일괄 이동하는 일정 조정 지원
+- **프로젝트 대시보드**: 전체/관리 업무 수, 진행률, 3일 내 마감, 지연, 마감일 미지정 업무 집계
+- **검색과 필터**: 업무명·내용, 담당자, 상태, 우선순위, 기간, 지난주/이번 주/다음 주, 관리 업무만 보기
+- **일정 관리**: 공휴일, 휴가, 출장, 워크샵, 감리, 기타 일정의 목록·달력 관리와 JSON 가져오기
+- **휴일 연동**: 프로젝트 팀원의 일정을 간트 셀과 업무 상세 툴팁에 표시
+- **프로젝트 권한**: 프로젝트별 `owner` / `manager` / `member` 역할과 팀원별 표시 색상 관리
+- **계정 관리**: 아이디 기반 로그인/회원가입, 프로필·비밀번호·테마 설정, 계정 소프트 삭제
+- **시스템 관리**: 초기 관리자 생성과 시스템 관리자용 사용자 관리
 
----
+## 기술 스택
 
-## 🤖 Antigravity 개발 가이드 (Vibe Coding)
+| 영역 | 기술 |
+| --- | --- |
+| 프레임워크 | Next.js 14 App Router, React 18, TypeScript 5 strict mode |
+| 데이터베이스 | PostgreSQL 또는 Supabase PostgreSQL, Drizzle ORM |
+| 인증 | Auth.js(NextAuth v5 beta), Credentials, JWT 세션 |
+| UI | Tailwind CSS 3, shadcn/ui, Radix UI, Lucide React, Sonner |
+| 일정 | dhtmlx-gantt 9, date-fns |
+| 폼/검증 | React Hook Form, Zod |
+| 클라이언트 상태 | Zustand |
+| 테스트 | Vitest, Testing Library, jsdom |
+| 패키지 관리자 | pnpm |
 
-본 프로젝트는 에이전트 지향 개발 방식을 따릅니다. `.agents` 디렉토리에 정의된 규칙과 스킬을 바탕으로 에이전트에게 자연어로 지시하여 기능을 확장할 수 있습니다.
+서버 데이터 변경은 React Query가 아니라 Server Action을 통해 처리합니다.
 
-### 에이전트 컨텍스트 구조
-- `.agents/rules/`: 프로젝트 코딩 컨벤션 및 보안 정책
-- `.agents/skills/`: 프레임워크 및 라이브러리별 전문 지식 (Next.js, Drizzle, Gantt 등)
-- `.agents/workflows/`: 반복적인 작업(마이그레이션, 리뷰 등)을 위한 표준화된 절차
+## 프로젝트 구조
 
-### 바이브 코딩 명령어 예시
-- **기능 개발**: "간트 차트에서 태스크를 드래그하면 시작/종료일이 DB에 바로 반영되게 해줘."
-- **DB 변경**: "`/db-migrate` 수행. tasks 테이블에 우선순위(priority) 컬럼 추가하고 기본값은 'medium'으로 설정해."
-- **코드 검토**: "`/review` 현재 구현된 팀원 관리 로직이 프로젝트 규칙을 준수하는지 확인해줘."
-
----
-
-## 📂 프로젝트 구조
-```bash
+```text
 src/
-├── app/                  # Next.js App Router (페이지 및 API)
-│   ├── (auth)/           # 인증 관련 (로그인/회원가입/비밀번호 변경)
-│   ├── admin/            # 시스템 관리자 페이지
-│   ├── holidays/         # 전역 휴일 관리
-│   ├── projects/         # 프로젝트 구성원, 간트차트, 설정
-│   ├── setup/            # 초기 시스템 설정 마법사
-│   └── actions/          # 서버 액션 (비즈니스 로직)
-├── components/           # UI 컴포넌트 (feature별 분리)
-├── hooks/                # 커스텀 React 훅
-├── lib/                  # 공통 라이브러리 및 DB 리포지토리 레이어
-│   └── db/               # Drizzle 스키마 및 어댑터
-├── store/                # Zustand 전역 상태 관리
-└── types/                # TypeScript 공통 타입 정의
-scripts/                  # 배포 및 개발 보조 스크립트
-docs/                     # 프로젝트 문서
+├── app/                         # App Router 페이지, 레이아웃, Route Handler
+│   ├── actions/                 # Server Actions와 mutation 조정
+│   ├── admin/users/             # 시스템 관리자 사용자 관리
+│   ├── holidays/                # 전사/팀원 일정 관리
+│   ├── projects/                # 프로젝트 목록과 상세 화면
+│   ├── profile/, settings/      # 사용자 설정
+│   └── setup/                   # 최초 설치 마법사
+├── components/
+│   ├── dashboard/               # 프로젝트 현황 대시보드
+│   ├── gantt/                   # 브라우저 전용 간트 차트
+│   ├── holidays/                # 일정 목록, 달력, 가져오기
+│   ├── projects/                # 프로젝트/업무/팀원 UI
+│   ├── wbs/                     # WBS 그리드
+│   └── ui/                      # shadcn/ui 공통 컴포넌트
+├── hooks/                       # 업무, 일정, 필터 훅
+├── lib/
+│   ├── db/repositories/         # 영속성 및 SQL 접근
+│   ├── db/schema/               # Drizzle PostgreSQL 스키마
+│   └── validations/             # 입력 검증 스키마
+├── store/                       # Zustand UI 상태
+└── types/                       # 공통 타입과 외부 타입 보강
+
+drizzle/postgres/                # 생성된 PostgreSQL 마이그레이션
+scripts/                         # Docker 빌드·운영 보조 스크립트
+compose.yaml                     # 애플리케이션 + PostgreSQL
+compose-only-db.yaml             # PostgreSQL만 실행
 ```
 
----
+주요 데이터 변경 흐름은 다음과 같습니다.
 
-## 🛠 시작하기
+```text
+Client UI → Server Action → Repository → Drizzle → PostgreSQL
+```
 
-### 1. 환경 설정
-`taskaio`는 서버 실행 시 `.env` 파일을 설정 파일로 사용합니다. 해당 파일이 없을 경우 브라우저 접속 시 자동으로 `/setup` 페이지로 리다이렉트되어 설정을 진행할 수 있습니다.
+프로젝트 범위의 변경 작업은 Server Action에서 세션과 프로젝트 역할을 확인하며, 시스템 관리자 기능은 별도의 관리자 검사를 거칩니다.
 
-### 2. 의존성 설치
-패키지 매니저는 반드시 `pnpm`을 사용합니다.
+## 로컬에서 시작하기
+
+### 사전 요구 사항
+
+- Node.js 20 권장
+- pnpm
+- PostgreSQL 15+ 또는 Supabase 프로젝트
+
+### 1. 의존성 설치
+
 ```bash
-pnpm install
-
-# 또는 (lockfile 변경 방지)
 pnpm install --frozen-lockfile
 ```
 
+의존성을 변경하는 작업에서는 `pnpm install`을 사용하고 변경된 `pnpm-lock.yaml`을 함께 검토합니다. npm이나 Yarn으로 lockfile을 만들지 마세요.
+
+### 2. 데이터베이스 준비
+
+비어 있는 PostgreSQL 데이터베이스 또는 Supabase 프로젝트를 준비합니다. PostgreSQL 연결 문자열 형식은 다음과 같습니다.
+
+```text
+postgresql://<user>:<password>@<host>:<port>/<database>
+```
+
+저장소의 PostgreSQL 컨테이너만 사용하려면 먼저 `compose-only-db.yaml`의 사용자·비밀번호와 호스트 바인드 마운트 경로를 환경에 맞게 수정한 후 실행합니다.
+
+```bash
+docker compose -f compose-only-db.yaml up -d
+```
+
+기본 호스트 포트는 `65432`이며, 로컬 애플리케이션에서는 호스트를 `localhost:65432`로 지정합니다.
+
 ### 3. 개발 서버 실행
+
 ```bash
 pnpm dev
 ```
 
----
+브라우저에서 `http://localhost:3000`으로 접속합니다. `DATABASE_URL`이 설정되지 않은 최초 실행에서는 `/setup`으로 자동 이동합니다.
 
-## 📦 배포 가이드 (Docker)
+### 4. 최초 설치
 
-이 섹션은 인터넷 연결이 제한된 리눅스 서버 환경 또는 Docker 환경에서의 배포 방법을 설명합니다.
+설치 마법사에서 다음 순서로 진행합니다.
 
-### 📋 사전 준비
-- 대상 서버에 `docker` 및 `docker compose`가 설치되어 있어야 합니다.
-- Windows 개발 PC에서 생성된 `taskaio-latest.tar` 파일과 `docker-compose.yml` 파일이 필요합니다.
+1. `신규 설치` 또는 스키마가 이미 준비된 `기존 DB 연결`을 선택합니다.
+2. PostgreSQL 또는 Supabase 연결 정보를 입력하고 연결을 확인합니다.
+3. 신규 설치라면 초기 시스템 관리자 정보를 입력합니다.
+4. 마법사가 PostgreSQL 마이그레이션을 적용하고 `.env`와 초기 관리자 계정을 생성합니다.
+5. 서비스 재시작 후 초기 관리자 계정으로 로그인합니다.
 
-### 📦 배포 패키지 생성 (Windows)
-프로젝트 루트에서 제공되는 자동화 스크립트를 사용하여 이미지를 소생성합니다.
+로컬 개발 서버는 설치 완료 후 종료될 수 있습니다. 이 경우 `pnpm dev`를 다시 실행하세요. Docker Compose의 애플리케이션 서비스는 `restart: always` 정책에 따라 자동 재시작됩니다.
+
+Supabase를 선택하면 URL, anon key, service role key가 추가로 필요합니다. 프로필 이미지 업로드를 사용하려면 Supabase Storage에 `avatars` 버킷과 적절한 접근 정책도 준비해야 합니다.
+
+## 환경 변수
+
+설치 마법사가 필요한 값을 생성하므로 최초 설치에서는 직접 `.env`를 만들지 않는 방식을 권장합니다. `DATABASE_URL`만 먼저 설정하면 설치가 완료된 것으로 판단되어 `/setup`에 접근할 수 없습니다.
+
+| 변수 | 필수 여부 | 설명 |
+| --- | --- | --- |
+| `DB_TYPE` | 필수 | `postgres` 또는 `supabase` |
+| `DATABASE_URL` | 필수 | PostgreSQL 연결 문자열 |
+| `AUTH_URL` | 필수 | 외부에서 접근하는 애플리케이션 URL |
+| `AUTH_SECRET` | 필수 | Auth.js JWT 암호화 시크릿 |
+| `AUTH_TRUST_HOST` | 권장 | 설치 마법사는 `true`로 저장 |
+| `DB_POOL_MAX` | 선택 | DB 풀 최대 연결 수. 기본값은 개발 10, 운영 20 |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase 사용 시 | Supabase 프로젝트 URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase 사용 시 | 브라우저용 anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase 사용 시 | 설치 마법사에서 입력받는 service role key |
+
+`.env`, `.env.local`, 키, 토큰, 데이터베이스 연결 문자열은 커밋하지 마세요.
+
+## 개발 명령
+
+```bash
+pnpm dev                             # 개발 서버
+pnpm build                           # 프로덕션 빌드
+pnpm start                           # 빌드 결과 실행
+pnpm lint                            # Next.js ESLint
+pnpm test                            # Vitest 전체 실행
+pnpm vitest run path/to/file.test.ts # 특정 테스트 파일 실행
+pnpm vitest -t "테스트 이름"         # 테스트 이름으로 실행
+```
+
+### 데이터베이스 스키마 변경
+
+```bash
+pnpm drizzle-kit generate
+```
+
+Drizzle CLI는 `DB_TYPE`에 따라 `src/lib/db/schema/<type>.ts`와 `drizzle/<type>/`을 사용합니다. 현재는 PostgreSQL 스키마만 있으므로 `DB_TYPE=postgres` 기준으로 실행하세요. `drizzle.config.ts`는 `.env.local`을 읽으므로 CLI 실행 시 해당 파일이나 셸 환경에 `DB_TYPE`과 `DATABASE_URL`을 설정해야 합니다.
+
+`pnpm drizzle-kit push`는 연결된 실제 데이터베이스를 직접 변경합니다. 대상 `DB_TYPE`과 `DATABASE_URL`을 확인하고 DB 적용이 필요한 경우에만 실행하세요.
+
+## Docker 배포
+
+저장소의 `compose.yaml`은 애플리케이션과 PostgreSQL 15를 함께 실행합니다.
+
+### 1. Compose 설정 검토
+
+운영 환경에 배포하기 전에 다음 값을 반드시 환경에 맞게 변경합니다.
+
+- `compose.yaml`의 PostgreSQL 사용자·비밀번호·데이터베이스 이름
+- `/data/taskaio/...` 절대 바인드 마운트 경로
+- 외부 공개 포트. 기본값은 `${PORT:-3001}:3000`
+- 방화벽, TLS 종료 지점, 백업 정책
+
+저장소의 Compose 자격 증명은 예시값이므로 운영 환경에서 그대로 사용하지 마세요.
+
+### 2. 호스트 디렉터리 준비
+
+기본 바인드 마운트 경로를 그대로 사용할 경우 다음 디렉터리를 준비합니다.
+
+```bash
+sudo mkdir -p /data/taskaio/data
+sudo mkdir -p /data/taskaio/db/postgresql/data
+sudo mkdir -p /data/taskaio/backup
+sudo chown -R 1000:1000 /data/taskaio/data
+sudo chown -R 999:999 /data/taskaio/db/postgresql/data
+sudo chown -R 999:999 /data/taskaio/backup
+sudo chmod 700 /data/taskaio/db/postgresql/data
+```
+
+애플리케이션 컨테이너는 UID/GID `1000:1000`, PostgreSQL 컨테이너는 UID `999`를 사용합니다.
+
+### 3. 소스에서 빌드하고 실행
+
+```bash
+docker compose up -d --build
+docker compose ps
+docker compose logs -f taskaio
+```
+
+기본 접속 주소는 `http://<server>:3001`입니다. 최초 설치 시 애플리케이션 컨테이너에서 PostgreSQL 서비스로 접속하므로 Database URL의 호스트와 포트는 `taskaio-db:5432`를 사용합니다.
+
+```text
+postgresql://<user>:<password>@taskaio-db:5432/<database>
+```
+
+### 4. 오프라인 배포 이미지 만들기
+
+Linux/macOS/Git Bash:
+
+```bash
+./scripts/build-docker.sh
+```
+
+Windows PowerShell:
+
 ```powershell
 ./scripts/build-docker.ps1
 ```
 
-또는 Dockerfile 수정 후 이미지 재빌드:
-```powershell
-docker build -t taskaio:latest .
-```
-
-이 스크립트는 `pnpm build`, `docker build`, `docker save` 과정을 자동으로 수행하여 `taskaio-latest.tar` 파일을 생성합니다.
-
-### 🚀 서버 배포 단계
-1.  **이미지 로드**: 
-    - **터미널(CLI)**
-    ```bash
-    docker load -i taskaio-latest.tar
-    ```
-    - **Docker Desktop**: `Images` 탭 → 우측 상단 `Import` 버튼 클릭 → `taskaio-latest.tar` 선택
-2.  **서비스 실행**: `docker-compose.yml`이 있는 디렉토리에서 실행합니다.
-    ```bash
-    docker compose up -d
-    ```
-3.  **초기 설정**: 브라우저에서 `http://서버IP:3000`으로 접속하여 설정을 완료합니다.
-
-postgres와 같은 경우 Database URL은 다음과 같이 설정합니다.
-```
-postgresql://usr_taskaio:[password]@taskaio-db:5432/db_taskaio
-```
-
-### 💾 데이터 영속성 (Persistence)
-Docker 환경에서 컨테이너를 삭제하거나 업데이트해도 설정과 데이터를 유지하기 위해 볼륨 설정이 필수적입니다.
-
-- **설정 파일 (`.env`)**: 셋업 완료 시 `/app/data/.env`에 자동 저장됩니다. 컨테이너 재시작 시 `start.sh`가 이를 `/app/.env`로 복사하여 설정을 복원합니다.
-- **SQLite DB**: SQLite를 사용하는 경우, 데이터베이스 파일 경로를 `data/sqlite.db`와 같이 `/app/data` 하위로 지정해야 데이터가 보존됩니다.
-- **볼륨 매핑**: `docker-compose.yml`에서 반드시 호스트 디렉토리를 `/app/data`에 연결하세요.
-  ```yaml
-  volumes:
-    - ./taskaio/data:/app/data
-  ```
-
-`docker-compose.yml`는 `./taskaio`에 옮기고
-
-### 폴더 생성 및 권한 생성
-
-```sh
-sudo mkdir -p /data/taskaio/data
-sudo chown -R devsvr:devsvr /data/taskaio/db
-
-sudo mkdir -p /data/taskaio/db/postgresql/data
-sudo chown -R 999:999 /data/taskaio/db/postgresql/data
-sudo chmod -R 700 /data/taskaio/db/postgresql/data
-```
-
-### 실행
-```sh
-cd /data/taskaio
-
-# 상태 확인
-docker compose ps
-
-# 로그 확인
-docker compose logs -f
-docker compose logs -f taskaio   # 앱만
-docker compose logs -f taskaio-db        # DB만
-
-# 백그라운드 실행 (일반적으로 이걸 사용)
-docker compose up -d
-docker compose up -d && docker compose logs -f
-
-# 로그 보면서 실행 (디버깅 시)
-docker compose up
-
-# 이미지 새로 빌드하고 실행
-docker compose up -d --build
-
-# 중지
-docker compose down
-
-# 중지 + 볼륨(데이터)까지 삭제 (초기화)
-docker compose down -v
-
-# 재시작
-docker compose restart
-```
-
-### 🛠️ 문제 해결 (Troubleshooting)
-- **로그 확인**: `docker compose logs -f`
-- **설정 초기화**: 프로젝트 루트의 `.env` 파일을 삭제하고 컨테이너 재시작
-- **포트 변경**: `docker-compose.yml`의 `ports` 섹션 수정
-
----
-
-## 의존성 설치
+두 스크립트는 의존성 설치, Next.js 빌드, Docker 이미지 빌드, 이미지 저장을 순서대로 실행하여 `taskaio-latest.tar`를 생성합니다. 대상 서버에 이 파일과 `compose.yaml`을 복사한 후 실행합니다.
 
 ```bash
-pnpm install --frozen-lockfile
+docker load -i taskaio-latest.tar
+docker compose up -d --no-build
 ```
 
-## 📝 라이선스
-이 프로젝트는 [MIT](LICENSE)에 따라 라이선스가 부여됩니다.
-Copyright 2026 SMILEJK930
+### 데이터 영속성과 운영 명령
+
+- 애플리케이션 설정: `/data/taskaio/data/.env`
+- PostgreSQL 데이터: `/data/taskaio/db/postgresql/data`
+- 백업 디렉터리: `/data/taskaio/backup`
+
+```bash
+docker compose ps                    # 상태 확인
+docker compose logs -f               # 전체 로그
+docker compose logs -f taskaio       # 애플리케이션 로그
+docker compose logs -f taskaio-db    # 데이터베이스 로그
+docker compose restart               # 전체 재시작
+docker compose down                  # 컨테이너와 네트워크 중지/제거
+```
+
+현재 Compose는 named volume이 아니라 호스트 바인드 마운트를 사용합니다. 따라서 `docker compose down -v`도 `/data/taskaio`의 설정과 데이터 파일을 삭제하지 않습니다.
+
+## 현재 제약 사항
+
+- **SQLite**: 런타임 분기와 `better-sqlite3` 의존성은 있으나 `src/lib/db/schema/sqlite.ts`가 없어 지원하지 않습니다.
+- **Supabase Storage**: PostgreSQL 기능과 별개로, 프로필 이미지 업로드에는 `avatars` 버킷과 Storage 정책이 필요합니다.
+- **기준 일정 대비 지연 추세**: 관련 아이디어는 문서화되어 있지만 현재 대시보드 기능에는 포함되지 않았습니다.
+
+## 라이선스
+
+[MIT License](LICENSE) · Copyright 2026 smilejk930
