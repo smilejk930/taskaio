@@ -5,6 +5,7 @@ import {
   text,
   primaryKey,
   integer,
+  index,
 } from "drizzle-orm/pg-core"
 
 
@@ -118,3 +119,25 @@ export const holidays = pgTable("holidays", {
   note: text("note"),
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow(),
 })
+
+export const personalAccessTokens = pgTable(
+  "personal_access_tokens",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    tokenPrefix: text("token_prefix").notNull().unique(),
+    tokenHash: text("token_hash").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+    expiresAt: timestamp("expires_at", { mode: "string" }),
+    lastUsedAt: timestamp("last_used_at", { mode: "string" }),
+    revokedAt: timestamp("revoked_at", { mode: "string" }),
+  },
+  (t) => [
+    index("personal_access_tokens_user_id_idx").on(t.userId),
+  ]
+)

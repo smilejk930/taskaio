@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { ThemeSettings } from '@/components/settings/ThemeSettings'
 import { AccountDeletion } from '@/components/settings/AccountDeletion'
+import { PersonalAccessTokensCard } from '@/components/settings/PersonalAccessTokensCard'
+import { getPersonalAccessTokensByUserId } from '@/lib/db/repositories/personal-access-tokens'
 import { AppLogo } from '@/components/common/AppLogo'
 import { HeaderNavLinks } from '@/components/common/HeaderNavLinks'
 
@@ -15,6 +17,8 @@ export default async function SettingsPage() {
   if (!user) {
     redirect('/login')
   }
+
+  const tokens = await getPersonalAccessTokensByUserId(user.id)
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -39,6 +43,7 @@ export default async function SettingsPage() {
 
         <div className="grid gap-6">
           <ThemeSettings />
+          <PersonalAccessTokensCard tokens={tokens} />
           <AccountDeletion />
         </div>
       </main>

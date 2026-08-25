@@ -12,11 +12,9 @@ export async function requireAuth() {
 }
 
 /**
- * Check if the user is a member of the project
+ * Check if a specific user is a member of the project
  */
-export async function authCheck(projectId: string) {
-  const userId = await requireAuth()
-  
+export async function authCheckForUser(projectId: string, userId: string) {
   const [member] = await db.select()
     .from(schema.projectMembers)
     .where(and(
@@ -32,16 +30,32 @@ export async function authCheck(projectId: string) {
 }
 
 /**
- * Check if the user is a manager or owner of the project
+ * Check if the user is a member of the project
  */
-export async function authCheckManager(projectId: string) {
-  const { userId, role } = await authCheck(projectId)
+export async function authCheck(projectId: string) {
+  const userId = await requireAuth()
+  return authCheckForUser(projectId, userId)
+}
+
+/**
+ * Check if a specific user is a manager or owner of the project
+ */
+export async function authCheckManagerForUser(projectId: string, userId: string) {
+  const { role } = await authCheckForUser(projectId, userId)
   
   if (role !== 'owner' && role !== 'manager') {
     throw new Error("Access denied: Requires manager or owner role.")
   }
   
   return { userId, role }
+}
+
+/**
+ * Check if the user is a manager or owner of the project
+ */
+export async function authCheckManager(projectId: string) {
+  const userId = await requireAuth()
+  return authCheckManagerForUser(projectId, userId)
 }
 
 /**

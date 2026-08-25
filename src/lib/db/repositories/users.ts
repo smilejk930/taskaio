@@ -31,6 +31,7 @@ export async function getAdminUserById(id: string) {
         email: schema.users.email,
         name: schema.users.name,
         displayName: schema.profiles.displayName,
+        avatarUrl: schema.profiles.avatarUrl,
         isAdmin: schema.profiles.isAdmin,
         isDeleted: schema.users.isDeleted,
     })
