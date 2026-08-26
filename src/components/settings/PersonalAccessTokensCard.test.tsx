@@ -2,6 +2,7 @@ import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import {
+  copyTextToClipboard,
   PersonalAccessTokensCard,
   TokenItem,
 } from './PersonalAccessTokensCard'
@@ -50,6 +51,39 @@ describe('PersonalAccessTokensCard (보안 UX 테스트)', () => {
     vi.restoreAllMocks()
     mockRefresh.mockReset()
     mockPush.mockReset()
+  })
+
+  it('Clipboard API가 거부되면 호환 복사 경로를 사용해야 함', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('Clipboard API blocked'))
+    const execCommand = vi.fn().mockReturnValue(true)
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    Object.defineProperty(document, 'execCommand', {
+      configurable: true,
+      value: execCommand,
+    })
+
+    const copied = await copyTextToClipboard('taio_pat_test_token')
+
+    expect(copied).toBe(true)
+    expect(writeText).toHaveBeenCalledWith('taio_pat_test_token')
+    expect(execCommand).toHaveBeenCalledWith('copy')
+    expect(document.querySelector('textarea')).not.toBeInTheDocument()
+  })
+
+  it('모든 클립보드 복사 경로가 실패하면 실패를 반환해야 함', async () => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: undefined,
+    })
+    Object.defineProperty(document, 'execCommand', {
+      configurable: true,
+      value: vi.fn().mockReturnValue(false),
+    })
+
+    await expect(copyTextToClipboard('taio_pat_test_token')).resolves.toBe(false)
   })
 
   it('토큰 목록에 이름과 prefix만 표시되고 토큰 secret이나 해시는 표시되지 않아야 함', () => {

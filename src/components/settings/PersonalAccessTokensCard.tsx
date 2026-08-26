@@ -53,6 +53,33 @@ interface PersonalAccessTokensCardProps {
   tokens: TokenItem[]
 }
 
+export async function copyTextToClipboard(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+  } catch {
+    // 권한 또는 보안 컨텍스트 제한 시 아래 호환 경로를 사용합니다.
+  }
+
+  const textarea = document.createElement('textarea')
+  textarea.value = text
+  textarea.setAttribute('readonly', '')
+  textarea.style.position = 'fixed'
+  textarea.style.opacity = '0'
+  document.body.appendChild(textarea)
+  textarea.select()
+
+  try {
+    return typeof document.execCommand === 'function' && document.execCommand('copy')
+  } catch {
+    return false
+  } finally {
+    textarea.remove()
+  }
+}
+
 export function PersonalAccessTokensCard({ tokens }: PersonalAccessTokensCardProps) {
   const router = useRouter()
 
@@ -110,12 +137,13 @@ export function PersonalAccessTokensCard({ tokens }: PersonalAccessTokensCardPro
 
   const handleCopyToken = async () => {
     if (!createdToken) return
-    try {
-      await navigator.clipboard.writeText(createdToken)
+
+    const copied = await copyTextToClipboard(createdToken)
+    if (copied) {
       setIsCopied(true)
       toast.success('토큰이 클립보드에 복사되었습니다.')
       setTimeout(() => setIsCopied(false), 2500)
-    } catch {
+    } else {
       toast.error('클립보드 복사에 실패했습니다.')
     }
   }
