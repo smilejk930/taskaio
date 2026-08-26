@@ -5,7 +5,7 @@ import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
 import { Circle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-// shadcn 표준 RadioGroup 래퍼 — 단일 선택 라디오 그룹
+// shadcn 표준 RadioGroup 래퍼 - 단일 선택 라디오 그룹
 const RadioGroup = React.forwardRef<
     React.ElementRef<typeof RadioGroupPrimitive.Root>,
     React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>
@@ -20,7 +20,7 @@ const RadioGroup = React.forwardRef<
 })
 RadioGroup.displayName = RadioGroupPrimitive.Root.displayName
 
-// 개별 라디오 아이템 — 선택 시 내부에 원형 인디케이터 표시
+// 개별 라디오 아이템 - 선택 시 내부에 원형 인디케이터 표시
 const RadioGroupItem = React.forwardRef<
     React.ElementRef<typeof RadioGroupPrimitive.Item>,
     React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>

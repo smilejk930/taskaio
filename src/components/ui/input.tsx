@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
-// shadcn/ui 표준 패턴 — 확장 가능성을 위해 빈 interface 유지
+// shadcn/ui 표준 패턴 - 확장 가능성을 위해 빈 interface 유지
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> { }
 

@@ -80,7 +80,7 @@ export function SetupForm({ initialIsCompleted = false }: { initialIsCompleted?:
     }
   }
 
-  // Step1 완료 후 다음 단계로 — 신규 설치만 Step2(관리자 정보) 진행, 기존 DB는 바로 Submit
+  // Step1 완료 후 다음 단계로 - 신규 설치만 Step2(관리자 정보) 진행, 기존 DB는 바로 Submit
   const handleNextOrSubmit = async () => {
     // 현재 단계의 필드만 검증
     const fieldsToTrigger: (keyof SetupInput)[] = ['dbType', 'databaseUrl']

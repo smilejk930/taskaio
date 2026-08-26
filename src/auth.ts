@@ -20,7 +20,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials: Partial<Record<string, unknown>>) {
         if (!credentials?.username || !credentials?.password) return null
 
-        // 아이디(username)로 사용자 조회 — 탈퇴(soft delete)된 계정은 제외
+        // 아이디(username)로 사용자 조회 - 탈퇴(soft delete)된 계정은 제외
         const [user] = await db.select().from(schema.users).where(
           and(
             eq(schema.users.username, credentials.username as string),

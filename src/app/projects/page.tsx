@@ -34,7 +34,7 @@ export default async function ProjectsPage() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            {/* 상단 헤더 — GitHub 스타일 브랜드 바 */}
+            {/* 상단 헤더 - GitHub 스타일 브랜드 바 */}
             <header className="border-b px-6 py-3 flex justify-between items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10 h-14">
                 <AppLogo />
                 <div className="flex items-center gap-2">

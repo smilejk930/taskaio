@@ -57,7 +57,7 @@ const formatHolidayDetailHtml = (holiday: Holiday) => {
             ? `<div><span style="font-weight:600;">대상 팀원:</span> ${escapeHtml(holiday.member_name)}</div>`
             : '',
         formatHolidayDateHtml(holiday),
-        `<div><span style="font-weight:600;">비고:</span> ${escapeHtml(holiday.note?.trim() || '—')}</div>`,
+        `<div><span style="font-weight:600;">비고:</span> ${escapeHtml(holiday.note?.trim() || '-')}</div>`,
     ].join('')
 }
 

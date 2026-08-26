@@ -196,7 +196,7 @@ export async function setupConfig(input: SetupInput) {
           // 5. 초기 관리자 생성
           const hashedPassword = await bcrypt.hash(adminPassword!, 10)
 
-          // 초기 관리자 INSERT — 아이디(username)와 이메일을 모두 저장
+          // 초기 관리자 INSERT - 아이디(username)와 이메일을 모두 저장
           const [user] = await migratorDb.insert(schema.users).values({
             username: adminUsername!,
             name: adminName!,

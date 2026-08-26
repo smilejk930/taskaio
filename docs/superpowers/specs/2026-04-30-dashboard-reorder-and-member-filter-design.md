@@ -92,12 +92,12 @@ shadcn 표준 RadioGroup을 추가한다.
     ))}
   </RadioGroup>
 
-  {/* 상단 5카드 — 새 순서 */}
+  {/* 상단 5카드 - 새 순서 */}
   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
     {/* 전체 업무 → 전체 진행률 → 긴급/높음 → 마감 임박 → 지연된 업무 */}
   </div>
 
-  {/* 하단 3섹션 — 새 순서 */}
+  {/* 하단 3섹션 - 새 순서 */}
   <div className="grid gap-6 md:grid-cols-3">
     {/* 우선 처리 필요 업무 → 마감 임박 업무 → 지연된 업무 */}
   </div>

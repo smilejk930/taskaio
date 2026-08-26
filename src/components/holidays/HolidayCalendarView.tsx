@@ -76,7 +76,7 @@ const formatHolidayHoverText = (holiday: Holiday) => {
         lines.push(`종료일: ${holiday.end_date}`)
     }
 
-    lines.push(`비고: ${holiday.note?.trim() || '—'}`)
+    lines.push(`비고: ${holiday.note?.trim() || '-'}`)
 
     return lines.join('\n')
 }

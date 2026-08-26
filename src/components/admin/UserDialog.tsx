@@ -41,7 +41,7 @@ export function UserDialog({ open, onOpenChange, user, onSuccess }: UserDialogPr
     const [loading, setLoading] = useState(false)
     const isEdit = !!user
 
-    // 아이디(username)와 이메일은 식별자 — 등록 시에만 입력, 수정 시에는 비활성
+    // 아이디(username)와 이메일은 식별자 - 등록 시에만 입력, 수정 시에는 비활성
     const [form, setForm] = useState({
         username: '',
         email: '',

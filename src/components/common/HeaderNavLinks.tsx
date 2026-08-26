@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
  */
 export function HeaderNavLinks() {
     const pathname = usePathname()
-    // 현재 화면이 일정 관리/프로젝트 목록 페이지인지 판별 — 자기 자신으로 향하는 링크는 숨긴다.
+    // 현재 화면이 일정 관리/프로젝트 목록 페이지인지 판별 - 자기 자신으로 향하는 링크는 숨긴다.
     const isHolidays = pathname?.startsWith('/holidays') ?? false
     const isProjectsList = pathname === '/projects'
 

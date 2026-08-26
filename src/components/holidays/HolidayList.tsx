@@ -174,11 +174,11 @@ export default function HolidayList({
                                     {['member_leave', 'business_trip'].includes(holiday.type) && holiday.member_id
                                         ? (holiday.profiles?.display_name
                                             ?? profiles.find(p => p.id === holiday.member_id)?.display_name
-                                            ?? '—')
-                                        : '—'}
+                                            ?? '-')
+                                        : '-'}
                                 </TableCell>
                                 <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                                    {holiday.note ?? '—'}
+                                    {holiday.note ?? '-'}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-1">

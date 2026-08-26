@@ -83,7 +83,7 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
         })
     }, [tasks, selectedDateRange])
 
-    // 선택된 팀원 기준으로 업무 목록을 필터링 — 모든 카드/섹션 집계는 이 배열을 사용한다
+    // 선택된 팀원 기준으로 업무 목록을 필터링 - 모든 카드/섹션 집계는 이 배열을 사용한다
     const filteredTasks = selectedMemberId === 'all'
         ? periodFilteredTasks
         : selectedMemberId === 'unassigned'
@@ -244,7 +244,7 @@ export default function DashboardView({ tasks, members, onTaskClick }: Dashboard
         <TooltipProvider delayDuration={150}>
         <div className="p-6 space-y-6 overflow-auto bg-background/50 h-full">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                {/* 팀원별 필터 — '전체' 기본 선택, 가로 정렬, 좁은 화면에서 자동 줄바꿈 */}
+                {/* 팀원별 필터 - '전체' 기본 선택, 가로 정렬, 좁은 화면에서 자동 줄바꿈 */}
                 <RadioGroup
                     value={selectedMemberId}
                     onValueChange={setSelectedMemberId}

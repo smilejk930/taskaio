@@ -74,7 +74,7 @@ import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
 import { Circle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-// shadcn 표준 RadioGroup 래퍼 — 단일 선택 라디오 그룹
+// shadcn 표준 RadioGroup 래퍼 - 단일 선택 라디오 그룹
 const RadioGroup = React.forwardRef<
     React.ElementRef<typeof RadioGroupPrimitive.Root>,
     React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Root>
@@ -89,7 +89,7 @@ const RadioGroup = React.forwardRef<
 })
 RadioGroup.displayName = RadioGroupPrimitive.Root.displayName
 
-// 개별 라디오 아이템 — 선택 시 내부에 원형 인디케이터 표시
+// 개별 라디오 아이템 - 선택 시 내부에 원형 인디케이터 표시
 const RadioGroupItem = React.forwardRef<
     React.ElementRef<typeof RadioGroupPrimitive.Item>,
     React.ComponentPropsWithoutRef<typeof RadioGroupPrimitive.Item>
@@ -171,7 +171,7 @@ import React from 'react'
     // 팀원 필터: 'all'이면 전체 업무, 그 외에는 해당 팀원이 담당인 업무만
     const [selectedMemberId, setSelectedMemberId] = React.useState<string>('all')
 
-    // 선택된 팀원 기준으로 업무 목록을 필터링 — 모든 카드/섹션 집계는 이 배열을 사용한다
+    // 선택된 팀원 기준으로 업무 목록을 필터링 - 모든 카드/섹션 집계는 이 배열을 사용한다
     const filteredTasks = selectedMemberId === 'all'
         ? tasks
         : tasks.filter(t => t.assignee_id === selectedMemberId)
@@ -179,7 +179,7 @@ import React from 'react'
 
 - [ ] **Step 3: 모든 `tasks` 집계 참조를 `filteredTasks`로 치환**
 
-다음 위치를 수정한다 (라인 번호는 수정 전 기준이며, Step 2 삽입 후에는 약간 밀린다 — `tasks.` 검색으로 찾는다):
+다음 위치를 수정한다 (라인 번호는 수정 전 기준이며, Step 2 삽입 후에는 약간 밀린다 - `tasks.` 검색으로 찾는다):
 
 3-1. 진행률 계산:
 ```tsx
@@ -223,7 +223,7 @@ cd /home/smilejk930/develop/workspace/taskaio
 pnpm tsc --noEmit
 ```
 
-Expected: 에러 없음. (`tasks` 미참조 경고가 나오면 안 됨 — 5번 카드 외에도 props는 라디오 버튼 렌더링에서 다음 Task에서 사용됨)
+Expected: 에러 없음. (`tasks` 미참조 경고가 나오면 안 됨 - 5번 카드 외에도 props는 라디오 버튼 렌더링에서 다음 Task에서 사용됨)
 
 주: 이 시점에는 `members` 변수가 라디오 버튼에서 아직 안 쓰이지만, 기존 하단 섹션에서 `members.find(...)`로 사용 중이라 unused 경고는 없다.
 
@@ -266,7 +266,7 @@ import { Label } from '@/components/ui/label'
 JSX의 최상위 `<div className="p-6 space-y-6 overflow-auto bg-background/50 h-full">` 바로 아래(상단 5카드 그리드 위)에 다음 블록을 삽입:
 
 ```tsx
-            {/* 팀원별 필터 — '전체' 기본 선택, 가로 정렬, 좁은 화면에서 자동 줄바꿈 */}
+            {/* 팀원별 필터 - '전체' 기본 선택, 가로 정렬, 좁은 화면에서 자동 줄바꿈 */}
             <RadioGroup
                 value={selectedMemberId}
                 onValueChange={setSelectedMemberId}
@@ -292,11 +292,11 @@ JSX의 최상위 `<div className="p-6 space-y-6 overflow-auto bg-background/50 h
 `<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">` 내부 카드들을 다음 순서로 재배치한다:
 
 새 순서:
-1. **전체 업무** — 그대로 (첫번째)
-2. **전체 진행률** — 그대로 (두번째)
-3. **긴급/높음** — 기존 4번째에서 3번째로 이동
-4. **마감 임박** — 기존 3번째에서 4번째로 이동
-5. **지연된 업무** — 기존 5번째 유지하되 카드 제목을 `지연 업무` → `지연된 업무`로 변경
+1. **전체 업무** - 그대로 (첫번째)
+2. **전체 진행률** - 그대로 (두번째)
+3. **긴급/높음** - 기존 4번째에서 3번째로 이동
+4. **마감 임박** - 기존 3번째에서 4번째로 이동
+5. **지연된 업무** - 기존 5번째 유지하되 카드 제목을 `지연 업무` → `지연된 업무`로 변경
 
 수정 후 5카드 그리드 전체를 다음과 같이 재작성:
 
@@ -363,9 +363,9 @@ JSX의 최상위 `<div className="p-6 space-y-6 overflow-auto bg-background/50 h
 
 `<div className="grid gap-6 md:grid-cols-3">` 내부에서 카드 블록 순서를 다음과 같이 재배치:
 
-1. **우선 처리 필요 업무** — 기존 2번째에서 1번째로 이동
-2. **마감 임박 업무** — 기존 1번째에서 2번째로 이동
-3. **지연된 업무** — 그대로 (3번째)
+1. **우선 처리 필요 업무** - 기존 2번째에서 1번째로 이동
+2. **마감 임박 업무** - 기존 1번째에서 2번째로 이동
+3. **지연된 업무** - 그대로 (3번째)
 
 각 카드의 내부 코드는 변경 없이 **블록 단위로 위치만 교환**한다. 주석(`{/* 우선순위 높은 미완료 업무 */}`, `{/* 마감 임박 목록 */}`, `{/* 지연된 업무 목록 */}`)도 함께 따라간다.
 
