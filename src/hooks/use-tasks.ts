@@ -112,7 +112,6 @@ export function useTasks(initialTasks: ProjectTask[]) {
 
             const payloadBase: TaskUpdate = { ...updates }
             const payload: TaskUpdatePayload = {}
-            if (payloadBase.project_id !== undefined) payload.projectId = payloadBase.project_id
             if (payloadBase.title !== undefined) payload.title = payloadBase.title
             if (payloadBase.description !== undefined) payload.description = payloadBase.description
             if (payloadBase.status !== undefined) payload.status = payloadBase.status

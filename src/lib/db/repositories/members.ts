@@ -84,6 +84,7 @@ export async function getMembersByProjectId(projectId: string) {
     return await db.select({
         id: schema.projectMembers.userId,
         userId: schema.projectMembers.userId,
+        projectId: schema.projectMembers.projectId,
         role: schema.projectMembers.role,
         colorCode: schema.projectMembers.colorCode,
         displayName: schema.profiles.displayName,
@@ -97,4 +98,52 @@ export async function getMembersByProjectId(projectId: string) {
     .innerJoin(schema.users, eq(schema.profiles.id, schema.users.id))
     .where(eq(schema.projectMembers.projectId, projectId))
     .orderBy(asc(schema.profiles.displayName))
+}
+
+export async function getMembersByProjectIdPaginated(
+    projectId: string,
+    options: { search?: string; limit?: number; offset?: number } = {}
+) {
+    const limit = options.limit ?? 50
+    const offset = options.offset ?? 0
+    const searchPattern = options.search ? `%${options.search}%` : null
+
+    const conditions = [
+        eq(schema.projectMembers.projectId, projectId),
+        eq(schema.users.isDeleted, false),
+    ]
+
+    if (searchPattern) {
+        conditions.push(
+            or(
+                like(schema.profiles.displayName, searchPattern),
+                like(schema.users.username, searchPattern),
+                like(schema.users.email, searchPattern)
+            )!
+        )
+    }
+
+    const rows = await db
+        .select({
+            id: schema.projectMembers.userId,
+            userId: schema.projectMembers.userId,
+            projectId: schema.projectMembers.projectId,
+            role: schema.projectMembers.role,
+            colorCode: schema.projectMembers.colorCode,
+            displayName: schema.profiles.displayName,
+            username: schema.users.username,
+            email: schema.users.email,
+            avatarUrl: schema.profiles.avatarUrl,
+        })
+        .from(schema.projectMembers)
+        .innerJoin(schema.profiles, eq(schema.projectMembers.userId, schema.profiles.id))
+        .innerJoin(schema.users, eq(schema.profiles.id, schema.users.id))
+        .where(and(...conditions))
+        .orderBy(asc(schema.profiles.displayName))
+        .limit(limit + 1)
+        .offset(offset)
+
+    const hasMore = rows.length > limit
+    const items = hasMore ? rows.slice(0, limit) : rows
+    return { items, hasMore }
 }

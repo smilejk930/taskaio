@@ -1,12 +1,30 @@
 import { db, schema } from "../index"
-import { eq, asc, or, inArray } from "drizzle-orm"
+import { eq, asc, or, and, inArray, like, gte, lte } from "drizzle-orm"
+import { Actor } from "@/lib/permissions"
+
+export interface ScheduleQueryOptions {
+  search?: string
+  type?: string
+  userId?: string
+  memberId?: string
+  startDate?: string
+  endDate?: string
+  from?: string
+  to?: string
+  limit?: number
+  offset?: number
+}
 
 export async function getAllHolidays() {
     return await db.select().from(schema.holidays).orderBy(asc(schema.holidays.startDate))
 }
 
+export async function getHolidayById(id: string) {
+    const [holiday] = await db.select().from(schema.holidays).where(eq(schema.holidays.id, id))
+    return holiday
+}
+
 export async function getHolidaysByMemberIds(memberIds: string[]) {
-    // 전사 공통 일정(공휴일·워크샵·감리)은 대상 팀원과 무관하게 모두 노출, 그 외 개인 일정은 멤버 필터 적용
     const conditions = [
         eq(schema.holidays.type, 'public_holiday'),
         eq(schema.holidays.type, 'workshop'),
@@ -22,7 +40,65 @@ export async function getHolidaysByMemberIds(memberIds: string[]) {
         .where(or(...conditions))
         .orderBy(asc(schema.holidays.startDate))
 }
-// ...
+
+export async function getSchedulesForActor(_actor: Actor, options: ScheduleQueryOptions = {}) {
+    const limit = options.limit ?? 50
+    const offset = options.offset ?? 0
+    const searchPattern = options.search ? `%${options.search}%` : null
+    const targetUserId = options.userId || options.memberId
+    const fromDate = options.startDate || options.from
+    const toDate = options.endDate || options.to
+
+    const andConditions = []
+
+    if (searchPattern) {
+        andConditions.push(
+            or(
+                like(schema.holidays.name, searchPattern),
+                like(schema.holidays.note, searchPattern)
+            )!
+        )
+    }
+
+    if (options.type) {
+        andConditions.push(eq(schema.holidays.type, options.type as NonNullable<typeof schema.holidays.$inferSelect.type>))
+    }
+
+    if (targetUserId) {
+        andConditions.push(eq(schema.holidays.memberId, targetUserId))
+    }
+
+    if (fromDate) {
+        andConditions.push(gte(schema.holidays.endDate, fromDate))
+    }
+
+    if (toDate) {
+        andConditions.push(lte(schema.holidays.startDate, toDate))
+    }
+
+    const whereClause = andConditions.length > 0 ? and(...andConditions) : undefined
+
+    const rows = await db
+        .select({
+            id: schema.holidays.id,
+            name: schema.holidays.name,
+            startDate: schema.holidays.startDate,
+            endDate: schema.holidays.endDate,
+            type: schema.holidays.type,
+            memberId: schema.holidays.memberId,
+            note: schema.holidays.note,
+            createdAt: schema.holidays.createdAt,
+        })
+        .from(schema.holidays)
+        .where(whereClause)
+        .orderBy(asc(schema.holidays.startDate))
+        .limit(limit + 1)
+        .offset(offset)
+
+    const hasMore = rows.length > limit
+    const items = hasMore ? rows.slice(0, limit) : rows
+    return { items, hasMore }
+}
 
 export async function insertHoliday(holiday: typeof schema.holidays.$inferInsert) {
     const [inserted] = await db.insert(schema.holidays).values(holiday).returning()

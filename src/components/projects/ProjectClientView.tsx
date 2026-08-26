@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import { multiLevelSort } from '@/lib/task-utils'
 
@@ -104,6 +104,9 @@ export default function ProjectClientView({
     const [selectedTask, setSelectedTask] = useState<Partial<TaskFormData> & { id?: string } | null>(null)
     const wbsGridRef = useRef<WbsGridHandle>(null)
     const currentMemberRole = members.find(m => m.id === currentUser?.id)?.role
+    const canEditTaskById = useCallback((id: string) => Boolean(
+        currentUser?.is_admin || tasks.find(task => task.id === id)?.assignee_id === currentUser?.id
+    ), [currentUser?.id, currentUser?.is_admin, tasks])
 
     const { filters, setFilters, resetFilters, filteredTasks, defaults: filterDefaults } = useTaskFilters(
         tasks,
@@ -431,7 +434,7 @@ export default function ProjectClientView({
                     <div className="min-w-0">
                         <div className="flex items-center gap-2">
                             <h1 className="text-base font-bold truncate">{project.name}</h1>
-                            {(currentMemberRole === 'owner' || currentMemberRole === 'manager') && (
+                            {(currentMemberRole === 'owner' || currentMemberRole === 'manager' || currentUser?.is_admin) && (
                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:bg-muted shrink-0" onClick={() => setIsEditProjectOpen(true)}>
                                     <Settings className="h-3.5 w-3.5" />
                                 </Button>
@@ -516,6 +519,7 @@ export default function ProjectClientView({
                                                 members={members}
                                                 currentMemberRole={currentMemberRole}
                                                 currentUserId={currentUser?.id}
+                                                isSystemAdmin={Boolean(currentUser?.is_admin)}
                                                 onTaskClick={openTaskDialog}
                                                 onTaskCreate={openCreateTaskDialog}
                                                 onTaskDelete={handleDeleteTask}
@@ -559,6 +563,7 @@ export default function ProjectClientView({
                                             onLinkAdd={handleLinkAdd}
                                             onLinkDelete={handleLinkDelete}
                                             onDateClick={handleGanttDateClick}
+                                            canEditTask={canEditTaskById}
                                         />
                                     </div>
                                 </>
@@ -617,7 +622,7 @@ export default function ProjectClientView({
                     </DialogFooter>
 
                     {/* Danger Zone */}
-                    {currentMemberRole === 'owner' && (
+                    {(currentMemberRole === 'owner' || currentUser?.is_admin) && (
                         <div className="mt-4 rounded-md border border-destructive/40 p-4 space-y-3">
                             <div>
                                 <p className="text-sm font-semibold text-destructive">⚠️ 위험 구역</p>
@@ -653,6 +658,7 @@ export default function ProjectClientView({
                 initialData={selectedTask ?? undefined}
                 members={members}
                 projectId={project.id}
+                currentUser={currentUser}
                 onSubmit={handleTaskDialogSubmit}
                 onDelete={handleDeleteTask}
                 isLoading={isTaskLoading}
@@ -664,6 +670,7 @@ export default function ProjectClientView({
                 onOpenChange={setIsHolidayDialogOpen}
                 initialData={selectedHoliday ?? undefined}
                 profiles={holidayProfiles}
+                currentUser={currentUser}
                 onSubmit={handleHolidaySubmit}
                 onDelete={handleDeleteHoliday}
                 isLoading={false}

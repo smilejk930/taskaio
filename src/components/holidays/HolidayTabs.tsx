@@ -142,6 +142,7 @@ export default function HolidayTabs({
                 onOpenChange={setIsCreateOpen}
                 initialData={dialogInitialData}
                 profiles={profiles}
+                currentUser={currentUser}
                 onSubmit={handleCreateSubmit}
                 onDelete={handleDelete}
                 isLoading={isLoading}

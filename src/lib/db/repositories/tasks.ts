@@ -1,8 +1,70 @@
 import { db, schema } from "../index"
-import { eq, and, or } from "drizzle-orm"
+import { eq, and, or, like, desc, isNull } from "drizzle-orm"
+
+export interface TaskQueryOptions {
+  search?: string
+  status?: string
+  priority?: string
+  assigneeId?: string
+  parentId?: string | null
+  limit?: number
+  offset?: number
+}
 
 export async function getTasksByProjectId(projectId: string) {
   return await db.select().from(schema.tasks).where(and(eq(schema.tasks.projectId, projectId), eq(schema.tasks.isDeleted, false)))
+}
+
+export async function getTasksForProjectPaginated(projectId: string, options: TaskQueryOptions = {}) {
+  const limit = options.limit ?? 50
+  const offset = options.offset ?? 0
+  const searchPattern = options.search ? `%${options.search}%` : null
+
+  const conditions = [
+    eq(schema.tasks.projectId, projectId),
+    eq(schema.tasks.isDeleted, false),
+  ]
+
+  if (searchPattern) {
+    conditions.push(
+      or(
+        like(schema.tasks.title, searchPattern),
+        like(schema.tasks.description, searchPattern)
+      )!
+    )
+  }
+
+  if (options.status) {
+    conditions.push(eq(schema.tasks.status, options.status as NonNullable<typeof schema.tasks.$inferSelect.status>))
+  }
+
+  if (options.priority) {
+    conditions.push(eq(schema.tasks.priority, options.priority as NonNullable<typeof schema.tasks.$inferSelect.priority>))
+  }
+
+  if (options.assigneeId) {
+    conditions.push(eq(schema.tasks.assigneeId, options.assigneeId))
+  }
+
+  if (options.parentId !== undefined) {
+    if (options.parentId === null || options.parentId === 'null' || options.parentId === 'root') {
+      conditions.push(isNull(schema.tasks.parentId))
+    } else {
+      conditions.push(eq(schema.tasks.parentId, options.parentId))
+    }
+  }
+
+  const rows = await db
+    .select()
+    .from(schema.tasks)
+    .where(and(...conditions))
+    .orderBy(desc(schema.tasks.createdAt))
+    .limit(limit + 1)
+    .offset(offset)
+
+  const hasMore = rows.length > limit
+  const items = hasMore ? rows.slice(0, limit) : rows
+  return { items, hasMore }
 }
 
 export async function syncParentTask(parentId: string) {
@@ -27,9 +89,6 @@ export async function syncParentTask(parentId: string) {
   const childMaxEnd = ends.length > 0 ? ends[ends.length - 1] : null
 
   // 핵심 로직: 부모 날짜는 "확장"만 허용 (축소 불가)
-  // - 자식이 부모보다 이르면 → 부모 시작일을 자식 시작일로 확장
-  // - 자식이 부모보다 늦으면 → 부모 종료일을 자식 종료일로 확장
-  // - 자식이 부모 범위 안에 있으면 → 부모 날짜 변동 없음
   const currentParentStart = parent?.startDate ?? null
   const currentParentEnd = parent?.endDate ?? null
 
@@ -73,7 +132,7 @@ export async function insertTask(item: typeof schema.tasks.$inferInsert) {
 }
 
 export async function getTaskById(id: string) {
-  const [task] = await db.select().from(schema.tasks).where(eq(schema.tasks.id, id))
+  const [task] = await db.select().from(schema.tasks).where(and(eq(schema.tasks.id, id), eq(schema.tasks.isDeleted, false)))
   return task
 }
 
@@ -95,7 +154,7 @@ export async function softDeleteTaskCascade(id: string) {
       eq(schema.taskDependencies.targetId, id)
     ))
 
-  // 4. 현재 업무 본인 삭제 처리 (누락되었던 로직 추가)
+  // 4. 현재 업무 본인 삭제 처리
   await db.update(schema.tasks)
     .set({ isDeleted: true, updatedAt: new Date().toISOString() })
     .where(eq(schema.tasks.id, id))
@@ -140,14 +199,9 @@ export async function shiftUserSubsequentTasks(
   excludeTaskId: string,
   alreadyShiftedAncestorIds: Set<string> = new Set()
 ) {
-  // 기준 시작일자 이후에 시작하며, 로그인한 사용자가 담당자인 업무들 타겟팅
-  // (deleted 되지 않았고, 편집 대상 업무 제외)
   const referenceDateStr = referenceStartDate.toISOString().split('T')[0];
   const { gt, and, eq, ne } = await import('drizzle-orm');
 
-  // 1. 일괄 이동 후보 조회
-  // gt() 사용 이유: "해당 업무 시작일자 이후(늦은 날짜)"만 명확히 골라내기 위함.
-  // gte()를 사용하면 동일 시작일의 다른 업무가 의도치 않게 함께 밀릴 수 있다.
   const candidates = await db.select({
     id: schema.tasks.id,
     startDate: schema.tasks.startDate,
@@ -163,7 +217,6 @@ export async function shiftUserSubsequentTasks(
 
   if (candidates.length === 0) return;
 
-  // 2. 조상 체인 추적용 프로젝트 트리 조회 (중복 이동 방지에 사용)
   const projectTasks = await db.select({
     id: schema.tasks.id,
     parentId: schema.tasks.parentId,
@@ -174,9 +227,6 @@ export async function shiftUserSubsequentTasks(
   const parentMap = new Map<string, string | null>()
   for (const t of projectTasks) parentMap.set(t.id, t.parentId)
 
-  // 3. 조상 중에 다른 후보 또는 이미 처리된 조상(편집 대상의 isMove 처리 등)이 있으면
-  //    직접 이동에서 제외한다. 그 경우 부모 처리 시 shiftChildTasks 재귀로 이동되므로
-  //    여기서 또 이동시키면 동일 업무가 두 번 이동(double shift)되는 버그 발생.
   const candidateIds = new Set(candidates.map(c => c.id))
   const hasShiftedAncestor = (id: string): boolean => {
     let cur = parentMap.get(id) ?? null
@@ -189,7 +239,6 @@ export async function shiftUserSubsequentTasks(
 
   const rootTargets = candidates.filter(c => !hasShiftedAncestor(c.id))
 
-  // 4. 직접 이동 + 자식 재귀 이동
   for (const t of rootTargets) {
     const updates: Partial<typeof schema.tasks.$inferInsert> = {}
 
@@ -208,7 +257,6 @@ export async function shiftUserSubsequentTasks(
         .set({ ...updates, updatedAt: new Date().toISOString() })
         .where(eq(schema.tasks.id, t.id))
 
-      // 자식들도 동일 오프셋으로 이동 (다른 담당자 자식까지 부모를 따라 함께 이동)
       await shiftChildTasks(t.id, offsetMs)
     }
   }

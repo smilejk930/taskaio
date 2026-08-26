@@ -51,6 +51,11 @@ interface TaskDialogProps {
     initialData?: Partial<TaskFormData> & { id?: string }
     members: Member[]
     projectId: string
+    currentUser?: {
+        id: string
+        display_name?: string | null
+        is_admin?: boolean | null
+    } | null
     onSubmit: (data: TaskFormData) => Promise<unknown>
     onDelete?: (id: string) => Promise<boolean>
     isLoading: boolean
@@ -78,6 +83,7 @@ export default function TaskDialog({
     initialData,
     members,
     projectId,
+    currentUser,
     onSubmit,
     onDelete,
     isLoading,
@@ -86,13 +92,14 @@ export default function TaskDialog({
     const [errors, setErrors] = useState<Partial<Record<keyof TaskFormData, string>>>({})
 
     // 다이얼로그 오픈 시점의 원본 시작일/종료일을 보관한다.
-    // shift_subsequent(이후 업무 일괄 이동) 옵션이 켜진 상태로 저장될 때,
-    // 새 종료일 = 새 시작일 + (원본 종료일 − 원본 시작일)로 자동 계산하기 위해 사용한다.
     const originalDatesRef = useRef<{ start: string | null; end: string | null }>({ start: null, end: null })
 
     useEffect(() => {
         if (open) {
-            const baseForm = initialData ? { ...EMPTY_FORM, ...initialData, project_id: projectId } : { ...EMPTY_FORM, project_id: projectId }
+            const defaultAssigneeId = !initialData?.id && currentUser?.id ? currentUser.id : (initialData?.assignee_id ?? null)
+            const baseForm = initialData
+                ? { ...EMPTY_FORM, ...initialData, assignee_id: defaultAssigneeId, project_id: projectId }
+                : { ...EMPTY_FORM, assignee_id: defaultAssigneeId, project_id: projectId }
 
             // 날짜 형식 정규화 (ISO 8601 -> YYYY-MM-DD)
             const formatDate = (dateValue: string | Date | null | undefined) => {
@@ -102,7 +109,6 @@ export default function TaskDialog({
             }
 
             let initialColor = baseForm.color || '#94a3b8'
-            // 새 업무이고 담당자가 지정되어 있는데 색상이 기본값이면 담당자 색상 적용
             if (!initialData?.id && baseForm.assignee_id && initialColor === '#94a3b8') {
                 const assignee = members.find(m => m.id === baseForm.assignee_id)
                 if (assignee?.colorCode) {
@@ -113,7 +119,6 @@ export default function TaskDialog({
             const normalizedStart = formatDate(baseForm.start_date)
             const normalizedEnd = formatDate(baseForm.end_date)
 
-            // 원본 일정(YYYY-MM-DD)을 ref에 저장 — 사용자가 시작일을 바꿔도 duration 계산 기준은 변하지 않는다
             originalDatesRef.current = {
                 start: typeof normalizedStart === 'string' ? normalizedStart : null,
                 end: typeof normalizedEnd === 'string' ? normalizedEnd : null,
@@ -129,7 +134,7 @@ export default function TaskDialog({
             } as TaskFormData)
             setErrors({})
         }
-    }, [open, initialData, projectId, members])
+    }, [open, initialData, projectId, members, currentUser])
 
     const isEdit = Boolean(initialData?.id)
     const isDetailTask = Boolean(initialData ? initialData.parent_id : form.parent_id)
@@ -144,12 +149,10 @@ export default function TaskDialog({
         setForm(prev => {
             const next = { ...prev, [key]: value }
 
-            // 상태가 'done'으로 변경되면 진척률을 100%로 설정
             if (key === 'status' && value === 'done') {
                 next.progress = 100
             }
 
-            // 진척률이 변경되면 상태를 자동 연동
             if (key === 'progress') {
                 const progressValue = value as number
                 if (progressValue === 100) {
@@ -161,7 +164,6 @@ export default function TaskDialog({
                 }
             }
 
-            // 담당자가 변경되면 담당자의 색상으로 자동 연동, 미지정이면 기본값
             if (key === 'assignee_id') {
                 if (value === null) {
                     next.color = '#94a3b8'
@@ -182,9 +184,6 @@ export default function TaskDialog({
         const newErrors: Partial<Record<keyof TaskFormData, string>> = {}
         if (!form.title.trim()) newErrors.title = '업무명을 입력해주세요.'
 
-        // 일괄 이동 옵션이 켜진 경우 종료일은 제출 시점에 원본 duration 기준으로 자동 재계산되므로,
-        // 현재 form.end_date(옛 종료일)와 새 시작일을 비교하는 검증은 의미가 없어 건너뛴다.
-        // 그렇지 않으면 옛 종료일이 새 시작일보다 앞서 있을 때 숨겨진 에러로 저장이 막혀 버튼이 먹통이 된다.
         if (!form.shift_subsequent && form.start_date && form.end_date && form.end_date < form.start_date) {
             newErrors.end_date = '종료일은 시작일 이후여야 합니다.'
         }
@@ -192,13 +191,10 @@ export default function TaskDialog({
         return Object.keys(newErrors).length === 0
     }
 
-    // 원본 시작일/종료일과 새 시작일을 받아 자동 계산된 종료일을 반환한다.
-    // 원본 일정 중 하나라도 비어 있거나 새 시작일이 비어 있으면 계산하지 않고 기존 form.end_date를 유지한다.
     const computeShiftedEndDate = (): string | null => {
         const { start: origStart, end: origEnd } = originalDatesRef.current
         const newStart = form.start_date
 
-        // 원본 duration을 알 수 없거나 새 시작일이 없으면 자동 계산 불가
         if (!origStart || !origEnd || !newStart) return form.end_date ?? null
 
         const origStartTs = new Date(origStart).getTime()
@@ -209,11 +205,9 @@ export default function TaskDialog({
             return form.end_date ?? null
         }
 
-        // 원본 duration(밀리초)을 새 시작일에 더해 새 종료일 산출
         const durationMs = origEndTs - origStartTs
         const shiftedEnd = new Date(newStartTs + durationMs)
 
-        // YYYY-MM-DD 형식으로 변환 (시간대 보정: 로컬 기준 날짜 추출)
         const yyyy = shiftedEnd.getFullYear()
         const mm = String(shiftedEnd.getMonth() + 1).padStart(2, '0')
         const dd = String(shiftedEnd.getDate()).padStart(2, '0')
@@ -223,8 +217,6 @@ export default function TaskDialog({
     const handleSubmit = async () => {
         if (!validate()) return
 
-        // 이후 업무 일괄 이동 옵션이 켜진 경우, 사용자가 직접 입력하지 않은 종료일을 자동 계산해 저장한다.
-        // 원본 (종료일 − 시작일) 차이를 새 시작일에 더해 매번 종료일을 손으로 맞춰야 했던 불편을 제거한다.
         const submitForm: TaskFormData = form.shift_subsequent
             ? { ...form, end_date: computeShiftedEndDate() }
             : form
@@ -244,6 +236,8 @@ export default function TaskDialog({
             }
         }
     }
+
+    const isNonAssignee = Boolean(currentUser && !currentUser.is_admin && isEdit && initialData?.assignee_id !== currentUser.id)
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -266,6 +260,7 @@ export default function TaskDialog({
                             value={form.title}
                             onChange={(e) => setField('title', e.target.value)}
                             placeholder="업무명을 입력하세요"
+                            disabled={isNonAssignee}
                             className={cn(
                                 "resize-y min-h-[40px] py-2",
                                 errors.title ? 'border-destructive' : ''
@@ -282,6 +277,7 @@ export default function TaskDialog({
                             value={form.description || ''}
                             onChange={(e) => setField('description', e.target.value)}
                             placeholder="업무 설명을 입력하세요"
+                            disabled={isNonAssignee}
                             className="resize-y min-h-[80px]"
                         />
                     </div>
@@ -290,7 +286,7 @@ export default function TaskDialog({
                         {/* 상태 */}
                         <div className="space-y-1">
                             <Label htmlFor="task-status" className="text-sm font-semibold text-muted-foreground">상태</Label>
-                            <Select value={form.status} onValueChange={(v) => setField('status', v as TaskFormData['status'])}>
+                            <Select value={form.status} onValueChange={(v) => setField('status', v as TaskFormData['status'])} disabled={isNonAssignee}>
                                 <SelectTrigger id="task-status" className="h-9">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -307,7 +303,7 @@ export default function TaskDialog({
                         {/* 우선순위 */}
                         <div className="space-y-1">
                             <Label htmlFor="task-priority" className="text-sm font-semibold text-muted-foreground">우선순위</Label>
-                            <Select value={form.priority} onValueChange={(v) => setField('priority', v as TaskFormData['priority'])}>
+                            <Select value={form.priority} onValueChange={(v) => setField('priority', v as TaskFormData['priority'])} disabled={isNonAssignee}>
                                 <SelectTrigger id="task-priority" className="h-9">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -324,7 +320,7 @@ export default function TaskDialog({
                         {/* 진척률 */}
                         <div className="space-y-1">
                             <Label htmlFor="task-progress" className="text-sm font-semibold text-muted-foreground">진척률 ({form.progress}%)</Label>
-                            <Select value={String(form.progress)} onValueChange={(v) => setField('progress', parseInt(v))}>
+                            <Select value={String(form.progress)} onValueChange={(v) => setField('progress', parseInt(v))} disabled={isNonAssignee}>
                                 <SelectTrigger id="task-progress" className="h-9">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -337,8 +333,7 @@ export default function TaskDialog({
                         </div>
                     </div>
 
-                    {/* 이후 일정 일괄 이동 옵션 (수정 시에만 노출, 시작일/종료일 입력 위에 위치) */}
-                    {/* 체크박스가 켜져 있으면 종료일 입력은 숨기고, 저장 시 원본 duration 기준으로 종료일을 자동 계산한다 */}
+                    {/* 이후 일정 일괄 이동 옵션 */}
                     {isEdit && (
                         <div className="flex items-center space-x-2 bg-blue-50/50 p-3 rounded-md border border-blue-100/50">
                             <input
@@ -346,6 +341,7 @@ export default function TaskDialog({
                                 id="shift_subsequent"
                                 checked={form.shift_subsequent || false}
                                 onChange={(e) => setField('shift_subsequent', e.target.checked)}
+                                disabled={isNonAssignee}
                                 className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600 cursor-pointer"
                             />
                             <Label
@@ -357,9 +353,8 @@ export default function TaskDialog({
                         </div>
                     )}
 
-                    {/* 시작일/종료일 입력 — 일괄 이동 옵션이 켜졌을 땐 종료일을 숨기고 시작일만 단독 표시 */}
+                    {/* 시작일/종료일 입력 */}
                     <div className={cn('grid gap-3', form.shift_subsequent ? 'grid-cols-1' : 'grid-cols-2')}>
-                        {/* 시작일 */}
                         <div className="space-y-1">
                             <Label htmlFor="task-start" className="text-sm font-semibold text-muted-foreground">
                                 시작일 (선택)
@@ -369,11 +364,11 @@ export default function TaskDialog({
                                 type="date"
                                 value={form.start_date || ''}
                                 onChange={(e) => setField('start_date', e.target.value)}
+                                disabled={isNonAssignee}
                                 className={cn("h-9", errors.start_date ? 'border-destructive' : '')}
                             />
                             {errors.start_date && <p className="text-xs text-destructive">{errors.start_date}</p>}
                         </div>
-                        {/* 종료일 — 일괄 이동 옵션이 꺼진 경우에만 노출 */}
                         {!form.shift_subsequent && (
                             <div className="space-y-1">
                                 <Label htmlFor="task-end" className="text-sm font-semibold text-muted-foreground">
@@ -384,6 +379,7 @@ export default function TaskDialog({
                                     type="date"
                                     value={form.end_date || ''}
                                     onChange={(e) => setField('end_date', e.target.value)}
+                                    disabled={isNonAssignee}
                                     className={cn("h-9", errors.end_date ? 'border-destructive' : '')}
                                 />
                                 {errors.end_date && <p className="text-xs text-destructive">{errors.end_date}</p>}
@@ -395,7 +391,11 @@ export default function TaskDialog({
                         {/* 담당자 */}
                         <div className="col-span-2 space-y-1">
                             <Label htmlFor="task-assignee" className="text-sm font-semibold text-muted-foreground">담당자</Label>
-                            <Select value={form.assignee_id || 'unassigned'} onValueChange={(v) => setField('assignee_id', v === 'unassigned' ? null : v)}>
+                            <Select
+                                value={form.assignee_id || 'unassigned'}
+                                onValueChange={(v) => setField('assignee_id', v === 'unassigned' ? null : v)}
+                                disabled={!currentUser?.is_admin}
+                            >
                                 <SelectTrigger id="task-assignee" className="h-9">
                                     <SelectValue />
                                 </SelectTrigger>
@@ -427,10 +427,19 @@ export default function TaskDialog({
 
                 </div>
 
+                {isNonAssignee && (
+                    <p className="text-xs text-amber-600 px-4">본인이 담당자가 아닌 업무는 수정하거나 삭제할 수 없습니다.</p>
+                )}
+
                 <DialogFooter className="flex justify-between sm:justify-between border-t pt-4">
                     <div>
                         {isEdit && onDelete && (
-                            <Button variant="ghost" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={handleDelete} disabled={isLoading}>
+                            <Button
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={handleDelete}
+                                disabled={isLoading || isNonAssignee}
+                            >
                                 삭제
                             </Button>
                         )}
@@ -439,7 +448,10 @@ export default function TaskDialog({
                         <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
                             취소
                         </Button>
-                        <Button onClick={handleSubmit} disabled={isLoading}>
+                        <Button
+                            onClick={handleSubmit}
+                            disabled={isLoading || isNonAssignee}
+                        >
                             {isLoading ? '저장 중...' : submitLabel}
                         </Button>
                     </div>

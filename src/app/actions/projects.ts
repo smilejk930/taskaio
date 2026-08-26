@@ -1,14 +1,14 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireAuth, authCheckManager } from '@/lib/auth-checks'
+import { requireSessionActor, canManageProject } from '@/lib/permissions'
 import * as projectRepo from '@/lib/db/repositories/projects'
 
 export async function createProject(name: string, description?: string) {
     try {
-        const userId = await requireAuth()
-        const project = await projectRepo.insertProject(name, description, userId)
-        await projectRepo.insertProjectMember(project.id, userId, 'owner')
+        const actor = await requireSessionActor()
+        const project = await projectRepo.insertProject(name, description, actor.userId)
+        await projectRepo.insertProjectMember(project.id, actor.userId, 'owner')
         revalidatePath('/projects')
         return { success: true, project }
     } catch (error: unknown) {
@@ -18,7 +18,11 @@ export async function createProject(name: string, description?: string) {
 
 export async function updateProject(id: string, updates: { name?: string; description?: string }) {
     try {
-        await authCheckManager(id)
+        const actor = await requireSessionActor()
+        const hasAccess = await canManageProject(actor, id)
+        if (!hasAccess) {
+            throw new Error('Access denied: Requires manager or owner role.')
+        }
         const project = await projectRepo.updateProjectById(id, updates)
         revalidatePath('/projects')
         revalidatePath(`/projects/${id}`)
@@ -30,7 +34,11 @@ export async function updateProject(id: string, updates: { name?: string; descri
 
 export async function deleteProject(id: string) {
     try {
-        await authCheckManager(id)
+        const actor = await requireSessionActor()
+        const hasAccess = await canManageProject(actor, id)
+        if (!hasAccess) {
+            throw new Error('Access denied: Requires manager or owner role.')
+        }
         await projectRepo.deleteProjectById(id)
         revalidatePath('/projects')
         return { success: true }

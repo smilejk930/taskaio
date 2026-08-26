@@ -25,8 +25,12 @@ function formatProjectCreatedDate(value: string | Date) {
 export default async function ProjectsPage() {
     const user = await getUser()
 
-    // 현재 사용자의 프로젝트 목록 조회 (Repository 레이어 사용)
-    const projects = await projectRepo.getProjectsByUserId(user?.id || '')
+    const projects = user?.is_admin
+        ? (await projectRepo.getProjectsForActor(
+            { userId: user.id, isAdmin: true },
+            { limit: 1000 }
+        )).items.map(project => ({ ...project, role: 'system_admin' as const }))
+        : await projectRepo.getProjectsByUserId(user?.id || '')
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -75,7 +79,7 @@ export default async function ProjectsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {projects.map((project) => {
                             const rawRole = project.role ?? 'member'
-                            const displayRole = rawRole === 'owner' ? '소유자' : rawRole === 'manager' ? '관리자' : '멤버'
+                            const displayRole = rawRole === 'system_admin' ? '시스템 관리자' : rawRole === 'owner' ? '소유자' : rawRole === 'manager' ? '관리자' : '멤버'
                             return (
                                 <Link key={project.id} href={`/projects/${project.id}`}>
                                     <Card className="hover:border-primary transition-colors cursor-pointer h-full">

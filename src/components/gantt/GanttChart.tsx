@@ -83,6 +83,7 @@ interface GanttChartProps {
     onLinkAdd?: (id: string, source: string, target: string, type: string) => void
     onLinkDelete?: (id: string) => void
     onDateClick?: (date: Date) => void
+    canEditTask?: (id: string) => boolean
 }
 
 export default function GanttChart({
@@ -98,6 +99,7 @@ export default function GanttChart({
     onLinkAdd,
     onLinkDelete,
     onDateClick,
+    canEditTask,
 }: GanttChartProps) {
     const ganttContainer = useRef<HTMLDivElement>(null)
     const [isGanttLoaded, setIsGanttLoaded] = useState(false)
@@ -155,10 +157,10 @@ export default function GanttChart({
     }, [scales, holidays, holidayInfoMap])
 
     // 콜백 함수들을 최신 상태로 유지하기 위한 Ref
-    const callbacksRef = useRef({ onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete, onDateClick })
+    const callbacksRef = useRef({ onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete, onDateClick, canEditTask })
     useEffect(() => {
-        callbacksRef.current = { onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete, onDateClick }
-    }, [onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete, onDateClick])
+        callbacksRef.current = { onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete, onDateClick, canEditTask }
+    }, [onTaskClick, onTaskCreate, onTaskUpdated, onTaskDeleted, onLinkAdd, onLinkDelete, onDateClick, canEditTask])
 
     // ── 라이브러리 동기화 및 초기 설정 ──────────────────────
     useEffect(() => {
@@ -753,6 +755,7 @@ export default function GanttChart({
 
                 eventIdsRef.current.push(ganttInstance.attachEvent("onBeforeTaskDrag", (id: unknown) => {
                     const _id = id as string;
+                    if (callbacksRef.current.canEditTask && !callbacksRef.current.canEditTask(_id)) return false;
                     isDragging.current = true;
                     modifiedTaskIdsDuringDrag.clear();
                     modifiedTaskIdsDuringDrag.add(_id);
@@ -958,6 +961,7 @@ export default function GanttChart({
                     // 드래그 중이거나 임시 ID인 경우 업데이트 무시 (DB 부하 방지 가드)
                     const isTempId = typeof _id === 'number' || (typeof _id === 'string' && !_id.includes('-'));
                     if (isDragging.current || isTempId || creatingIdsRef.current.has(_id.toString())) return true;
+                    if (callbacksRef.current.canEditTask && !callbacksRef.current.canEditTask(_id.toString())) return true;
 
                     // 데이터 실질 변경 여부 체크 (중복 토스트 방지)
                     const updateKey = `${item.id}-${item.start_date?.getTime()}-${item.end_date?.getTime()}-${item.progress}`;
@@ -970,6 +974,7 @@ export default function GanttChart({
 
                 eventIdsRef.current.push(ganttInstance.attachEvent('onAfterTaskDelete', (id: unknown) => {
                     const _id = id as string;
+                    if (callbacksRef.current.canEditTask && !callbacksRef.current.canEditTask(_id)) return true;
                     if (typeof _id === 'string' && _id.includes('-')) callbacksRef.current.onTaskDeleted?.(_id);
                     return true;
                 }));

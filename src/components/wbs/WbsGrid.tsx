@@ -50,6 +50,7 @@ interface WbsGridProps {
     /** 현재 접속자 역할 (owner/manager: 담당자 선택 가능, member: 읽기 전용) */
     currentMemberRole: 'owner' | 'manager' | 'member' | null | undefined
     currentUserId?: string
+    isSystemAdmin?: boolean
     onTaskClick: (task: ProjectTask) => void
     onTaskCreate: (parentId: string | null) => void
     onTaskDelete: (id: string) => Promise<boolean>
@@ -75,6 +76,8 @@ type WbsTableMeta = {
     handleEditStart: (task: LocalTask) => void
     handleDelete: (id: string) => Promise<void>
     handleAddNewRow: (parentId?: string | null) => void
+    canEditTask: (task: LocalTask) => boolean
+    canAssignTask: boolean
 }
 
 export interface WbsGridHandle {
@@ -86,6 +89,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
     projectId,
     members,
     currentUserId,
+    isSystemAdmin = false,
     onTaskDelete,
     onInlineCreate,
     onInlineUpdate,
@@ -97,6 +101,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
     const [isSaving, setIsSaving] = useState<string | null>(null)
 
     const tableContainerRef = useRef<HTMLDivElement>(null)
+    const canEditTask = (task: LocalTask) => Boolean(task._isNew || isSystemAdmin || (currentUserId && task.assignee_id === currentUserId))
 
     // ── 외부 노출 메서드 ──────────────────────────────────────────────────────
     React.useImperativeHandle(ref, () => ({
@@ -168,7 +173,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
     }
 
     const handleEditStart = (task: LocalTask) => {
-        if (task._isNew) return
+        if (task._isNew || !canEditTask(task)) return
         setEditingTaskIds(prev => new Set(prev).add(task.id))
         setTempTasksData(prev => ({
             ...prev,
@@ -376,6 +381,8 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
     }
 
     const handleDelete = async (id: string) => {
+        const task = allDataTree.find(item => item.id === id)
+        if (!task || !canEditTask(task)) return
         if (!confirm('정말 삭제하시겠습니까?')) return
         await onTaskDelete(id)
     }
@@ -397,6 +404,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                         <Select
                             value={val || 'unassigned'}
                             onValueChange={(v) => handleLocalChange(task.id, 'assignee_id', v === 'unassigned' ? null : v, task._isNew)}
+                            disabled={!meta.canAssignTask}
                         >
                             <SelectTrigger className="h-8 text-xs bg-background justify-center">
                                 <SelectValue placeholder="미지정" />
@@ -424,7 +432,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
             cell: ({ row, table }) => {
                 const task = row.original
                 const meta = table.options.meta as WbsTableMeta
-                const { editingTaskIds, tempTasksData, allDataTree, handleLocalChange, handleSave, handleCancel } = meta
+                const { editingTaskIds, tempTasksData, allDataTree, handleLocalChange, handleSave, handleCancel, handleEditStart } = meta
                 const isEditing = editingTaskIds.has(task.id) || task._isNew
 
                 let depth = 0;
@@ -456,17 +464,18 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
                     )
                 }
 
+                const editable = meta.canEditTask(task)
                 return (
                     <div
-                        className="cursor-pointer group flex items-center gap-1 py-1"
+                        className={`${editable ? 'cursor-pointer group' : ''} flex items-center gap-1 py-1`}
                         style={{ paddingLeft: `${depth * 20}px` }}
-                        onClick={() => handleEditStart(task)}
+                        onClick={() => editable && handleEditStart(task)}
                     >
                         {depth > 0 && <span className="text-muted-foreground text-xs mt-0.5">└</span>}
                         <span className={`text-sm ${depth === 0 ? 'font-semibold' : depth === 1 ? 'font-medium' : 'font-normal'} border-b border-transparent group-hover:border-primary/30 transition-all whitespace-pre-wrap break-all leading-normal`}>
                             {task.title || '(제목 없음)'}
                         </span>
-                        <Edit2 className="h-3 w-3 text-muted-foreground opacity-30 group-hover:opacity-100 ml-1 transition-opacity shrink-0" />
+                        {editable && <Edit2 className="h-3 w-3 text-muted-foreground opacity-30 group-hover:opacity-100 ml-1 transition-opacity shrink-0" />}
                     </div>
                 )
             },
@@ -714,20 +723,24 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
 
                 return (
                     <div className="flex items-center justify-center gap-0.5 transition-opacity">
-                        <Button
-                            variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/60 hover:text-foreground hover:bg-muted"
-                            onClick={() => handleEditStart(task)}
-                            title="수정"
-                        >
-                            <Edit2 className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                            variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/60 hover:text-red-600 hover:bg-red-50"
-                            onClick={() => handleDelete(task.id)}
-                            title="삭제"
-                        >
-                            <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        {meta.canEditTask(task) && (
+                            <>
+                                <Button
+                                    variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/60 hover:text-foreground hover:bg-muted"
+                                    onClick={() => handleEditStart(task)}
+                                    title="수정"
+                                >
+                                    <Edit2 className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                    variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground/60 hover:text-red-600 hover:bg-red-50"
+                                    onClick={() => handleDelete(task.id)}
+                                    title="삭제"
+                                >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                            </>
+                        )}
                         {!task.parent_id && (
                             <Button
                                 variant="ghost"
@@ -765,6 +778,8 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
             handleEditStart,
             handleDelete,
             handleAddNewRow,
+            canEditTask,
+            canAssignTask: isSystemAdmin,
         } as WbsTableMeta
     })
 

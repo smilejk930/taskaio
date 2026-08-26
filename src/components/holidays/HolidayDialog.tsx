@@ -29,6 +29,11 @@ interface HolidayDialogProps {
     // 수정 모드일 때 초기값 주입, 없으면 추가 모드
     initialData?: HolidayFormData & { id?: string }
     profiles: HolidayProfile[]
+    currentUser?: {
+        id: string
+        display_name?: string | null
+        is_admin?: boolean | null
+    } | null
     onSubmit: (data: HolidayFormData) => Promise<boolean>
     onDelete?: (id: string) => Promise<boolean>
     isLoading: boolean
@@ -84,11 +89,6 @@ export default function HolidayDialog({
         if (form.start_date && form.end_date && form.end_date < form.start_date) {
             newErrors.end_date = '종료일은 시작일 이후여야 합니다.'
         }
-        // 개인 일정(휴가, 출장)일 때만 대상 팀원 필수. 공휴일·워크샵·감리·기타는 전사 공통이라 미지정 허용
-        if (['member_leave', 'business_trip'].includes(form.type) && !form.member_id) {
-            newErrors.member_id = '해당 일정은 대상 팀원을 지정해야 합니다.'
-        }
-
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
     }
@@ -124,13 +124,7 @@ export default function HolidayDialog({
                         <Label htmlFor="holiday-type">유형</Label>
                         <Select
                             value={form.type}
-                            onValueChange={(v) => {
-                                setField('type', v as HolidayFormData['type'])
-                                // 전사 공통 일정(공휴일·워크샵·감리)은 대상 팀원이 없으므로 member_id 초기화
-                                if (['public_holiday', 'workshop', 'supervision'].includes(v)) {
-                                    setField('member_id', null)
-                                }
-                            }}
+                            onValueChange={(v) => setField('type', v as HolidayFormData['type'])}
                         >
                             <SelectTrigger id="holiday-type">
                                 <SelectValue />
@@ -146,32 +140,27 @@ export default function HolidayDialog({
                         </Select>
                     </div>
 
-                    {/* 팀원 선택: 전사 공통 일정(공휴일·워크샵·감리)은 노출하지 않고, 개인 일정(휴가·출장)에서만 노출하며 필수 */}
-                    {!['public_holiday', 'workshop', 'supervision'].includes(form.type) && (
-                        <div className="space-y-2">
-                            <Label htmlFor="holiday-member">
-                                대상 팀원 <span className="text-destructive">*</span>
-                            </Label>
-                            <Select
-                                value={form.member_id ?? ''}
-                                onValueChange={(v) => setField('member_id', v || null)}
-                            >
-                                <SelectTrigger id="holiday-member" className={errors.member_id ? 'border-destructive' : ''}>
-                                    <SelectValue placeholder="팀원을 선택하세요" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {profiles.map(p => (
-                                        <SelectItem key={p.id} value={p.id}>
-                                            {p.display_name ?? '일정명 없음'}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {errors.member_id && (
-                                <p className="text-xs text-destructive">{errors.member_id}</p>
-                            )}
-                        </div>
-                    )}
+                    <div className="space-y-2">
+                        <Label htmlFor="holiday-member">대상 팀원 (선택)</Label>
+                        <Select
+                            value={form.member_id ?? ''}
+                            onValueChange={(v) => setField('member_id', v || null)}
+                        >
+                            <SelectTrigger id="holiday-member" className={errors.member_id ? 'border-destructive' : ''}>
+                                <SelectValue placeholder="팀원을 선택하세요" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {profiles.map(p => (
+                                    <SelectItem key={p.id} value={p.id}>
+                                        {p.display_name ?? '일정명 없음'}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {errors.member_id && (
+                            <p className="text-xs text-destructive">{errors.member_id}</p>
+                        )}
+                    </div>
 
                     {/* 일정명 */}
                     <div className="space-y-2">

@@ -36,6 +36,12 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         return notFound()
     }
 
+    // 프로젝트 접근 권한 검증: 관리자이거나 프로젝트 멤버가 아니면 404 반환
+    const isMember = Boolean(user?.id && members.some(m => m.userId === user.id))
+    if (!user?.is_admin && !isMember) {
+        return notFound()
+    }
+
     const memberIds = members.map(m => m.userId)
 
     // 2. 휴일/휴가 데이터 조회
