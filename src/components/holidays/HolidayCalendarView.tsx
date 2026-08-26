@@ -63,10 +63,17 @@ const HOLIDAY_LABELS: Record<string, string> = {
     other: '기타',
 }
 
-const formatHolidayHoverText = (holiday: Holiday) => {
+export const formatHolidayHoverText = (holiday: Holiday, profiles?: HolidayProfile[]) => {
+    const profileName = holiday.profiles?.display_name?.trim()
+    const matchedProfileName = holiday.member_id && profiles
+        ? profiles.find(p => p.id === holiday.member_id)?.display_name?.trim()
+        : null
+    const memberName = profileName || matchedProfileName || (holiday.member_id ? '알 수 없음' : null)
+
     const lines = [
         `유형: ${HOLIDAY_LABELS[holiday.type] || HOLIDAY_LABELS.other}`,
         `일정명: ${holiday.name}`,
+        `대상팀원: ${memberName || '-'}`,
     ]
 
     if (holiday.start_date === holiday.end_date) {
@@ -353,7 +360,7 @@ export default function HolidayCalendarView({
                                                                         "holiday-item text-xs px-2 py-1.5 border rounded-md cursor-pointer",
                                                                         HOLIDAY_COLORS[holiday.type] || HOLIDAY_COLORS['other']
                                                                     )}
-                                                                    title={formatHolidayHoverText(holiday)}
+                                                                    title={formatHolidayHoverText(holiday, profiles)}
                                                                 >
                                                                     <div className="font-semibold flex items-center justify-between">
                                                                         <span>{holiday.name}</span>
@@ -420,7 +427,7 @@ export default function HolidayCalendarView({
                                                         isStart ? "rounded-l-md ml-1" : "border-l-0 ml-[-2px]",
                                                         isEnd ? "rounded-r-md mr-1" : "border-r-0 mr-[-2px]"
                                                     )}
-                                                    title={formatHolidayHoverText(holiday)}
+                                                    title={formatHolidayHoverText(holiday, profiles)}
                                                 >
                                                     {isStart ? (
                                                         <span className="font-semibold text-[11px]">
