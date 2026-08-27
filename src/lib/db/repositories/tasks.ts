@@ -1,5 +1,5 @@
 import { db, schema } from "../index"
-import { eq, and, or, like, desc, isNull } from "drizzle-orm"
+import { eq, and, or, like, desc, isNull, count } from "drizzle-orm"
 
 export interface TaskQueryOptions {
   search?: string
@@ -54,17 +54,18 @@ export async function getTasksForProjectPaginated(projectId: string, options: Ta
     }
   }
 
-  const rows = await db
+  const whereClause = and(...conditions)
+  const [rows, totalRows] = await Promise.all([db
     .select()
     .from(schema.tasks)
-    .where(and(...conditions))
-    .orderBy(desc(schema.tasks.createdAt))
+    .where(whereClause)
+    .orderBy(desc(schema.tasks.createdAt), desc(schema.tasks.id))
     .limit(limit + 1)
-    .offset(offset)
+    .offset(offset), db.select({ value: count() }).from(schema.tasks).where(whereClause)])
 
   const hasMore = rows.length > limit
   const items = hasMore ? rows.slice(0, limit) : rows
-  return { items, hasMore }
+  return { items, hasMore, total: totalRows[0]?.value ?? 0 }
 }
 
 export async function syncParentTask(parentId: string) {

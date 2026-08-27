@@ -1,5 +1,5 @@
 import { db, schema } from "../index"
-import { eq, and, desc, or, like } from "drizzle-orm"
+import { eq, and, desc, or, like, count } from "drizzle-orm"
 import { Actor } from "@/lib/permissions"
 
 export interface ProjectQueryOptions {
@@ -8,20 +8,21 @@ export interface ProjectQueryOptions {
   offset?: number
 }
 
-export async function insertProject(name: string, description: string | undefined | null, creatorId: string) {
-  const [project] = await db.insert(schema.projects).values({
-    name,
-    description: description || null,
-    creatorId,
-  }).returning()
-  return project
-}
+export async function insertProjectWithOwner(name: string, description: string | undefined | null, creatorId: string) {
+  return db.transaction(async (tx) => {
+    const [project] = await tx.insert(schema.projects).values({
+      name,
+      description: description || null,
+      creatorId,
+    }).returning()
 
-export async function insertProjectMember(projectId: string, userId: string, role: string) {
-  await db.insert(schema.projectMembers).values({
-    projectId,
-    userId,
-    role: role as typeof schema.projectMembers.$inferInsert.role,
+    await tx.insert(schema.projectMembers).values({
+      projectId: project.id,
+      userId: creatorId,
+      role: 'owner',
+    })
+
+    return project
   })
 }
 
@@ -85,7 +86,8 @@ export async function getProjectsForActor(actor: Actor, options: ProjectQueryOpt
       )
     }
 
-    const rows = await db
+    const whereClause = and(...conditions)
+    const [rows, totalRows] = await Promise.all([db
       .select({
         id: schema.projects.id,
         name: schema.projects.name,
@@ -95,14 +97,14 @@ export async function getProjectsForActor(actor: Actor, options: ProjectQueryOpt
         updatedAt: schema.projects.updatedAt,
       })
       .from(schema.projects)
-      .where(and(...conditions))
-      .orderBy(desc(schema.projects.createdAt))
+      .where(whereClause)
+      .orderBy(desc(schema.projects.createdAt), desc(schema.projects.id))
       .limit(limit + 1)
-      .offset(offset)
+      .offset(offset), db.select({ value: count() }).from(schema.projects).where(whereClause)])
 
     const hasMore = rows.length > limit
     const items = hasMore ? rows.slice(0, limit) : rows
-    return { items, hasMore }
+    return { items, hasMore, total: totalRows[0]?.value ?? 0 }
   }
 
   const conditions = [
@@ -119,7 +121,8 @@ export async function getProjectsForActor(actor: Actor, options: ProjectQueryOpt
     )
   }
 
-  const rows = await db
+  const whereClause = and(...conditions)
+  const [rows, totalRows] = await Promise.all([db
     .select({
       id: schema.projects.id,
       name: schema.projects.name,
@@ -131,12 +134,15 @@ export async function getProjectsForActor(actor: Actor, options: ProjectQueryOpt
     })
     .from(schema.projects)
     .innerJoin(schema.projectMembers, eq(schema.projects.id, schema.projectMembers.projectId))
-    .where(and(...conditions))
-    .orderBy(desc(schema.projects.createdAt))
+    .where(whereClause)
+    .orderBy(desc(schema.projects.createdAt), desc(schema.projects.id))
     .limit(limit + 1)
-    .offset(offset)
+    .offset(offset), db.select({ value: count() })
+      .from(schema.projects)
+      .innerJoin(schema.projectMembers, eq(schema.projects.id, schema.projectMembers.projectId))
+      .where(whereClause)])
 
   const hasMore = rows.length > limit
   const items = hasMore ? rows.slice(0, limit) : rows
-  return { items, hasMore }
+  return { items, hasMore, total: totalRows[0]?.value ?? 0 }
 }

@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server'
 import { authenticateApiRequest } from '@/lib/api-auth'
 import * as usersRepo from '@/lib/db/repositories/users'
 import * as patRepo from '@/lib/db/repositories/personal-access-tokens'
+import { withApiErrorHandling } from '@/lib/api-response'
 
-export async function GET(request: Request) {
+async function get(request: Request) {
   const authResult = await authenticateApiRequest(request)
 
   if (!authResult) {
@@ -76,3 +77,5 @@ export async function GET(request: Request) {
     }
   )
 }
+
+export const GET = withApiErrorHandling(get)

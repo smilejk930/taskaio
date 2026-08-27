@@ -5,7 +5,7 @@ import {
   hasNonSelfDescendants,
   checkCircularHierarchy,
 } from '@/lib/permissions'
-import { apiSuccess, apiError } from '@/lib/api-response'
+import { apiSuccess, apiError, withApiErrorHandling } from '@/lib/api-response'
 import { updateTaskSchema } from '@/lib/validations/api'
 import * as taskRepo from '@/lib/db/repositories/tasks'
 
@@ -15,7 +15,7 @@ interface RouteParams {
   }
 }
 
-export async function GET(request: Request, { params }: RouteParams) {
+async function get(request: Request, { params }: RouteParams) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -37,7 +37,7 @@ export async function GET(request: Request, { params }: RouteParams) {
   return apiSuccess(task)
 }
 
-export async function PATCH(request: Request, { params }: RouteParams) {
+async function patch(request: Request, { params }: RouteParams) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -108,7 +108,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   const finalStartDate = updates.startDate ?? task.startDate
   const finalEndDate = updates.endDate ?? task.endDate
-  if (finalStartDate && finalEndDate && finalEndDate < finalStartDate) {
+  if (finalStartDate && finalEndDate && new Date(finalEndDate).getTime() < new Date(finalStartDate).getTime()) {
     return apiError('UNPROCESSABLE_ENTITY', 'End date must be on or after start date.', 422)
   }
 
@@ -183,7 +183,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   return apiSuccess(updatedTask)
 }
 
-export async function DELETE(request: Request, { params }: RouteParams) {
+async function remove(request: Request, { params }: RouteParams) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -227,3 +227,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
 
   return apiSuccess({ success: true })
 }
+
+export const GET = withApiErrorHandling(get)
+export const PATCH = withApiErrorHandling(patch)
+export const DELETE = withApiErrorHandling(remove)

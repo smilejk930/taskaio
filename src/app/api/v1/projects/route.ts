@@ -1,9 +1,9 @@
 import { getActorFromRequest } from '@/lib/permissions'
-import { apiSuccess, apiError, decodeCursor, encodeCursor } from '@/lib/api-response'
+import { apiSuccess, apiError, decodeCursor, encodeCursor, withApiErrorHandling } from '@/lib/api-response'
 import { createProjectSchema, projectsQuerySchema } from '@/lib/validations/api'
 import * as projectRepo from '@/lib/db/repositories/projects'
 
-export async function GET(request: Request) {
+async function get(request: Request) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -21,17 +21,17 @@ export async function GET(request: Request) {
   const offset = decodeCursor(query.cursor)
   const search = query.search || query.q
 
-  const { items, hasMore } = await projectRepo.getProjectsForActor(actor, {
+  const { items, hasMore, total } = await projectRepo.getProjectsForActor(actor, {
     search,
     limit: query.limit,
     offset,
   })
 
   const nextCursor = hasMore ? encodeCursor(offset + query.limit) : null
-  return apiSuccess(items, { nextCursor, hasMore })
+  return apiSuccess(items, { nextCursor, hasMore, total })
 }
 
-export async function POST(request: Request) {
+async function post(request: Request) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -52,8 +52,10 @@ export async function POST(request: Request) {
   }
 
   const { name, description } = parseResult.data
-  const project = await projectRepo.insertProject(name, description, actor.userId)
-  await projectRepo.insertProjectMember(project.id, actor.userId, 'owner')
+  const project = await projectRepo.insertProjectWithOwner(name, description, actor.userId)
 
   return apiSuccess(project, undefined, 201)
 }
+
+export const GET = withApiErrorHandling(get)
+export const POST = withApiErrorHandling(post)

@@ -1,5 +1,5 @@
 import { getActorFromRequest, canViewProject, getProjectRole } from '@/lib/permissions'
-import { apiSuccess, apiError, decodeCursor, encodeCursor } from '@/lib/api-response'
+import { apiSuccess, apiError, decodeCursor, encodeCursor, withApiErrorHandling } from '@/lib/api-response'
 import { createTaskSchema, tasksQuerySchema } from '@/lib/validations/api'
 import * as projectRepo from '@/lib/db/repositories/projects'
 import * as taskRepo from '@/lib/db/repositories/tasks'
@@ -10,7 +10,7 @@ interface RouteParams {
   }
 }
 
-export async function GET(request: Request, { params }: RouteParams) {
+async function get(request: Request, { params }: RouteParams) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -39,7 +39,7 @@ export async function GET(request: Request, { params }: RouteParams) {
   const offset = decodeCursor(query.cursor)
   const search = query.search || query.q
 
-  const { items, hasMore } = await taskRepo.getTasksForProjectPaginated(projectId, {
+  const { items, hasMore, total } = await taskRepo.getTasksForProjectPaginated(projectId, {
     search,
     status: query.status,
     priority: query.priority,
@@ -50,10 +50,10 @@ export async function GET(request: Request, { params }: RouteParams) {
   })
 
   const nextCursor = hasMore ? encodeCursor(offset + query.limit) : null
-  return apiSuccess(items, { nextCursor, hasMore })
+  return apiSuccess(items, { nextCursor, hasMore, total })
 }
 
-export async function POST(request: Request, { params }: RouteParams) {
+async function post(request: Request, { params }: RouteParams) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -142,3 +142,6 @@ export async function POST(request: Request, { params }: RouteParams) {
 
   return apiSuccess(newTask, undefined, 201)
 }
+
+export const GET = withApiErrorHandling(get)
+export const POST = withApiErrorHandling(post)

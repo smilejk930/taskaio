@@ -1,5 +1,5 @@
 import { db, schema } from "../index"
-import { eq, and, or, like, asc } from "drizzle-orm"
+import { eq, and, or, like, asc, count } from "drizzle-orm"
 
 /**
  * 사용자 검색: 이름(displayName), 아이디(username), 이메일에서 부분 일치 검색
@@ -123,7 +123,8 @@ export async function getMembersByProjectIdPaginated(
         )
     }
 
-    const rows = await db
+    const whereClause = and(...conditions)
+    const [rows, totalRows] = await Promise.all([db
         .select({
             id: schema.projectMembers.userId,
             userId: schema.projectMembers.userId,
@@ -138,12 +139,16 @@ export async function getMembersByProjectIdPaginated(
         .from(schema.projectMembers)
         .innerJoin(schema.profiles, eq(schema.projectMembers.userId, schema.profiles.id))
         .innerJoin(schema.users, eq(schema.profiles.id, schema.users.id))
-        .where(and(...conditions))
-        .orderBy(asc(schema.profiles.displayName))
+        .where(whereClause)
+        .orderBy(asc(schema.profiles.displayName), asc(schema.projectMembers.userId))
         .limit(limit + 1)
-        .offset(offset)
+        .offset(offset), db.select({ value: count() })
+        .from(schema.projectMembers)
+        .innerJoin(schema.profiles, eq(schema.projectMembers.userId, schema.profiles.id))
+        .innerJoin(schema.users, eq(schema.profiles.id, schema.users.id))
+        .where(whereClause)])
 
     const hasMore = rows.length > limit
     const items = hasMore ? rows.slice(0, limit) : rows
-    return { items, hasMore }
+    return { items, hasMore, total: totalRows[0]?.value ?? 0 }
 }

@@ -2,10 +2,14 @@ import { z } from 'zod'
 
 const dateRegex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})?)?$/
 
+export const isChronological = (startDate?: string | null, endDate?: string | null) =>
+  !startDate || !endDate || new Date(startDate).getTime() <= new Date(endDate).getTime()
+
 export const dateString = z.string().refine((val) => {
   if (!dateRegex.test(val)) return false
   const d = new Date(val)
-  return !isNaN(d.getTime())
+  if (isNaN(d.getTime())) return false
+  return val.length !== 10 || d.toISOString().slice(0, 10) === val
 }, {
   message: 'Invalid date format (expected YYYY-MM-DD or ISO string)',
 })
@@ -47,10 +51,7 @@ export const createTaskSchema = z.object({
   color: z.string().nullable().optional(),
 }).refine(
   (data) => {
-    if (data.startDate && data.endDate) {
-      return data.startDate <= data.endDate
-    }
-    return true
+    return isChronological(data.startDate, data.endDate)
   },
   {
     message: '종료일은 시작일 이후여야 합니다.',
@@ -71,10 +72,7 @@ export const updateTaskSchema = z.object({
   color: z.string().nullable().optional(),
 }).refine(
   (data) => {
-    if (data.startDate && data.endDate) {
-      return data.startDate <= data.endDate
-    }
-    return true
+    return isChronological(data.startDate, data.endDate)
   },
   {
     message: '종료일은 시작일 이후여야 합니다.',
@@ -112,7 +110,7 @@ export const createScheduleSchema = z.object({
   memberId: z.string().nullable().optional(),
   note: z.string().nullable().optional(),
 }).refine(
-  (data) => data.startDate <= data.endDate,
+  (data) => isChronological(data.startDate, data.endDate),
   {
     message: '종료일은 시작일 이후여야 합니다.',
     path: ['endDate'],
@@ -128,10 +126,7 @@ export const updateScheduleSchema = z.object({
   note: z.string().nullable().optional(),
 }).refine(
   (data) => {
-    if (data.startDate && data.endDate) {
-      return data.startDate <= data.endDate
-    }
-    return true
+    return isChronological(data.startDate, data.endDate)
   },
   {
     message: '종료일은 시작일 이후여야 합니다.',

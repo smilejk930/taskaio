@@ -1,5 +1,5 @@
 import { getActorFromRequest, canViewProject } from '@/lib/permissions'
-import { apiSuccess, apiError, decodeCursor, encodeCursor } from '@/lib/api-response'
+import { apiSuccess, apiError, decodeCursor, encodeCursor, withApiErrorHandling } from '@/lib/api-response'
 import { membersQuerySchema } from '@/lib/validations/api'
 import * as projectRepo from '@/lib/db/repositories/projects'
 import * as memberRepo from '@/lib/db/repositories/members'
@@ -10,7 +10,7 @@ interface RouteParams {
   }
 }
 
-export async function GET(request: Request, { params }: RouteParams) {
+async function get(request: Request, { params }: RouteParams) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -39,12 +39,14 @@ export async function GET(request: Request, { params }: RouteParams) {
   const offset = decodeCursor(query.cursor)
   const search = query.search || query.q
 
-  const { items, hasMore } = await memberRepo.getMembersByProjectIdPaginated(projectId, {
+  const { items, hasMore, total } = await memberRepo.getMembersByProjectIdPaginated(projectId, {
     search,
     limit: query.limit,
     offset,
   })
 
   const nextCursor = hasMore ? encodeCursor(offset + query.limit) : null
-  return apiSuccess(items, { nextCursor, hasMore })
+  return apiSuccess(items, { nextCursor, hasMore, total })
 }
+
+export const GET = withApiErrorHandling(get)

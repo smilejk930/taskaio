@@ -10,7 +10,7 @@ import {
 } from '@/lib/permissions'
 import * as tasksRepo from '@/lib/db/repositories/tasks'
 import { schema } from '@/lib/db'
-import { createTaskSchema, updateTaskSchema } from '@/lib/validations/api'
+import { createTaskSchema, updateTaskSchema, isChronological } from '@/lib/validations/api'
 
 type TaskWritableFields = Pick<typeof schema.tasks.$inferInsert,
   'title' | 'description' | 'status' | 'priority' | 'assigneeId' | 'parentId' |
@@ -70,7 +70,7 @@ export async function updateTask(id: string, updates: TaskUpdatePayload) {
 
     const finalStartDate = safeUpdates.startDate ?? existingTask.startDate
     const finalEndDate = safeUpdates.endDate ?? existingTask.endDate
-    if (finalStartDate && finalEndDate && finalEndDate < finalStartDate) {
+    if (!isChronological(finalStartDate, finalEndDate)) {
         throw new Error('종료일은 시작일 이후여야 합니다.')
     }
 

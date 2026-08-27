@@ -1,9 +1,9 @@
 import { getActorFromRequest } from '@/lib/permissions'
-import { apiSuccess, apiError, decodeCursor, encodeCursor } from '@/lib/api-response'
+import { apiSuccess, apiError, decodeCursor, encodeCursor, withApiErrorHandling } from '@/lib/api-response'
 import { createScheduleSchema, schedulesQuerySchema } from '@/lib/validations/api'
 import * as holidayRepo from '@/lib/db/repositories/holidays'
 
-export async function GET(request: Request) {
+async function get(request: Request) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -21,7 +21,7 @@ export async function GET(request: Request) {
   const offset = decodeCursor(query.cursor)
   const search = query.search || query.q
 
-  const { items, hasMore } = await holidayRepo.getSchedulesForActor(actor, {
+  const { items, hasMore, total } = await holidayRepo.getSchedulesForActor(actor, {
     search,
     type: query.type,
     userId: query.userId || query.memberId,
@@ -32,10 +32,10 @@ export async function GET(request: Request) {
   })
 
   const nextCursor = hasMore ? encodeCursor(offset + query.limit) : null
-  return apiSuccess(items, { nextCursor, hasMore })
+  return apiSuccess(items, { nextCursor, hasMore, total })
 }
 
-export async function POST(request: Request) {
+async function post(request: Request) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -68,3 +68,6 @@ export async function POST(request: Request) {
 
   return apiSuccess(newSchedule, undefined, 201)
 }
+
+export const GET = withApiErrorHandling(get)
+export const POST = withApiErrorHandling(post)

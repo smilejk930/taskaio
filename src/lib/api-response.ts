@@ -85,3 +85,16 @@ export function decodeCursor(cursor?: string | null): number {
   }
   return 0
 }
+
+export function withApiErrorHandling<TArgs extends unknown[]>(
+  handler: (...args: TArgs) => Promise<Response>
+) {
+  return async (...args: TArgs): Promise<Response> => {
+    try {
+      return await handler(...args)
+    } catch (error) {
+      console.error('Unhandled API error', error)
+      return apiError('INTERNAL_ERROR', 'Internal server error', 500)
+    }
+  }
+}

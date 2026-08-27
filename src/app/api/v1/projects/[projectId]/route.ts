@@ -1,5 +1,5 @@
 import { getActorFromRequest, canViewProject, canManageProject } from '@/lib/permissions'
-import { apiSuccess, apiError } from '@/lib/api-response'
+import { apiSuccess, apiError, withApiErrorHandling } from '@/lib/api-response'
 import { updateProjectSchema } from '@/lib/validations/api'
 import * as projectRepo from '@/lib/db/repositories/projects'
 
@@ -9,7 +9,7 @@ interface RouteParams {
   }
 }
 
-export async function GET(request: Request, { params }: RouteParams) {
+async function get(request: Request, { params }: RouteParams) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -31,7 +31,7 @@ export async function GET(request: Request, { params }: RouteParams) {
   return apiSuccess(project)
 }
 
-export async function PATCH(request: Request, { params }: RouteParams) {
+async function patch(request: Request, { params }: RouteParams) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -71,7 +71,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   return apiSuccess(updated)
 }
 
-export async function DELETE(request: Request, { params }: RouteParams) {
+async function remove(request: Request, { params }: RouteParams) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -98,3 +98,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   await projectRepo.deleteProjectById(projectId)
   return apiSuccess({ success: true })
 }
+
+export const GET = withApiErrorHandling(get)
+export const PATCH = withApiErrorHandling(patch)
+export const DELETE = withApiErrorHandling(remove)

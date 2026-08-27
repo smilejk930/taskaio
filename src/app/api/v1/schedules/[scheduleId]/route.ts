@@ -1,5 +1,5 @@
 import { getActorFromRequest } from '@/lib/permissions'
-import { apiSuccess, apiError } from '@/lib/api-response'
+import { apiSuccess, apiError, withApiErrorHandling } from '@/lib/api-response'
 import { updateScheduleSchema } from '@/lib/validations/api'
 import * as holidayRepo from '@/lib/db/repositories/holidays'
 
@@ -9,7 +9,7 @@ interface RouteParams {
   }
 }
 
-export async function GET(request: Request, { params }: RouteParams) {
+async function get(request: Request, { params }: RouteParams) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -26,7 +26,7 @@ export async function GET(request: Request, { params }: RouteParams) {
   return apiSuccess(schedule)
 }
 
-export async function PATCH(request: Request, { params }: RouteParams) {
+async function patch(request: Request, { params }: RouteParams) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -56,7 +56,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   const finalStartDate = updates.startDate ?? schedule.startDate
   const finalEndDate = updates.endDate ?? schedule.endDate
-  if (finalEndDate < finalStartDate) {
+  if (new Date(finalEndDate).getTime() < new Date(finalStartDate).getTime()) {
     return apiError('UNPROCESSABLE_ENTITY', 'End date must be on or after start date', 422)
   }
 
@@ -64,7 +64,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   return apiSuccess(updated)
 }
 
-export async function DELETE(request: Request, { params }: RouteParams) {
+async function remove(request: Request, { params }: RouteParams) {
   const actor = await getActorFromRequest(request)
   if (!actor) {
     return apiError('UNAUTHORIZED', 'Unauthorized', 401, undefined, {
@@ -81,3 +81,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
   await holidayRepo.deleteHolidayById(scheduleId)
   return apiSuccess({ success: true })
 }
+
+export const GET = withApiErrorHandling(get)
+export const PATCH = withApiErrorHandling(patch)
+export const DELETE = withApiErrorHandling(remove)

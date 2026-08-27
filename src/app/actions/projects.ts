@@ -7,8 +7,7 @@ import * as projectRepo from '@/lib/db/repositories/projects'
 export async function createProject(name: string, description?: string) {
     try {
         const actor = await requireSessionActor()
-        const project = await projectRepo.insertProject(name, description, actor.userId)
-        await projectRepo.insertProjectMember(project.id, actor.userId, 'owner')
+        const project = await projectRepo.insertProjectWithOwner(name, description, actor.userId)
         revalidatePath('/projects')
         return { success: true, project }
     } catch (error: unknown) {
