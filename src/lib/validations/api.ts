@@ -38,6 +38,16 @@ export const projectsQuerySchema = z.object({
 export const taskStatusEnum = z.enum(['todo', 'in_progress', 'review', 'done'])
 export const taskPriorityEnum = z.enum(['low', 'medium', 'high', 'urgent'])
 
+const taskStatusList = z.string()
+  .transform(value => value.split(',').map(item => item.trim()).filter(Boolean))
+  .pipe(z.array(taskStatusEnum).min(1))
+
+const taskPriorityList = z.string()
+  .transform(value => value.split(',').map(item => item.trim()).filter(Boolean))
+  .pipe(z.array(taskPriorityEnum).min(1))
+
+const queryDate = dateString.transform(value => value.slice(0, 10))
+
 export const createTaskSchema = z.object({
   title: z.string().trim().min(1, '업무명은 필수입니다.').max(255),
   description: z.string().nullable().optional(),
@@ -80,16 +90,35 @@ export const updateTaskSchema = z.object({
   }
 )
 
+const taskFilterQueryShape = {
+  search: z.string().optional(),
+  q: z.string().optional(),
+  status: taskStatusList.optional(),
+  priority: taskPriorityList.optional(),
+  assigneeId: z.string().optional(),
+  from: queryDate.optional(),
+  to: queryDate.optional(),
+  due: z.enum(['soon', 'overdue']).optional(),
+  asOf: queryDate.optional(),
+}
+
+const isTaskQueryChronological = (data: { from?: string, to?: string }) =>
+  !data.from || !data.to || data.from <= data.to
+
+const taskQueryDateError = {
+  message: 'to must be on or after from',
+  path: ['to'],
+}
+
 export const tasksQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
   cursor: z.string().optional(),
-  search: z.string().optional(),
-  q: z.string().optional(),
-  status: taskStatusEnum.optional(),
-  priority: taskPriorityEnum.optional(),
-  assigneeId: z.string().optional(),
   parentId: z.string().optional(),
-})
+  ...taskFilterQueryShape,
+}).refine(isTaskQueryChronological, taskQueryDateError)
+
+export const tasksSummaryQuerySchema = z.object(taskFilterQueryShape)
+  .refine(isTaskQueryChronological, taskQueryDateError)
 
 // ── Schedule Validation Schemas ─────────────────────────────────────────
 

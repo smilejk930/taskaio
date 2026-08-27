@@ -41,10 +41,14 @@ async function get(request: Request, { params }: RouteParams) {
 
   const { items, hasMore, total } = await taskRepo.getTasksForProjectPaginated(projectId, {
     search,
-    status: query.status,
-    priority: query.priority,
+    statuses: query.status,
+    priorities: query.priority,
     assigneeId: query.assigneeId,
     parentId: query.parentId,
+    from: query.from,
+    to: query.to,
+    due: query.due,
+    asOf: query.asOf,
     limit: query.limit,
     offset,
   })

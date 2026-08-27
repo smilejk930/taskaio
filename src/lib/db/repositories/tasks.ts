@@ -1,12 +1,16 @@
 import { db, schema } from "../index"
-import { eq, and, or, like, desc, isNull, count } from "drizzle-orm"
+import { eq, and, or, like, desc, isNull, isNotNull, count, inArray, gte, lte, lt, ne } from "drizzle-orm"
 
 export interface TaskQueryOptions {
   search?: string
-  status?: string
-  priority?: string
+  statuses?: string[]
+  priorities?: string[]
   assigneeId?: string
   parentId?: string | null
+  from?: string
+  to?: string
+  due?: 'soon' | 'overdue'
+  asOf?: string
   limit?: number
   offset?: number
 }
@@ -18,8 +22,32 @@ export async function getTasksByProjectId(projectId: string) {
 export async function getTasksForProjectPaginated(projectId: string, options: TaskQueryOptions = {}) {
   const limit = options.limit ?? 50
   const offset = options.offset ?? 0
-  const searchPattern = options.search ? `%${options.search}%` : null
 
+  const conditions = buildTaskConditions(projectId, options)
+  const whereClause = and(...conditions)
+  const [rows, totalRows] = await Promise.all([db
+    .select()
+    .from(schema.tasks)
+    .where(whereClause)
+    .orderBy(desc(schema.tasks.createdAt), desc(schema.tasks.id))
+    .limit(limit + 1)
+    .offset(offset), db.select({ value: count() }).from(schema.tasks).where(whereClause)])
+
+  const hasMore = rows.length > limit
+  const items = hasMore ? rows.slice(0, limit) : rows
+  return { items, hasMore, total: totalRows[0]?.value ?? 0 }
+}
+
+export async function getTasksForProjectFiltered(projectId: string, options: TaskQueryOptions = {}) {
+  return await db
+    .select()
+    .from(schema.tasks)
+    .where(and(...buildTaskConditions(projectId, options)))
+    .orderBy(desc(schema.tasks.createdAt), desc(schema.tasks.id))
+}
+
+function buildTaskConditions(projectId: string, options: TaskQueryOptions) {
+  const searchPattern = options.search ? `%${options.search}%` : null
   const conditions = [
     eq(schema.tasks.projectId, projectId),
     eq(schema.tasks.isDeleted, false),
@@ -34,12 +62,12 @@ export async function getTasksForProjectPaginated(projectId: string, options: Ta
     )
   }
 
-  if (options.status) {
-    conditions.push(eq(schema.tasks.status, options.status as NonNullable<typeof schema.tasks.$inferSelect.status>))
+  if (options.statuses?.length) {
+    conditions.push(inArray(schema.tasks.status, options.statuses as NonNullable<typeof schema.tasks.$inferSelect.status>[]))
   }
 
-  if (options.priority) {
-    conditions.push(eq(schema.tasks.priority, options.priority as NonNullable<typeof schema.tasks.$inferSelect.priority>))
+  if (options.priorities?.length) {
+    conditions.push(inArray(schema.tasks.priority, options.priorities as NonNullable<typeof schema.tasks.$inferSelect.priority>[]))
   }
 
   if (options.assigneeId) {
@@ -54,18 +82,27 @@ export async function getTasksForProjectPaginated(projectId: string, options: Ta
     }
   }
 
-  const whereClause = and(...conditions)
-  const [rows, totalRows] = await Promise.all([db
-    .select()
-    .from(schema.tasks)
-    .where(whereClause)
-    .orderBy(desc(schema.tasks.createdAt), desc(schema.tasks.id))
-    .limit(limit + 1)
-    .offset(offset), db.select({ value: count() }).from(schema.tasks).where(whereClause)])
+  if (options.from) {
+    conditions.push(isNotNull(schema.tasks.startDate), isNotNull(schema.tasks.endDate), gte(schema.tasks.endDate, options.from))
+  }
 
-  const hasMore = rows.length > limit
-  const items = hasMore ? rows.slice(0, limit) : rows
-  return { items, hasMore, total: totalRows[0]?.value ?? 0 }
+  if (options.to) {
+    conditions.push(isNotNull(schema.tasks.startDate), isNotNull(schema.tasks.endDate), lte(schema.tasks.startDate, options.to))
+  }
+
+  if (options.due) {
+    const asOf = options.asOf ?? new Date().toISOString().slice(0, 10)
+    conditions.push(ne(schema.tasks.status, 'done'), isNotNull(schema.tasks.endDate))
+    if (options.due === 'overdue') {
+      conditions.push(lt(schema.tasks.endDate, asOf))
+    } else {
+      const dueThrough = new Date(`${asOf}T00:00:00Z`)
+      dueThrough.setUTCDate(dueThrough.getUTCDate() + 3)
+      conditions.push(gte(schema.tasks.endDate, asOf), lte(schema.tasks.endDate, dueThrough.toISOString().slice(0, 10)))
+    }
+  }
+
+  return conditions
 }
 
 export async function syncParentTask(parentId: string) {
