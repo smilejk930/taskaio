@@ -23,7 +23,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Pencil, Trash2, Search } from 'lucide-react'
-import { Holiday, HolidayFormData, HolidayProfile } from '@/hooks/use-holidays'
+import type { Holiday, HolidayFormData, HolidayProfile } from '@/hooks/use-holidays'
 import HolidayDialog from './HolidayDialog'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -43,6 +43,14 @@ interface HolidayListProps {
 function formatDateRange(start: string, end: string): string {
     if (start === end) return start
     return `${start} ~ ${end}`
+}
+
+export function getHolidayMemberName(holiday: Holiday, profiles: HolidayProfile[]): string {
+    if (!holiday.member_id) return '-'
+
+    return holiday.profiles?.display_name?.trim()
+        || profiles.find(profile => profile.id === holiday.member_id)?.display_name?.trim()
+        || '알 수 없음'
 }
 
 // ──── 컴포넌트 ────────────────────────────────────────────────────────────────
@@ -73,9 +81,7 @@ export default function HolidayList({
         if (!searchQuery.trim()) return true
         const query = searchQuery.toLowerCase()
         const matchName = holiday.name.toLowerCase().includes(query)
-        const memberName = ['member_leave', 'business_trip'].includes(holiday.type) && holiday.member_id
-            ? (holiday.profiles?.display_name ?? profiles.find(p => p.id === holiday.member_id)?.display_name ?? '')
-            : ''
+        const memberName = getHolidayMemberName(holiday, profiles)
         const matchMember = memberName.toLowerCase().includes(query)
         
         const typeNames: Record<string, string> = {
@@ -170,12 +176,7 @@ export default function HolidayList({
                                     {formatDateRange(holiday.start_date, holiday.end_date)}
                                 </TableCell>
                                 <TableCell className="text-sm text-muted-foreground">
-                                    {/* profiles join 결과 또는 profiles 목록에서 이름 조회 */}
-                                    {['member_leave', 'business_trip'].includes(holiday.type) && holiday.member_id
-                                        ? (holiday.profiles?.display_name
-                                            ?? profiles.find(p => p.id === holiday.member_id)?.display_name
-                                            ?? '-')
-                                        : '-'}
+                                    {getHolidayMemberName(holiday, profiles)}
                                 </TableCell>
                                 <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
                                     {holiday.note ?? '-'}
