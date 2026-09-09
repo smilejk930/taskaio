@@ -20,6 +20,7 @@ import { Settings } from 'lucide-react'
 import WbsGrid, { WbsGridHandle } from '@/components/wbs/WbsGrid'
 import DashboardView from '@/components/dashboard/DashboardView'
 import TeamManagementView from '@/components/projects/members/TeamManagementView'
+import { TaskExcelDownloadButton } from '@/components/projects/TaskExcelDownloadButton'
 import { TaskSearchFilter } from '@/components/projects/TaskSearchFilter'
 import { UserMenu } from '@/components/auth/UserMenu'
 import { AppLogo } from '@/components/common/AppLogo'
@@ -108,11 +109,29 @@ export default function ProjectClientView({
         currentUser?.is_admin || tasks.find(task => task.id === id)?.assignee_id === currentUser?.id
     ), [currentUser?.id, currentUser?.is_admin, tasks])
 
-    const { filters, setFilters, resetFilters, filteredTasks, defaults: filterDefaults } = useTaskFilters(
+    const { filters, setFilters, resetFilters, filteredTasks, exportTasks, defaults: filterDefaults } = useTaskFilters(
         tasks,
         currentUser?.id ? [currentUser.id] : [],
         currentMemberRole === 'manager' ? 'manager' : 'default'
     )
+
+  const taskSearchFilter = (
+    <TaskSearchFilter
+      filters={filters}
+      setFilters={setFilters}
+      members={members}
+      onReset={resetFilters}
+      defaults={filterDefaults}
+      actions={
+        <TaskExcelDownloadButton
+          tasks={exportTasks}
+          members={members}
+          projectName={project.name}
+          isTaskLoading={isTaskLoading}
+        />
+      }
+    />
+  )
 
     const processingRef = useRef<Set<string>>(new Set());
 
@@ -500,16 +519,8 @@ export default function ProjectClientView({
                                 <WbsSkeleton />
                             ) : (
                                 <>
-                                        <div className="flex items-start gap-4 mb-2">
-                                            <div className="flex-1">
-                                                <TaskSearchFilter
-                                                    filters={filters}
-                                                    setFilters={setFilters}
-                                                    members={members}
-                                                    onReset={resetFilters}
-                                                    defaults={filterDefaults}
-                                                />
-                                            </div>
+                                        <div className="mb-2">
+                                            {taskSearchFilter}
                                         </div>
                                         <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
                                             <WbsGrid
@@ -536,13 +547,7 @@ export default function ProjectClientView({
                                 <GanttSkeleton />
                             ) : (
                                 <>
-                                    <TaskSearchFilter
-                                        filters={filters}
-                                        setFilters={setFilters}
-                                        members={members}
-                                        onReset={resetFilters}
-                                        defaults={filterDefaults}
-                                    />
+                                    {taskSearchFilter}
                                     <div className="flex-1 min-h-0 border rounded-lg bg-background overflow-hidden">
                                         <GanttChart
                                             tasks={ganttTasks}

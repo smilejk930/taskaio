@@ -41,6 +41,7 @@
     "dhtmlx-gantt": "^9.1.2",
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
+    "exceljs": "^4.4.0",
     "lucide-react": "^0.577.0",
     "next": "14.2.35",
     "next-auth": "5.0.0-beta.30",

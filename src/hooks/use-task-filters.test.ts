@@ -121,3 +121,76 @@ describe('useTaskFilters', () => {
         expect(toYmd(result.current.filters.dateRange.to)).toBe('2026-06-07')
     })
 })
+
+const hierarchyTask = (id: string, overrides: Partial<ProjectTask> = {}): ProjectTask => ({
+  id,
+  title: '검색 대상',
+  project_id: 'p1',
+  parent_id: null,
+  assignee_id: 'user-1',
+  description: null,
+  start_date: '2026-09-09',
+  end_date: '2026-09-10',
+  status: 'in_progress',
+  priority: 'high',
+  progress: 50,
+  is_deleted: false,
+  color: null,
+  created_at: null,
+  updated_at: null,
+  ...overrides,
+})
+
+const hierarchyTasks: ProjectTask[] = [
+  hierarchyTask('parent', { title: '관리업무', assignee_id: 'user-2', status: 'done' }),
+  hierarchyTask('middle', { title: '중간 업무', parent_id: 'parent', status: 'done' }),
+  hierarchyTask('match', { parent_id: 'middle' }),
+  hierarchyTask('description-match', { title: '별도 업무', description: '검색 대상 설명', parent_id: 'middle' }),
+  hierarchyTask('wrong-title', { title: '다른 업무', parent_id: 'parent' }),
+  hierarchyTask('wrong-assignee', { assignee_id: 'user-2', parent_id: 'parent' }),
+  hierarchyTask('wrong-status', { status: 'done', parent_id: 'parent' }),
+  hierarchyTask('wrong-priority', { priority: 'low', parent_id: 'parent' }),
+  hierarchyTask('wrong-date', { start_date: '2026-10-01', end_date: '2026-10-02', parent_id: 'parent' }),
+]
+
+describe('엑셀 다운로드 대상 필터', () => {
+  test('검색 조건을 유지하고 일치하는 하위 업무와 모든 상위를 중복 없이 포함한다', () => {
+    const { result } = renderHook(() => useTaskFilters(hierarchyTasks))
+    act(() => {
+      result.current.setFilters(prev => ({
+        ...prev,
+        title: '검색 대상',
+        assigneeIds: ['user-1'],
+        statuses: ['in_progress'],
+        priorities: ['high'],
+        dateRange: { from: new Date(2026, 8, 9), to: new Date(2026, 8, 9) },
+        showOnlyParent: true,
+      }))
+    })
+
+    const expectedIds = ['parent', 'middle', 'match', 'description-match']
+    expect(result.current.exportTasks.map(task => task.id)).toEqual(expectedIds)
+    expect(result.current.filteredTasks.map(task => task.id)).toEqual(['parent'])
+
+    act(() => { result.current.setFilters(prev => ({ ...prev, showOnlyParent: false })) })
+    expect(result.current.exportTasks.map(task => task.id)).toEqual(expectedIds)
+    expect(result.current.filteredTasks).toEqual(result.current.exportTasks)
+  })
+
+  test('관리업무만 검색에 일치하면 조건과 무관한 하위 업무를 추가하지 않는다', () => {
+    const { result } = renderHook(() => useTaskFilters(hierarchyTasks))
+    act(() => {
+      result.current.setFilters(prev => ({ ...prev, title: '관리업무', statuses: [], showOnlyParent: true }))
+    })
+    expect(result.current.exportTasks.map(task => task.id)).toEqual(['parent'])
+  })
+
+  test('조회 결과가 없으면 엑셀 대상도 비어 있다', () => {
+    const { result } = renderHook(() => useTaskFilters(hierarchyTasks))
+    act(() => {
+      result.current.setFilters(prev => ({ ...prev, title: '존재하지 않는 업무', showOnlyParent: true }))
+    })
+    expect(result.current.filteredTasks).toEqual([])
+    expect(result.current.exportTasks).toEqual([])
+  })
+})

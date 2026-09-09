@@ -83,7 +83,7 @@ export function useTaskFilters(
     // 초기화: 모든 필터를 제거하는 것이 아니라 첫 진입 기본값으로 복원
     const resetFilters = () => setFilters(defaultFilters)
 
-    const filteredTasks = useMemo(() => {
+    const exportTasks = useMemo(() => {
         // 1. 기초 필터링 (계층 무관하게 조건 만족하는 업무)
         // 필터가 하나도 없으면 모든 업무를 대상으로 함
         const isFilterEmpty = !filters.title &&
@@ -148,14 +148,12 @@ export function useTaskFilters(
             }
         })
 
-        // 3. 관리 업무만 보기 토글 적용
-        // "관리 업무만"이 체크되어 있으면 visibleIds 중에서 부모가 없는 것만 필터링
-        if (filters.showOnlyParent) {
-            return tasks.filter(t => visibleIds.has(t.id) && !t.parent_id)
-        }
-
         return tasks.filter(t => visibleIds.has(t.id))
     }, [tasks, filters])
+
+  const filteredTasks = useMemo(() => (
+    filters.showOnlyParent ? exportTasks.filter(task => !task.parent_id) : exportTasks
+  ), [exportTasks, filters.showOnlyParent])
 
     // 「전체」 토글이 OFF로 돌아갈 때 복원할 기본값. 호출부(TaskSearchFilter)에 전달.
     const defaults = useMemo(() => ({
@@ -170,6 +168,7 @@ export function useTaskFilters(
         setFilters,
         resetFilters,
         filteredTasks,
+        exportTasks,
         defaults,
     }
 }

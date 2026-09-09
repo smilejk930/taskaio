@@ -39,6 +39,7 @@ interface TaskSearchFilterProps {
     setFilters: React.Dispatch<React.SetStateAction<TaskFilters>>
     members: Member[]
     onReset: () => void
+  actions?: React.ReactNode
     /** 「전체」 토글이 OFF로 전환될 때 복원할 기본 선택값 */
     defaults: {
         assigneeIds: string[]
@@ -60,7 +61,7 @@ const PRIORITY_OPTIONS = [
     { value: 'low', label: '낮음', variant: 'outline' as const },
 ]
 
-export function TaskSearchFilter({ filters, setFilters, members, onReset, defaults }: TaskSearchFilterProps) {
+export function TaskSearchFilter({ filters, setFilters, members, onReset, defaults, actions }: TaskSearchFilterProps) {
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFilters(prev => ({ ...prev, title: e.target.value }))
     }
@@ -304,6 +305,7 @@ export function TaskSearchFilter({ filters, setFilters, members, onReset, defaul
                     초기화
                     <X className="ml-2 h-4 w-4" />
                 </Button>
+                {actions && <div className="ml-auto flex shrink-0 items-center">{actions}</div>}
             </div>
 
             {/* 선택된 필터 칩 표시 영역 */}
