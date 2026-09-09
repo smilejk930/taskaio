@@ -2,8 +2,8 @@
 FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN npm install -g "$(node -p "require('./package.json').packageManager")" && pnpm install --frozen-lockfile
 
 # 2. 빌드 단계
 FROM node:20-alpine AS builder
@@ -14,7 +14,7 @@ COPY . .
 RUN mkdir -p public drizzle
 # standalone 모드를 Docker 빌드에서만 활성화 (Windows 로컬에서는 심볼릭 링크 권한 문제 회피)
 ENV NEXT_BUILD_STANDALONE=true
-RUN npm install -g pnpm && pnpm build
+RUN npm install -g "$(node -p "require('./package.json').packageManager")" && pnpm build
 
 # 3. 실행 단계
 FROM node:20-alpine AS runner
