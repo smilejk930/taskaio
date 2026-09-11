@@ -35,11 +35,8 @@ export async function updateTask(id: string, updates: TaskUpdatePayload) {
     const safeUpdates = parsed.data
 
     if (!actor.isAdmin) {
-        if (existingTask.assigneeId !== actor.userId) {
+        if (existingTask.assigneeId !== null && existingTask.assigneeId !== actor.userId) {
             throw new Error('Access denied: You are not the assignee of this task.')
-        }
-        if (safeUpdates.assigneeId !== undefined && safeUpdates.assigneeId !== actor.userId) {
-            throw new Error('Access denied: Cannot reassign task to another user.')
         }
 
         const isParentChanged = safeUpdates.parentId !== undefined && safeUpdates.parentId !== existingTask.parentId
@@ -52,7 +49,9 @@ export async function updateTask(id: string, updates: TaskUpdatePayload) {
                 throw new Error('409 Conflict: Cannot move task: descendant tasks contain other assignees or unassigned tasks.')
             }
         }
-    } else if (safeUpdates.assigneeId) {
+    }
+
+    if (safeUpdates.assigneeId) {
         const role = await getProjectRole(existingTask.projectId, safeUpdates.assigneeId)
         if (!role) throw new Error('Assignee must be a member of the project.')
     }
@@ -145,14 +144,8 @@ export async function createTask(task: TaskInsertPayload) {
         throw new Error('Access denied: You do not have access to this project.')
     }
 
-    let finalAssigneeId = taskData.assigneeId
-    if (!actor.isAdmin) {
-        if (!finalAssigneeId) {
-            finalAssigneeId = actor.userId
-        } else if (finalAssigneeId !== actor.userId) {
-            throw new Error('Access denied: Cannot assign task to another user.')
-        }
-    } else if (finalAssigneeId) {
+    const finalAssigneeId = taskData.assigneeId
+    if (finalAssigneeId) {
         const role = await getProjectRole(task.projectId, finalAssigneeId)
         if (!role) {
             throw new Error('Assignee must be a member of the project.')

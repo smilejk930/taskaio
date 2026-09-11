@@ -91,21 +91,11 @@ async function post(request: Request, { params }: RouteParams) {
   const taskData = parseResult.data
 
   // 1. 담당자(assigneeId) 규칙 검증
-  let finalAssigneeId = taskData.assigneeId
-  if (!actor.isAdmin) {
-    // 일반 사용자는 미지정 시 본인, 타인 지정 시 거부
-    if (!finalAssigneeId) {
-      finalAssigneeId = actor.userId
-    } else if (finalAssigneeId !== actor.userId) {
-      return apiError('FORBIDDEN', 'Access denied: Cannot assign task to another user.', 403)
-    }
-  } else {
-    // 관리자가 특정 담당자를 지정한 경우 프로젝트 멤버인지 검증
-    if (finalAssigneeId) {
-      const role = await getProjectRole(projectId, finalAssigneeId)
-      if (!role) {
-        return apiError('UNPROCESSABLE_ENTITY', 'Assignee must be a member of the project.', 422)
-      }
+  const finalAssigneeId = taskData.assigneeId
+  if (finalAssigneeId) {
+    const role = await getProjectRole(projectId, finalAssigneeId)
+    if (!role) {
+      return apiError('UNPROCESSABLE_ENTITY', 'Assignee must be a member of the project.', 422)
     }
   }
 

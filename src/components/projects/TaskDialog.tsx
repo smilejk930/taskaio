@@ -237,7 +237,7 @@ export default function TaskDialog({
         }
     }
 
-    const isNonAssignee = Boolean(currentUser && !currentUser.is_admin && isEdit && initialData?.assignee_id !== currentUser.id)
+    const isNonAssignee = Boolean(currentUser && !currentUser.is_admin && isEdit && initialData?.assignee_id !== null && initialData?.assignee_id !== currentUser.id)
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -394,7 +394,7 @@ export default function TaskDialog({
                             <Select
                                 value={form.assignee_id || 'unassigned'}
                                 onValueChange={(v) => setField('assignee_id', v === 'unassigned' ? null : v)}
-                                disabled={!currentUser?.is_admin}
+                                disabled={isNonAssignee}
                             >
                                 <SelectTrigger id="task-assignee" className="h-9">
                                     <SelectValue />

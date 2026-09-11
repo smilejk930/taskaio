@@ -101,7 +101,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
     const [isSaving, setIsSaving] = useState<string | null>(null)
 
     const tableContainerRef = useRef<HTMLDivElement>(null)
-    const canEditTask = (task: LocalTask) => Boolean(task._isNew || isSystemAdmin || (currentUserId && task.assignee_id === currentUserId))
+    const canEditTask = (task: LocalTask) => Boolean(task._isNew || isSystemAdmin || (currentUserId && (task.assignee_id === currentUserId || task.assignee_id === null)))
 
     // ── 외부 노출 메서드 ──────────────────────────────────────────────────────
     React.useImperativeHandle(ref, () => ({
@@ -779,7 +779,7 @@ const WbsGrid = React.forwardRef<WbsGridHandle, WbsGridProps>(({
             handleDelete,
             handleAddNewRow,
             canEditTask,
-            canAssignTask: isSystemAdmin,
+            canAssignTask: true,
         } as WbsTableMeta
     })
 

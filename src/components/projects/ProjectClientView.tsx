@@ -105,9 +105,12 @@ export default function ProjectClientView({
     const [selectedTask, setSelectedTask] = useState<Partial<TaskFormData> & { id?: string } | null>(null)
     const wbsGridRef = useRef<WbsGridHandle>(null)
     const currentMemberRole = members.find(m => m.id === currentUser?.id)?.role
-    const canEditTaskById = useCallback((id: string) => Boolean(
-        currentUser?.is_admin || tasks.find(task => task.id === id)?.assignee_id === currentUser?.id
-    ), [currentUser?.id, currentUser?.is_admin, tasks])
+    const canEditTaskById = useCallback((id: string) => {
+        const targetTask = tasks.find(task => task.id === id)
+        return Boolean(
+            currentUser?.is_admin || (currentUser?.id && (targetTask?.assignee_id === currentUser.id || targetTask?.assignee_id === null))
+        )
+    }, [currentUser?.id, currentUser?.is_admin, tasks])
 
     const { filters, setFilters, resetFilters, filteredTasks, exportTasks, defaults: filterDefaults } = useTaskFilters(
         tasks,

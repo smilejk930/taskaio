@@ -56,9 +56,9 @@ async function patch(request: Request, { params }: RouteParams) {
     return apiError('NOT_FOUND', 'Task not found', 404)
   }
 
-  // 1. 일반 사용자 권한 검사 (본인 담당 업무만 수정 가능)
+  // 1. 일반 사용자 권한 검사 (본인 담당 업무 및 미지정 업무 수정 가능)
   if (!actor.isAdmin) {
-    if (task.assigneeId !== actor.userId) {
+    if (task.assigneeId !== null && task.assigneeId !== actor.userId) {
       return apiError('FORBIDDEN', 'Access denied: You are not the assignee of this task.', 403)
     }
   }
@@ -77,17 +77,11 @@ async function patch(request: Request, { params }: RouteParams) {
 
   const updates = parseResult.data
 
-  // 2. 담당자 재할당 검사
-  if (updates.assigneeId !== undefined) {
-    if (!actor.isAdmin) {
-      if (updates.assigneeId !== actor.userId) {
-        return apiError('FORBIDDEN', 'Access denied: Cannot reassign task to another user.', 403)
-      }
-    } else if (updates.assigneeId) {
-      const role = await getProjectRole(task.projectId, updates.assigneeId)
-      if (!role) {
-        return apiError('UNPROCESSABLE_ENTITY', 'Assignee must be a member of the project.', 422)
-      }
+  // 2. 담당자 지정 및 프로젝트 멤버십 검증
+  if (updates.assigneeId !== undefined && updates.assigneeId !== null) {
+    const role = await getProjectRole(task.projectId, updates.assigneeId)
+    if (!role) {
+      return apiError('UNPROCESSABLE_ENTITY', 'Assignee must be a member of the project.', 422)
     }
   }
 
