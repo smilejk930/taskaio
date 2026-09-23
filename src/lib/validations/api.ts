@@ -80,6 +80,7 @@ export const updateTaskSchema = z.object({
   endDate: dateString.nullable().optional(),
   progress: z.coerce.number().int().min(0).max(100).optional(),
   color: z.string().nullable().optional(),
+  shiftSubsequentTasks: z.boolean().optional(),
 }).refine(
   (data) => {
     return isChronological(data.startDate, data.endDate)
