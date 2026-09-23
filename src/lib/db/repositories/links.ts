@@ -7,7 +7,7 @@ export async function createLink(link: typeof schema.taskDependencies.$inferInse
 }
 
 export async function getLinkById(id: string) {
-    const [link] = await db.select().from(schema.taskDependencies).where(eq(schema.taskDependencies.id, id))
+    const [link] = await db.select().from(schema.taskDependencies).where(and(eq(schema.taskDependencies.id, id), eq(schema.taskDependencies.isDeleted, false)))
     return link
 }
 

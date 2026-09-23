@@ -120,6 +120,12 @@ export const tasksQuerySchema = z.object({
 export const tasksSummaryQuerySchema = z.object(taskFilterQueryShape)
   .refine(isTaskQueryChronological, taskQueryDateError)
 
+export const createTaskDependencySchema = z.object({
+  sourceId: z.string().trim().min(1),
+  targetId: z.string().trim().min(1),
+  type: z.enum(['0', '1', '2', '3']),
+})
+
 // ── Schedule Validation Schemas ─────────────────────────────────────────
 
 export const scheduleTypeEnum = z.enum([

@@ -75,7 +75,7 @@ async function patch(request: Request, { params }: RouteParams) {
     return apiError('UNPROCESSABLE_ENTITY', 'Validation failed', 422, parseResult.error.issues)
   }
 
-  const updates = parseResult.data
+  const { shiftSubsequentTasks, ...updates } = parseResult.data
 
   // 2. 담당자 지정 및 프로젝트 멤버십 검증
   if (updates.assigneeId !== undefined && updates.assigneeId !== null) {
@@ -162,8 +162,21 @@ async function patch(request: Request, { params }: RouteParams) {
     }
 
     const isMove = startOffsetMs !== 0 && updates.endDate && task.endDate && startOffsetMs === endOffsetMs
+    const alreadyShiftedAncestors = new Set<string>()
     if (isMove) {
       await taskRepo.shiftChildTasks(taskId, startOffsetMs)
+      alreadyShiftedAncestors.add(taskId)
+    }
+
+    if (shiftSubsequentTasks && startOffsetMs !== 0) {
+      await taskRepo.shiftUserSubsequentTasks(
+        task.projectId,
+        actor.userId,
+        new Date(task.startDate),
+        startOffsetMs,
+        taskId,
+        alreadyShiftedAncestors
+      )
     }
   }
 
